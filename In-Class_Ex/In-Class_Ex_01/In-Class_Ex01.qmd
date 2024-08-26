@@ -1,0 +1,84 @@
+---
+title: "In Class Exercise 01"
+author: "Henry Low"
+date: "Aug 26 2024"
+date-modified: "last-modified"
+execute:
+  evalu: true
+  echo: true
+  message: false
+  freeze: true
+format: html
+editor: visual
+---
+
+
+## Loading the R packages
+
+```{r}
+pacman::p_load(tidyverse, sf, tmap, ggstatsplot)
+```
+
+## Load Data
+
+```{r}
+mpsz14_shp <- st_read(dsn = "data/MasterPlan2014SubzoneBoundaryWebSHP/", layer = "MP14_SUBZONE_WEB_PL")
+# mpsz14_kml <- st_read("data/MasterPlan2014SubzoneBoundaryWebKML.kml")
+```
+
+
+## Write
+```{r}
+st_write(mpsz14_shp, "data/MP14_SUBZONE_WEB_PL.kml", 
+         delete_dsn = TRUE # Overwrite old file if exists
+         )
+```
+## Read Pre-School Location
+```{r}
+presch <- st_read("data/PreSchoolsLocation.kml")
+```
+
+## Read Master Plan 2019 Subzone (No Sea)
+```{r}
+# SHP File
+mpsz19_shp <- st_read(dsn = "data/MPSZ-2019/", layer = "MPSZ-2019") %>% 
+  st_transform(crs = 3414) # Transform (Grid Projection) from GRS to CRS
+```
+
+```{r}
+# KML File
+mpsz19_kml <- st_read("data/MasterPlan2019SubzoneBoundaryNoSeaKML.kml")
+```
+
+
+## Load Population Data
+```{r}
+popdata <- read_csv("data/respopagesextod2023.csv")
+```
+
+
+## Load Cycling Path
+```{r}
+cyclingpath = st_read(dsn = "data/CyclingPath_Jul2024", 
+                         layer = "CyclingPathGazette")
+```
+
+
+Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+
+## Running Code
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+1 + 1
+```
+
+You can add options to executable code like this
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
