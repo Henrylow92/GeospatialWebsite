@@ -11,7 +11,7 @@ website:
       - text: "In-class Exercise"
         menu: 
           - text: "In-Class Exercise 01"
-            href: In-Class_Ex01.html
+            href: In-Class_Ex/In-Class_Ex_01/In-Class_Ex01.html
 
 format:
   html:

@@ -25,21 +25,21 @@
     "href": "about.html",
     "title": "About",
     "section": "",
-    "text": "About this site\n\n1 + 1\n\n[1] 2"
+    "text": "Placeholder\n\n# Placeholder"
   },
   {
     "objectID": "index.html",
     "href": "index.html",
     "title": "GeospatialWebsite",
     "section": "",
-    "text": "This is a Quarto website.\nTo learn more about Quarto websites visit https://quarto.org/docs/websites.\n\n1 + 1\n\n[1] 2"
+    "text": "This is a website documenting the MITB module ISSS626 Geospatial Analytics and Applications\n\n# Placeholder"
   },
   {
     "objectID": "In-Class_Ex/In-Class_Ex_01/In-Class_Ex01.html",
     "href": "In-Class_Ex/In-Class_Ex_01/In-Class_Ex01.html",
     "title": "In Class Exercise 01",
     "section": "",
-    "text": "Quarto Logo"
+    "text": "pacman::p_load(tidyverse, sf, tmap, ggstatsplot)"
   },
   {
     "objectID": "In-Class_Ex/In-Class_Ex_01/In-Class_Ex01.html#quarto",
@@ -54,5 +54,61 @@
     "title": "In Class Exercise 01",
     "section": "Running Code",
     "text": "Running Code\nWhen you click the Render button a document will be generated that includes both content and the output of embedded code. You can embed code like this:\n\n1 + 1\n\n[1] 2\n\n\nYou can add options to executable code like this\n\n\n[1] 4\n\n\nThe echo: false option disables the printing of code (only output is displayed)."
+  },
+  {
+    "objectID": "In-Class_Ex/In-Class_Ex_01/In-Class_Ex01.html#loading-the-r-packages",
+    "href": "In-Class_Ex/In-Class_Ex_01/In-Class_Ex01.html#loading-the-r-packages",
+    "title": "In Class Exercise 01",
+    "section": "",
+    "text": "pacman::p_load(tidyverse, sf, tmap, ggstatsplot)"
+  },
+  {
+    "objectID": "In-Class_Ex/In-Class_Ex_01/In-Class_Ex01.html#load-data",
+    "href": "In-Class_Ex/In-Class_Ex_01/In-Class_Ex01.html#load-data",
+    "title": "In Class Exercise 01",
+    "section": "Load Data",
+    "text": "Load Data\n\nmpsz14_shp &lt;- st_read(dsn = \"data/MasterPlan2014SubzoneBoundaryWebSHP/\", layer = \"MP14_SUBZONE_WEB_PL\")\n\nReading layer `MP14_SUBZONE_WEB_PL' from data source \n  `C:\\Users\\Henry\\Desktop\\SMU Masters\\2024-2025 T1\\Geospatial Analytics & Applications\\Project\\GeospatialWebsite\\In-Class_Ex\\In-Class_Ex_01\\data\\MasterPlan2014SubzoneBoundaryWebSHP' \n  using driver `ESRI Shapefile'\nSimple feature collection with 323 features and 15 fields\nGeometry type: MULTIPOLYGON\nDimension:     XY\nBounding box:  xmin: 2667.538 ymin: 15748.72 xmax: 56396.44 ymax: 50256.33\nProjected CRS: SVY21\n\n# mpsz14_kml &lt;- st_read(\"data/MasterPlan2014SubzoneBoundaryWebKML.kml\")"
+  },
+  {
+    "objectID": "In-Class_Ex/In-Class_Ex_01/In-Class_Ex01.html#write",
+    "href": "In-Class_Ex/In-Class_Ex_01/In-Class_Ex01.html#write",
+    "title": "In Class Exercise 01",
+    "section": "Write",
+    "text": "Write\n\nst_write(mpsz14_shp, \"data/MP14_SUBZONE_WEB_PL.kml\", \n         delete_dsn = TRUE # Overwrite old file if exists\n         )\n\nDeleting source `data/MP14_SUBZONE_WEB_PL.kml' using driver `KML'\nWriting layer `MP14_SUBZONE_WEB_PL' to data source \n  `data/MP14_SUBZONE_WEB_PL.kml' using driver `KML'\nWriting 323 features with 15 fields and geometry type Multi Polygon."
+  },
+  {
+    "objectID": "In-Class_Ex/In-Class_Ex_01/In-Class_Ex01.html#read-pre-school-location",
+    "href": "In-Class_Ex/In-Class_Ex_01/In-Class_Ex01.html#read-pre-school-location",
+    "title": "In Class Exercise 01",
+    "section": "Read Pre-School Location",
+    "text": "Read Pre-School Location\n\npresch &lt;- st_read(\"data/PreSchoolsLocation.kml\")\n\nReading layer `PRESCHOOLS_LOCATION' from data source \n  `C:\\Users\\Henry\\Desktop\\SMU Masters\\2024-2025 T1\\Geospatial Analytics & Applications\\Project\\GeospatialWebsite\\In-Class_Ex\\In-Class_Ex_01\\data\\PreSchoolsLocation.kml' \n  using driver `KML'\nSimple feature collection with 2290 features and 2 fields\nGeometry type: POINT\nDimension:     XYZ\nBounding box:  xmin: 103.6878 ymin: 1.247759 xmax: 103.9897 ymax: 1.462134\nz_range:       zmin: 0 zmax: 0\nGeodetic CRS:  WGS 84"
+  },
+  {
+    "objectID": "In-Class_Ex/In-Class_Ex_01/In-Class_Ex01.html#read-master-plan-2019-subzone-no-sea",
+    "href": "In-Class_Ex/In-Class_Ex_01/In-Class_Ex01.html#read-master-plan-2019-subzone-no-sea",
+    "title": "In Class Exercise 01",
+    "section": "Read Master Plan 2019 Subzone (No Sea)",
+    "text": "Read Master Plan 2019 Subzone (No Sea)\n\n# SHP File\nmpsz19_shp &lt;- st_read(dsn = \"data/MPSZ-2019/\", layer = \"MPSZ-2019\") %&gt;% \n  st_transform(crs = 3414) # Transform (Grid Projection) from GRS to CRS\n\nReading layer `MPSZ-2019' from data source \n  `C:\\Users\\Henry\\Desktop\\SMU Masters\\2024-2025 T1\\Geospatial Analytics & Applications\\Project\\GeospatialWebsite\\In-Class_Ex\\In-Class_Ex_01\\data\\MPSZ-2019' \n  using driver `ESRI Shapefile'\nSimple feature collection with 332 features and 6 fields\nGeometry type: MULTIPOLYGON\nDimension:     XY\nBounding box:  xmin: 103.6057 ymin: 1.158699 xmax: 104.0885 ymax: 1.470775\nGeodetic CRS:  WGS 84\n\n\n\n# KML File\nmpsz19_kml &lt;- st_read(\"data/MasterPlan2019SubzoneBoundaryNoSeaKML.kml\")\n\nReading layer `URA_MP19_SUBZONE_NO_SEA_PL' from data source \n  `C:\\Users\\Henry\\Desktop\\SMU Masters\\2024-2025 T1\\Geospatial Analytics & Applications\\Project\\GeospatialWebsite\\In-Class_Ex\\In-Class_Ex_01\\data\\MasterPlan2019SubzoneBoundaryNoSeaKML.kml' \n  using driver `KML'\nSimple feature collection with 332 features and 2 fields\nGeometry type: MULTIPOLYGON\nDimension:     XY, XYZ\nBounding box:  xmin: 103.6057 ymin: 1.158699 xmax: 104.0885 ymax: 1.470775\nz_range:       zmin: 0 zmax: 0\nGeodetic CRS:  WGS 84"
+  },
+  {
+    "objectID": "In-Class_Ex/In-Class_Ex_01/In-Class_Ex01.html#load-population-data",
+    "href": "In-Class_Ex/In-Class_Ex_01/In-Class_Ex01.html#load-population-data",
+    "title": "In Class Exercise 01",
+    "section": "Load Population Data",
+    "text": "Load Population Data\n\npopdata &lt;- read_csv(\"data/respopagesextod2023.csv\")\n\nRows: 100928 Columns: 7\n── Column specification ────────────────────────────────────────────────────────\nDelimiter: \",\"\nchr (5): PA, SZ, AG, Sex, TOD\ndbl (2): Pop, Time\n\nℹ Use `spec()` to retrieve the full column specification for this data.\nℹ Specify the column types or set `show_col_types = FALSE` to quiet this message."
+  },
+  {
+    "objectID": "In-Class_Ex/In-Class_Ex_01/In-Class_Ex01.html#load-cycling-path",
+    "href": "In-Class_Ex/In-Class_Ex_01/In-Class_Ex01.html#load-cycling-path",
+    "title": "In Class Exercise 01",
+    "section": "Load Cycling Path",
+    "text": "Load Cycling Path\n\ncyclingpath = st_read(dsn = \"data/CyclingPath_Jul2024\", \n                         layer = \"CyclingPathGazette\")\n\nReading layer `CyclingPathGazette' from data source \n  `C:\\Users\\Henry\\Desktop\\SMU Masters\\2024-2025 T1\\Geospatial Analytics & Applications\\Project\\GeospatialWebsite\\In-Class_Ex\\In-Class_Ex_01\\data\\CyclingPath_Jul2024' \n  using driver `ESRI Shapefile'\nSimple feature collection with 3138 features and 2 fields\nGeometry type: MULTILINESTRING\nDimension:     XY\nBounding box:  xmin: 11854.32 ymin: 28347.98 xmax: 42644.17 ymax: 48948.15\nProjected CRS: SVY21"
+  },
+  {
+    "objectID": "In-Class_Ex/In-Class_Ex_01/data/MPSZ-2019/MPSZ-2019.html",
+    "href": "In-Class_Ex/In-Class_Ex_01/data/MPSZ-2019/MPSZ-2019.html",
+    "title": "GeospatialWebsite",
+    "section": "",
+    "text": "&lt;!DOCTYPE qgis PUBLIC ‘http://mrcc.com/qgis.dtd’ ‘SYSTEM’&gt;     dataset\n\n\n        0 0     false"
   }
 ]

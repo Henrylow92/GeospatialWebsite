@@ -2,10 +2,8 @@
 title: "GeospatialWebsite"
 ---
 
-This is a Quarto website.
-
-To learn more about Quarto websites visit <https://quarto.org/docs/websites>.
+This is a website documenting the MITB module ISSS626 Geospatial Analytics and Applications
 
 ```{r}
-1 + 1
+# Placeholder
 ```
