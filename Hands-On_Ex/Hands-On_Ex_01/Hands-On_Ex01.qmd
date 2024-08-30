@@ -1,0 +1,63 @@
+---
+title: "Hands-On Exercise 01"
+author: "Henry Low"
+date: "Aug 30 2024"
+date-modified: "last-modified"
+execute:
+  evalu: true
+  echo: true
+  message: false
+  freeze: true
+format: html
+editor: visual
+---
+
+# Chapter 1: Geospatial Data Science with R
+
+## 1.1 Data Sources (saved under 'data' folder)
+
+From [data.gov.sg](https://data.gov.sg/):\
+- [Master Plan 2014 Subzone Boundary (Web) (SHP)](https://data.gov.sg/datasets?query=Master+Plan+2014+Subzone+Boundary&page=1&resultId=d_d14da225fccf921049ab64238ff473d9)\
+- [Master Plan 2014 Subzone Boundary (Web) (KML)](https://data.gov.sg/datasets?query=Master+Plan+2014+Subzone+Boundary&page=1&resultId=d_5cb80a95445f236737f6bc2bfe5f159d)\
+- [Pre-Schools Location (KML)](https://data.gov.sg/datasets?query=Pre-Schools+Location&page=1&resultId=d_a72bcd23e208d995f3bd4eececeaca43)
+
+Others:\
+[Cycling Path from LTADataMall](https://datamall.lta.gov.sg/content/dam/datamall/datasets/Geospatial/CyclingPath_Jul2024.zip)\
+[Listings from Airbnb (listings.csv)](https://insideairbnb.com/get-the-data/)
+
+## 1.2 Setting Up
+
+### 1.2.1 Loading the R packages
+
+```{r}
+pacman::p_load(tidyverse, sf)
+```
+
+### 1.2.2 Importing Datasets
+
+```{r}
+# Load MP14_SUBSONZE_WEB_PL
+mpsz = st_read(dsn = "data/MasterPlan2014SubzoneBoundaryWebSHP", layer = "MP14_SUBZONE_WEB_PL")
+```
+
+```{r}
+# Load Cycling Path
+cyclingpath = st_read(dsn = "data/CyclingPath_Jul2024", layer = "CyclingPathGazette")
+```
+
+```{r}
+# Load PreSchool 
+preschool = st_read("data/PreSchoolsLocation.kml")
+```
+
+## 1.3 Data Exploration
+
+## 1.4 Data Visualization
+
+## 1.5 Projection
+
+## 1.6 Transforming Aspatial Data
+
+## 1.7 Geoprocessing 
+
+# Chapter 2: Thematic Mapping and GeoVisualisation with R

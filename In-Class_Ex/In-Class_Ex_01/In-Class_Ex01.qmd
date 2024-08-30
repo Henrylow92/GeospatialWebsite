@@ -26,19 +26,22 @@ mpsz14_shp <- st_read(dsn = "data/MasterPlan2014SubzoneBoundaryWebSHP/", layer =
 # mpsz14_kml <- st_read("data/MasterPlan2014SubzoneBoundaryWebKML.kml")
 ```
 
-
 ## Write
+
 ```{r}
 st_write(mpsz14_shp, "data/MP14_SUBZONE_WEB_PL.kml", 
          delete_dsn = TRUE # Overwrite old file if exists
          )
 ```
+
 ## Read Pre-School Location
+
 ```{r}
 presch <- st_read("data/PreSchoolsLocation.kml")
 ```
 
 ## Read Master Plan 2019 Subzone (No Sea)
+
 ```{r}
 # SHP File
 mpsz19_shp <- st_read(dsn = "data/MPSZ-2019/", layer = "MPSZ-2019") %>% 
@@ -50,16 +53,15 @@ mpsz19_shp <- st_read(dsn = "data/MPSZ-2019/", layer = "MPSZ-2019") %>%
 mpsz19_kml <- st_read("data/MasterPlan2019SubzoneBoundaryNoSeaKML.kml")
 ```
 
-
 ## Load Population Data
+
 ```{r}
 popdata <- read_csv("data/respopagesextod2023.csv")
 ```
 
-
 ## Load Cycling Path
+
 ```{r}
 cyclingpath = st_read(dsn = "data/CyclingPath_Jul2024", 
                          layer = "CyclingPathGazette")
 ```
-
