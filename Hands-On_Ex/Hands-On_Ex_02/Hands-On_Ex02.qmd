@@ -502,6 +502,7 @@ plot(G_tm.csr)
 ```
 
 ## 5.2 Using F-Function
+
 *F function estimates the empty space function F(r) or its hazard rate h(r) from a point pattern in a window of arbitrary*
 
 ```{r}
@@ -531,6 +532,7 @@ plot(F_tm.csr)
 ```
 
 ## 5.3 Using K-Function
+
 *K-function measures the number of events found up to a given distance of any particular event.*
 
 ```{r}
@@ -538,12 +540,14 @@ plot(F_tm.csr)
 K_ck = Kest(childcare_ck_ppp, correction = "Ripley")
 plot(K_ck, . -r ~ r, ylab= "K(d)-r", xlab = "d(m)")
 ```
+
 ```{r}
 # Complete Spatial Randomness Test (Monte Carlo)
 K_ck.csr <- envelope(childcare_ck_ppp, Kest, nsim = 99, rank = 1, glocal=TRUE)
 # Plot results
 plot(K_ck.csr, . - r ~ r, xlab="d", ylab="K(d)-r")
 ```
+
 ```{r}
 # Compute K-function for Tampines
 K_tm = Kest(childcare_tm_ppp, correction = "Ripley")
@@ -591,5 +595,3 @@ L_tm.csr <- envelope(childcare_tm_ppp, Lest, nsim = 99, rank = 1, glocal=TRUE)
 plot(L_tm.csr, . - r ~ r, 
      xlab="d", ylab="L(d)-r", xlim=c(0,500))
 ```
-
-
