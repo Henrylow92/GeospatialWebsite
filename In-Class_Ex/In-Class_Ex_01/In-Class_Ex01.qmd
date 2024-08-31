@@ -12,7 +12,6 @@ format: html
 editor: visual
 ---
 
-
 ## Loading the R packages
 
 ```{r}
