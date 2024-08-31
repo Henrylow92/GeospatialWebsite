@@ -1,0 +1,15 @@
+{
+  "hash": "3fcd747b0db7fd0573dafa0821a868a6",
+  "result": {
+    "engine": "knitr",
+    "markdown": "---\ntitle: \"Hands-On Exercise 02\"\nauthor: \"Henry Low\"\ndate: \"Sep 1 2024\"\ndate-modified: \"last-modified\"\nexecute:\n  evalu: true\n  echo: true\n  message: false\n  freeze: true\nformat: html\neditor: visual\n---\n\n\n\n# Data Sources (saved under 'data' folder)\n\nFrom [data.gov.sg](https://data.gov.sg/):\\\n- [Master Plan 2014 Subzone Boundary (Web) (SHP)](https://data.gov.sg/datasets?query=Master+Plan+2014+Subzone+Boundary&page=1&resultId=d_d14da225fccf921049ab64238ff473d9)\\\n- [Master Plan 2014 Subzone Boundary (Web) (KML)](https://data.gov.sg/datasets?query=Master+Plan+2014+Subzone+Boundary&page=1&resultId=d_5cb80a95445f236737f6bc2bfe5f159d)\\\n- [Childcare](https://data.gov.sg/datasets?query=child+care&page=1&resultId=d_5d668e3f544335f8028f546827b773b4)\n\nOthers:\\\n- [CostalOutline from SLA](https://www.sla.gov.sg/geospatial-development-and-services/digitised-land-information)\n\n## 1.1 Setting Up\n\n### 1.1.1 Loading the R packages\n\n\n::: {.cell}\n\n```{.r .cell-code}\npacman::p_load(sf, raster, spatstat, tmap, tidyverse)\n```\n:::\n\n\n\n# Chapter 4: 1st Order Spatial Point Patterns Analysis Methods\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n# Chapter 5: 2nd Order Spatial Point Patterns Analysis Methods\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
+    "supporting": [],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}

@@ -1,0 +1,164 @@
+---
+title: "Hands-On Exercise 02"
+author: "Henry Low"
+date: "Sep 1 2024"
+date-modified: "last-modified"
+execute:
+  evalu: true
+  echo: true
+  message: false
+  freeze: true
+format: html
+editor: visual
+---
+
+# Data Sources (saved under 'data' folder)
+
+From [data.gov.sg](https://data.gov.sg/):\
+- [Master Plan 2014 Subzone Boundary (Web) (SHP)](https://data.gov.sg/datasets?query=Master+Plan+2014+Subzone+Boundary&page=1&resultId=d_d14da225fccf921049ab64238ff473d9)\
+- [Master Plan 2014 Subzone Boundary (Web) (KML)](https://data.gov.sg/datasets?query=Master+Plan+2014+Subzone+Boundary&page=1&resultId=d_5cb80a95445f236737f6bc2bfe5f159d)\
+- [Childcare](https://data.gov.sg/datasets?query=child+care&page=1&resultId=d_5d668e3f544335f8028f546827b773b4)
+
+Others:\
+- [CostalOutline from SLA](https://www.sla.gov.sg/geospatial-development-and-services/digitised-land-information)
+
+## 1.1 Setting Up
+
+### 1.1.1 Loading the R packages
+```{r}
+pacman::p_load(sf, raster, spatstat, tmap, tidyverse)
+```
+
+# Chapter 4: 1st Order Spatial Point Patterns Analysis Methods
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Chapter 5: 2nd Order Spatial Point Patterns Analysis Methods
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
