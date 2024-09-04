@@ -1,1 +1,23 @@
 /* css styles */
+body {
+    background-image: url('dalle.png'); /* Replace with the correct path */
+    background-size: cover; /* Ensures the image covers the whole page */
+    background-attachment: fixed; /* Keeps the image fixed in place while scrolling */
+    background-position: center; /* Centers the image */
+    background-repeat: no-repeat; /* Ensures the image doesn't repeat */
+    background-color: #f8f8f8; /* Optional fallback background color */
+}
+
+.content {
+    background-color: rgba(255, 255, 255, 0.9); /* Adds a semi-transparent white background to the content */
+    padding: 20px; /* Adds padding inside the content area */
+    border-radius: 8px; /* Rounds the corners of the content area */
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); /* Adds a subtle shadow to lift the content */
+}
+
+.toc-active {
+    background-color: rgba(255, 255, 255, 0.9); /* Adds a semi-transparent white background to the content */
+    padding: 20px; /* Adds padding inside the content area */
+    border-radius: 8px; /* Rounds the corners of the content area */
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); /* Adds a subtle shadow to lift the content */
+}
