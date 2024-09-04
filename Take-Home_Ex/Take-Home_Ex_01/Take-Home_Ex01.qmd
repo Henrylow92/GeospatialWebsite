@@ -14,8 +14,7 @@ date-format: "DD MM YYYY"
 ---
 
 # Data Sources
-(Thailand Road Accident 2019-2022)[https://www.kaggle.com/datasets/thaweewatboy/thailand-road-accident-2019-2022]
-(Thailand Roads (OpenStreetMap Export) from HDX)[https://s3.dualstack.us-east-1.amazonaws.com/production-raw-data-api/ISO3/THA/roads/lines/hotosm_tha_roads_lines_shp.zip]
-(Thailand - Subnational Administrative Boundaries from HDX)[https://data.humdata.org/dataset/d24bdc45-eb4c-4e3d-8b16-44db02667c27/resource/d0c722ff-6939-4423-ac0d-6501830b1759/download/tha_adm_rtsd_itos_20210121_shp.zip]
 
-
+[Thailand Road Accident 2019-2022](https://www.kaggle.com/datasets/thaweewatboy/thailand-road-accident-2019-2022)\
+[Thailand Roads (OpenStreetMap Export) from HDX](https://s3.dualstack.us-east-1.amazonaws.com/production-raw-data-api/ISO3/THA/roads/lines/hotosm_tha_roads_lines_shp.zip)\
+[Thailand - Subnational Administrative Boundaries from HDX](https://data.humdata.org/dataset/d24bdc45-eb4c-4e3d-8b16-44db02667c27/resource/d0c722ff-6939-4423-ac0d-6501830b1759/download/tha_adm_rtsd_itos_20210121_shp.zip)

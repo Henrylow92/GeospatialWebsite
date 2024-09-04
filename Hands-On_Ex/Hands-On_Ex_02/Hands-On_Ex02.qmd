@@ -299,9 +299,11 @@ plot(kde_childcareSG_adaptive, main = "Adaptive bandwidth")
 
 ```{r}
 # # Convert KDE output into grid object
-# gridded_kde_childcareSG_bw <- as.SpatialGridDataFrame.im(kde_childcareSG.bw) # function does not exist
-# spplot(gridded_kde_childcareSG_bw)
+gridded_kde_childcareSG_bw <- maptools::as.SpatialGridDataFrame.im(kde_childcareSG.bw) # Use maptools
+spplot(gridded_kde_childcareSG_bw)
+```
 
+```{r}
 # Convert kde_childcareSG.bw to raster
 kde_childcareSG_bw_raster <- raster(kde_childcareSG.bw)
 kde_childcareSG_bw_raster
