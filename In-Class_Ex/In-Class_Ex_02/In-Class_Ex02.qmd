@@ -10,69 +10,167 @@ execute:
   freeze: true
 format: html
 editor: visual
-date-format: "DD MM YYYY"
 ---
 
-## Loading the R packages
+## Piazza Issues
+
+### 1. Unable to run as.SpatialGridDataFrame.im 
 
 ```{r}
-#| eval: false
+# Solution - install maptolls from posit
+#| eval: false # eval: false
 install.packages("maptools", repos = "https://packagemanager.posit.co/cran/2023-10-13")
 ```
 
-```{r}
-pacman::p_load(tidyverse, sf, tmap, ggstatsplot)
-```
-
-
+### 2. Create coastal outline
 
 ```{r}
-# # Load costaloutline dataset
-# sg_sf <- mpsz_sf %>%
-#   st_union() # Can just use st_union instead of requiring costaloutline dataset
+# Load Packages
+pacman::p_load(tidyverse, sf, tmap, ggstatsplot, spatstat, raster)
+
+# Load mpsz_sf dataset
+mpsz_sf <- st_read(dsn = "data/MasterPlan2014SubzoneBoundaryWebSHP", layer = "MP14_SUBZONE_WEB_PL") %>%
+  st_set_crs(., 3414) # Change CRS attribute to 3414
+# Create costaloutline dataset
+sg_sf <- mpsz_sf %>%
+  st_union() # Can just use st_union instead of requiring costaloutline dataset
+# Check sg_sf
+plot(sg_sf)
 ```
+## Other Spatstat package geospatial processing
 
-
+### 1. Create ppp objects from sf data frame
 
 ```{r}
-# # Convert KDE output into grid object
-# Using maptools
-# gridded_kde_childcareSG_bw <- maptools::as.SpatialGridDataFrame.im(kde_childcareSG.bw) 
-# spplot(gridded_kde_childcareSG_bw)
+# Load childcare sf
+childcare_sf <- st_read("data/child-care-services-geojson.geojson") %>%
+  st_transform(crs = 3414)
 
-# Using sf geometry
-# gridded_kde_childcareSG_ad <-  as(kde_childcareSG_adaptive, "SpatialGridDataFrame")
-# spplot(gridded_kde_childcareSG_ad)
+# Create ppp object with as.ppp() from spatstat.geom
+childcare_ppp <- as.ppp(childcare_sf)
+
+# Visualize ppp object
+plot(childcare_ppp)
+```
+```{r}
+# Check property of ppp object
+summary(childcare_ppp)
+```
+### 2. Create owin object from sf data frame
+
+```{r}
+# Create owin object with as.owin() from spatstat.geom
+sg_owin <- as.owin(sg_sf)
+
+# Visualize owin object
+plot(sg_owin)
+```
+```{r}
+# Check property of owin object
+summary(sg_owin)
 ```
 
+### 3. Combine point events object and owin object
+
+```{r}
+# Combine point events object and owin object
+childcareSG_ppp <-  childcare_ppp[sg_owin]
+
+# Visualize combined object
+plot(childcareSG_ppp)
+```
+## Spatial Points Pattern Analysis
+
+### 1. Kernel Density Estimation of Spatial Point Event
+
+```{r}
+# Change scale from metre to km
+childcareSG_ppp.km <- rescale.ppp(childcareSG_ppp, 1000, "km")
+
+# Adaptive density estimation
+kde_childcareSG_adaptive <- adaptive.density(childcareSG_ppp.km, method="kernel")
+
+# Visualize results
+plot(kde_childcareSG_adaptive)
+```
+
+### 2. Convert Kernel Density Estimation Output into grid object
+
+```{r}
+# Convert KDE into grid with spatstat.geom
+gridded_kde_childcareSG_ad <- as(kde_childcareSG_adaptive, "SpatialGridDataFrame")
+
+# # Convert KDE into grid with maptools method
+# gridded_kde_childcareSG_ad <- maptools::as.SpatialGridDataFrame.im(kde_childcareSG_adaptive)
+
+# Visualize results
+spplot(gridded_kde_childcareSG_ad)
+```
+### 3. Visualize Kernel Density Estimation raster with tmap function
+
+```{r}
+# Visualize output
+kde_childcareSG_ad_raster <- raster(kde_childcareSG_adaptive)
+tm_shape(kde_childcareSG_ad_raster) + 
+  tm_raster(palette = "viridis") +
+  tm_layout(legend.position = c("right", "bottom"), 
+            frame = FALSE,
+            bg.color = "#E4D5C9")
+```
+
+### 4. Extract Study Area
+
+```{r}
+# Filter specific planning area
+pg_owin <- mpsz_sf %>%
+  filter(PLN_AREA_N == "PUNGGOL") %>%
+  as.owin()
+
+# Create point events object and filtered owin object
+childcare_pg <-  childcare_ppp[pg_owin]
+
+# Visualize result
+plot(childcare_pg)  
+```
+
+### 5. Monte Carlo Simulation
 
 ```{r}
 # Ensure reproducibility
 set.seed(42)
 ```
 
+### 6. Edge Correction Methods
+Generally dont have worry about edge correction for Singapopre. "Ripley" is a popular method that should work for most cases.
+But for specific area, users may need to be careful when specific points are too close to edge.
+
+## Geospatial ANalytics: Thailand Road Accident Case Study
+
 ```{r}
-# Generally dont have worry about edge correction for Singapopre
-# But for specific area, need to be careful when specific points are too close to edge. 
-```
-
-
-
-```{r}
-# Load road accidents
-accidents <- read_csv("data/thai_road_accident_2019_2022.csv")
-
-accidents_sf <- accidents %>%
+# Load road accidents and Convert to sf dataframe
+accidents_sf <- read_csv("data/thai_road_accident_2019_2022.csv") %>% 
   filter(!is.na(longitude) & longitude != "", !is.na(latitude) & latitude != "") %>%
+  filter(province_en %in% c("Bangkok", "Nonthaburi", "Pathum Thani", 
+                              "Samut Prakan", "Samut Sakhon", "Nakhon Pathom")) %>%
   st_as_sf(coords = c("longitude", "latitude"), crs = 4326) %>%
   st_transform(crs = 32647)
-```
-```{r}
-# Check
-st_geometry(accidents_sf)
+glimpse(accidents_sf) 
 ```
 
 ```{r}
-# Check
-st_crs(accidents_sf)
+# Load thai road for only Bangkok Metropolitan Region
+thai_bound <- st_read(dsn = "data/tha_adm_rtsd_itos_20210121_shp/", layer = "tha_admbnda_adm1_rtsd_20220121") %>%
+  st_transform(crs = 32647) %>%
+  filter(ADM1_EN %in% c("Bangkok", "Nonthaburi", "Pathum Thani", 
+                              "Samut Prakan", "Samut Sakhon", "Nakhon Pathom"))
+glimpse(thai_bound)
+```
+
+```{r}
+# Visualize accident data
+tmap_mode("plot")
+tm_shape(thai_bound) +
+  tm_polygons() +
+  tm_shape(accidents_sf) +
+  tm_dots(size = 0.01, col = "black", alpha = 0.5)
 ```

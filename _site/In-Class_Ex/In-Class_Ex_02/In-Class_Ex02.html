@@ -7,6 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Henry Low">
+<meta name="dcterms.date" content="2024-09-02">
 
 <title>In Class Exercise 02 – GeospatialWebsite</title>
 <style>
@@ -256,7 +257,27 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#loading-the-r-packages" id="toc-loading-the-r-packages" class="nav-link active" data-scroll-target="#loading-the-r-packages">Loading the R packages</a></li>
+  <li><a href="#piazza-issues" id="toc-piazza-issues" class="nav-link active" data-scroll-target="#piazza-issues">Piazza Issues</a>
+  <ul class="collapse">
+  <li><a href="#unable-to-run-as.spatialgriddataframe.im" id="toc-unable-to-run-as.spatialgriddataframe.im" class="nav-link" data-scroll-target="#unable-to-run-as.spatialgriddataframe.im">1. Unable to run as.SpatialGridDataFrame.im</a></li>
+  <li><a href="#create-coastal-outline" id="toc-create-coastal-outline" class="nav-link" data-scroll-target="#create-coastal-outline">2. Create coastal outline</a></li>
+  </ul></li>
+  <li><a href="#other-spatstat-package-geospatial-processing" id="toc-other-spatstat-package-geospatial-processing" class="nav-link" data-scroll-target="#other-spatstat-package-geospatial-processing">Other Spatstat package geospatial processing</a>
+  <ul class="collapse">
+  <li><a href="#create-ppp-objects-from-sf-data-frame" id="toc-create-ppp-objects-from-sf-data-frame" class="nav-link" data-scroll-target="#create-ppp-objects-from-sf-data-frame">1. Create ppp objects from sf data frame</a></li>
+  <li><a href="#create-owin-object-from-sf-data-frame" id="toc-create-owin-object-from-sf-data-frame" class="nav-link" data-scroll-target="#create-owin-object-from-sf-data-frame">2. Create owin object from sf data frame</a></li>
+  <li><a href="#combine-point-events-object-and-owin-object" id="toc-combine-point-events-object-and-owin-object" class="nav-link" data-scroll-target="#combine-point-events-object-and-owin-object">3. Combine point events object and owin object</a></li>
+  </ul></li>
+  <li><a href="#spatial-points-pattern-analysis" id="toc-spatial-points-pattern-analysis" class="nav-link" data-scroll-target="#spatial-points-pattern-analysis">Spatial Points Pattern Analysis</a>
+  <ul class="collapse">
+  <li><a href="#kernel-density-estimation-of-spatial-point-event" id="toc-kernel-density-estimation-of-spatial-point-event" class="nav-link" data-scroll-target="#kernel-density-estimation-of-spatial-point-event">1. Kernel Density Estimation of Spatial Point Event</a></li>
+  <li><a href="#convert-kernel-density-estimation-output-into-grid-object" id="toc-convert-kernel-density-estimation-output-into-grid-object" class="nav-link" data-scroll-target="#convert-kernel-density-estimation-output-into-grid-object">2. Convert Kernel Density Estimation Output into grid object</a></li>
+  <li><a href="#visualize-kernel-density-estimation-raster-with-tmap-function" id="toc-visualize-kernel-density-estimation-raster-with-tmap-function" class="nav-link" data-scroll-target="#visualize-kernel-density-estimation-raster-with-tmap-function">3. Visualize Kernel Density Estimation raster with tmap function</a></li>
+  <li><a href="#extract-study-area" id="toc-extract-study-area" class="nav-link" data-scroll-target="#extract-study-area">4. Extract Study Area</a></li>
+  <li><a href="#monte-carlo-simulation" id="toc-monte-carlo-simulation" class="nav-link" data-scroll-target="#monte-carlo-simulation">5. Monte Carlo Simulation</a></li>
+  <li><a href="#edge-correction-methods" id="toc-edge-correction-methods" class="nav-link" data-scroll-target="#edge-correction-methods">6. Edge Correction Methods</a></li>
+  </ul></li>
+  <li><a href="#geospatial-analytics-thailand-road-accident-case-study" id="toc-geospatial-analytics-thailand-road-accident-case-study" class="nav-link" data-scroll-target="#geospatial-analytics-thailand-road-accident-case-study">Geospatial ANalytics: Thailand Road Accident Case Study</a></li>
   </ul>
 </nav>
     </div>
@@ -282,14 +303,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">02 09 2024</p>
+      <p class="date">September 2, 2024</p>
     </div>
   </div>
   
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">03 09 2024</p>
+      <p class="date-modified">September 7, 2024</p>
     </div>
   </div>
     
@@ -300,40 +321,386 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="loading-the-r-packages" class="level2">
-<h2 class="anchored" data-anchor-id="loading-the-r-packages">Loading the R packages</h2>
+<section id="piazza-issues" class="level2">
+<h2 class="anchored" data-anchor-id="piazza-issues">Piazza Issues</h2>
+<section id="unable-to-run-as.spatialgriddataframe.im" class="level3">
+<h3 class="anchored" data-anchor-id="unable-to-run-as.spatialgriddataframe.im">1. Unable to run as.SpatialGridDataFrame.im</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">"maptools"</span>, <span class="at">repos =</span> <span class="st">"https://packagemanager.posit.co/cran/2023-10-13"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Solution - install maptolls from posit</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false # eval: false</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">"maptools"</span>, <span class="at">repos =</span> <span class="st">"https://packagemanager.posit.co/cran/2023-10-13"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>package 'maptools' successfully unpacked and MD5 sums checked</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: cannot remove prior installation of package 'maptools'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in file.copy(savedcopy, lib, recursive = TRUE): problem copying
+C:\R-4.4.1\library\00LOCK\maptools\libs\x64\maptools.dll to
+C:\R-4.4.1\library\maptools\libs\x64\maptools.dll: Permission denied</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: restored 'maptools'</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+The downloaded binary packages are in
+    C:\Users\Henry\AppData\Local\Temp\RtmpK8h2Yl\downloaded_packages</code></pre>
+</div>
+</div>
+</section>
+<section id="create-coastal-outline" class="level3">
+<h3 class="anchored" data-anchor-id="create-coastal-outline">2. Create coastal outline</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load Packages</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(tidyverse, sf, tmap, ggstatsplot, spatstat, raster)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Load mpsz_sf dataset</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>mpsz_sf <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="at">dsn =</span> <span class="st">"data/MasterPlan2014SubzoneBoundaryWebSHP"</span>, <span class="at">layer =</span> <span class="st">"MP14_SUBZONE_WEB_PL"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_set_crs</span>(., <span class="dv">3414</span>) <span class="co"># Change CRS attribute to 3414</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reading layer `MP14_SUBZONE_WEB_PL' from data source 
+  `C:\Users\Henry\Desktop\SMU Masters\2024-2025 T1\Geospatial Analytics &amp; Applications\Project\GeospatialWebsite\In-Class_Ex\In-Class_Ex_02\data\MasterPlan2014SubzoneBoundaryWebSHP' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 323 features and 15 fields
+Geometry type: MULTIPOLYGON
+Dimension:     XY
+Bounding box:  xmin: 2667.538 ymin: 15748.72 xmax: 56396.44 ymax: 50256.33
+Projected CRS: SVY21</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: st_crs&lt;- : replacing crs does not reproject data; use st_transform for
+that</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create costaloutline dataset</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>sg_sf <span class="ot">&lt;-</span> mpsz_sf <span class="sc">%&gt;%</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_union</span>() <span class="co"># Can just use st_union instead of requiring costaloutline dataset</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Check sg_sf</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(sg_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="In-Class_Ex02_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="other-spatstat-package-geospatial-processing" class="level2">
+<h2 class="anchored" data-anchor-id="other-spatstat-package-geospatial-processing">Other Spatstat package geospatial processing</h2>
+<section id="create-ppp-objects-from-sf-data-frame" class="level3">
+<h3 class="anchored" data-anchor-id="create-ppp-objects-from-sf-data-frame">1. Create ppp objects from sf data frame</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load childcare sf</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>childcare_sf <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">"data/child-care-services-geojson.geojson"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">3414</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reading layer `child-care-services-geojson' from data source 
+  `C:\Users\Henry\Desktop\SMU Masters\2024-2025 T1\Geospatial Analytics &amp; Applications\Project\GeospatialWebsite\In-Class_Ex\In-Class_Ex_02\data\child-care-services-geojson.geojson' 
+  using driver `GeoJSON'
+Simple feature collection with 1545 features and 2 fields
+Geometry type: POINT
+Dimension:     XYZ
+Bounding box:  xmin: 103.6824 ymin: 1.248403 xmax: 103.9897 ymax: 1.462134
+z_range:       zmin: 0 zmax: 0
+Geodetic CRS:  WGS 84</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create ppp object with as.ppp() from spatstat.geom</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>childcare_ppp <span class="ot">&lt;-</span> <span class="fu">as.ppp</span>(childcare_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in as.ppp.sf(childcare_sf): only first attribute column is used for
+marks</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize ppp object</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(childcare_ppp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in default.charmap(ntypes, chars): Too many types to display every type
+as a different character</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Only 10 out of 1545 symbols are shown in the symbol map</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="In-Class_Ex02_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(tidyverse, sf, tmap, ggstatsplot)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check property of ppp object</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(childcare_ppp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Marked planar point pattern:  1545 points
+Average intensity 1.91145e-06 points per square unit
+
+Coordinates are given to 11 decimal places
+
+marks are of type 'character'
+Summary:
+   Length     Class      Mode 
+     1545 character character 
+
+Window: rectangle = [11203.01, 45404.24] x [25667.6, 49300.88] units
+                    (34200 x 23630 units)
+Window area = 808287000 square units</code></pre>
+</div>
+</div>
+</section>
+<section id="create-owin-object-from-sf-data-frame" class="level3">
+<h3 class="anchored" data-anchor-id="create-owin-object-from-sf-data-frame">2. Create owin object from sf data frame</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create owin object with as.owin() from spatstat.geom</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>sg_owin <span class="ot">&lt;-</span> <span class="fu">as.owin</span>(sg_sf)</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize owin object</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(sg_owin)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="In-Class_Ex02_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># # Load costaloutline dataset</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># sg_sf &lt;- mpsz_sf %&gt;%</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">#   st_union() # Can just use st_union instead of requiring costaloutline dataset</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check property of owin object</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(sg_owin)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Window: polygonal boundary
+80 separate polygons (35 holes)
+                  vertices         area relative.area
+polygon 1            14650  6.97996e+08      8.93e-01
+polygon 2 (hole)         3 -2.21090e+00     -2.83e-09
+polygon 3              285  1.61128e+06      2.06e-03
+polygon 4 (hole)         3 -2.05920e-03     -2.63e-12
+polygon 5 (hole)         3 -8.83647e-03     -1.13e-11
+polygon 6              668  5.40368e+07      6.91e-02
+polygon 7               44  2.26577e+03      2.90e-06
+polygon 8               27  1.50315e+04      1.92e-05
+polygon 9              711  1.28815e+07      1.65e-02
+polygon 10 (hole)       36 -4.01660e+04     -5.14e-05
+polygon 11 (hole)      317 -5.11280e+04     -6.54e-05
+polygon 12 (hole)        3 -3.41405e-01     -4.37e-10
+polygon 13 (hole)        3 -2.89050e-05     -3.70e-14
+polygon 14              77  3.29939e+05      4.22e-04
+polygon 15              30  2.80002e+04      3.58e-05
+polygon 16 (hole)        3 -2.83151e-01     -3.62e-10
+polygon 17              71  8.18750e+03      1.05e-05
+polygon 18 (hole)        3 -1.68316e-04     -2.15e-13
+polygon 19 (hole)       36 -7.79904e+03     -9.97e-06
+polygon 20 (hole)        4 -2.05611e-02     -2.63e-11
+polygon 21 (hole)        3 -2.18000e-06     -2.79e-15
+polygon 22 (hole)        3 -3.65501e-03     -4.67e-12
+polygon 23 (hole)        3 -4.95057e-02     -6.33e-11
+polygon 24 (hole)        3 -3.99521e-02     -5.11e-11
+polygon 25 (hole)        3 -6.62377e-01     -8.47e-10
+polygon 26 (hole)        3 -2.09065e-03     -2.67e-12
+polygon 27              91  1.49663e+04      1.91e-05
+polygon 28 (hole)       26 -1.25665e+03     -1.61e-06
+polygon 29 (hole)      349 -1.21433e+03     -1.55e-06
+polygon 30 (hole)       20 -4.39069e+00     -5.62e-09
+polygon 31 (hole)       48 -1.38338e+02     -1.77e-07
+polygon 32 (hole)       28 -1.99862e+01     -2.56e-08
+polygon 33              40  1.38607e+04      1.77e-05
+polygon 34 (hole)       40 -6.00381e+03     -7.68e-06
+polygon 35 (hole)        7 -1.40545e-01     -1.80e-10
+polygon 36 (hole)       12 -8.36709e+01     -1.07e-07
+polygon 37              45  2.51218e+03      3.21e-06
+polygon 38             142  3.22293e+03      4.12e-06
+polygon 39             148  3.10395e+03      3.97e-06
+polygon 40              75  1.73526e+04      2.22e-05
+polygon 41              83  5.28920e+03      6.76e-06
+polygon 42             211  4.70521e+05      6.02e-04
+polygon 43             106  3.04104e+03      3.89e-06
+polygon 44             266  1.50631e+06      1.93e-03
+polygon 45              71  5.63061e+03      7.20e-06
+polygon 46              10  1.99717e+02      2.55e-07
+polygon 47             478  2.06120e+06      2.64e-03
+polygon 48             155  2.67502e+05      3.42e-04
+polygon 49            1027  1.27782e+06      1.63e-03
+polygon 50 (hole)        3 -1.16959e-03     -1.50e-12
+polygon 51              65  8.42861e+04      1.08e-04
+polygon 52              47  3.82087e+04      4.89e-05
+polygon 53               6  4.50259e+02      5.76e-07
+polygon 54             132  9.53357e+04      1.22e-04
+polygon 55 (hole)        3 -3.23310e-04     -4.13e-13
+polygon 56               4  2.69313e+02      3.44e-07
+polygon 57 (hole)        3 -1.46474e-03     -1.87e-12
+polygon 58            1045  4.44510e+06      5.68e-03
+polygon 59              22  6.74651e+03      8.63e-06
+polygon 60              64  3.43149e+04      4.39e-05
+polygon 61 (hole)        3 -1.98390e-03     -2.54e-12
+polygon 62 (hole)        4 -1.13774e-02     -1.46e-11
+polygon 63              14  5.86546e+03      7.50e-06
+polygon 64              95  5.96187e+04      7.62e-05
+polygon 65 (hole)        4 -1.86410e-02     -2.38e-11
+polygon 66 (hole)        3 -5.12482e-03     -6.55e-12
+polygon 67 (hole)        3 -1.96410e-03     -2.51e-12
+polygon 68 (hole)        3 -5.55856e-03     -7.11e-12
+polygon 69             234  2.08755e+06      2.67e-03
+polygon 70              10  4.90942e+02      6.28e-07
+polygon 71             234  4.72886e+05      6.05e-04
+polygon 72 (hole)       13 -3.91907e+02     -5.01e-07
+polygon 73              15  4.03300e+04      5.16e-05
+polygon 74             227  1.10308e+06      1.41e-03
+polygon 75              10  6.60195e+03      8.44e-06
+polygon 76              19  3.09221e+04      3.95e-05
+polygon 77             145  9.61782e+05      1.23e-03
+polygon 78              30  4.28933e+03      5.49e-06
+polygon 79              37  1.29481e+04      1.66e-05
+polygon 80               4  9.47108e+01      1.21e-07
+enclosing rectangle: [2667.54, 56396.44] x [15748.72, 50256.33] units
+                     (53730 x 34510 units)
+Window area = 781945000 square units
+Fraction of frame area: 0.422</code></pre>
 </div>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># # Convert KDE output into grid object</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Using maptools</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># gridded_kde_childcareSG_bw &lt;- maptools::as.SpatialGridDataFrame.im(kde_childcareSG.bw) </span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># spplot(gridded_kde_childcareSG_bw)</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Using sf geometry</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co"># gridded_kde_childcareSG_ad &lt;-  as(kde_childcareSG_adaptive, "SpatialGridDataFrame")</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co"># spplot(gridded_kde_childcareSG_ad)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+</section>
+<section id="combine-point-events-object-and-owin-object" class="level3">
+<h3 class="anchored" data-anchor-id="combine-point-events-object-and-owin-object">3. Combine point events object and owin object</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ensure reproducibility</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Combine point events object and owin object</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>childcareSG_ppp <span class="ot">&lt;-</span>  childcare_ppp[sg_owin]</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize combined object</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(childcareSG_ppp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in default.charmap(ntypes, chars): Too many types to display every type
+as a different character</code></pre>
 </div>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Generally dont have worry about edge correction for Singapopre</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co"># But for specific area, need to be careful when specific points are too close to edge. </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Only 10 out of 1545 symbols are shown in the symbol map</code></pre>
 </div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="In-Class_Ex02_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="spatial-points-pattern-analysis" class="level2">
+<h2 class="anchored" data-anchor-id="spatial-points-pattern-analysis">Spatial Points Pattern Analysis</h2>
+<section id="kernel-density-estimation-of-spatial-point-event" class="level3">
+<h3 class="anchored" data-anchor-id="kernel-density-estimation-of-spatial-point-event">1. Kernel Density Estimation of Spatial Point Event</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load road accidents</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>accidents <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"data/thai_road_accident_2019_2022.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Change scale from metre to km</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>childcareSG_ppp.km <span class="ot">&lt;-</span> <span class="fu">rescale.ppp</span>(childcareSG_ppp, <span class="dv">1000</span>, <span class="st">"km"</span>)</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Adaptive density estimation</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>kde_childcareSG_adaptive <span class="ot">&lt;-</span> <span class="fu">adaptive.density</span>(childcareSG_ppp.km, <span class="at">method=</span><span class="st">"kernel"</span>)</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize results</span></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(kde_childcareSG_adaptive)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="In-Class_Ex02_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="convert-kernel-density-estimation-output-into-grid-object" class="level3">
+<h3 class="anchored" data-anchor-id="convert-kernel-density-estimation-output-into-grid-object">2. Convert Kernel Density Estimation Output into grid object</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert KDE into grid with spatstat.geom</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>gridded_kde_childcareSG_ad <span class="ot">&lt;-</span> <span class="fu">as</span>(kde_childcareSG_adaptive, <span class="st">"SpatialGridDataFrame"</span>)</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="co"># # Convert KDE into grid with maptools method</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="co"># gridded_kde_childcareSG_ad &lt;- maptools::as.SpatialGridDataFrame.im(kde_childcareSG_adaptive)</span></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize results</span></span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a><span class="fu">spplot</span>(gridded_kde_childcareSG_ad)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="In-Class_Ex02_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="visualize-kernel-density-estimation-raster-with-tmap-function" class="level3">
+<h3 class="anchored" data-anchor-id="visualize-kernel-density-estimation-raster-with-tmap-function">3. Visualize Kernel Density Estimation raster with tmap function</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize output</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>kde_childcareSG_ad_raster <span class="ot">&lt;-</span> <span class="fu">raster</span>(kde_childcareSG_adaptive)</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(kde_childcareSG_ad_raster) <span class="sc">+</span> </span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_raster</span>(<span class="at">palette =</span> <span class="st">"viridis"</span>) <span class="sc">+</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_layout</span>(<span class="at">legend.position =</span> <span class="fu">c</span>(<span class="st">"right"</span>, <span class="st">"bottom"</span>), </span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">frame =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>            <span class="at">bg.color =</span> <span class="st">"#E4D5C9"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Currect projection of shape kde_childcareSG_ad_raster unknown. Long
+lat (epsg 4326) coordinates assumed.</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="In-Class_Ex02_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="extract-study-area" class="level3">
+<h3 class="anchored" data-anchor-id="extract-study-area">4. Extract Study Area</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter specific planning area</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>pg_owin <span class="ot">&lt;-</span> mpsz_sf <span class="sc">%&gt;%</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(PLN_AREA_N <span class="sc">==</span> <span class="st">"PUNGGOL"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.owin</span>()</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Create point events object and filtered owin object</span></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>childcare_pg <span class="ot">&lt;-</span>  childcare_ppp[pg_owin]</span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize result</span></span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(childcare_pg)  </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in default.charmap(ntypes, chars): Too many types to display every type
+as a different character</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Only 10 out of 61 symbols are shown in the symbol map</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="In-Class_Ex02_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="monte-carlo-simulation" class="level3">
+<h3 class="anchored" data-anchor-id="monte-carlo-simulation">5. Monte Carlo Simulation</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ensure reproducibility</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="edge-correction-methods" class="level3">
+<h3 class="anchored" data-anchor-id="edge-correction-methods">6. Edge Correction Methods</h3>
+<p>Generally dont have worry about edge correction for Singapopre. “Ripley” is a popular method that should work for most cases. But for specific area, users may need to be careful when specific points are too close to edge.</p>
+</section>
+</section>
+<section id="geospatial-analytics-thailand-road-accident-case-study" class="level2">
+<h2 class="anchored" data-anchor-id="geospatial-analytics-thailand-road-accident-case-study">Geospatial ANalytics: Thailand Road Accident Case Study</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load road accidents and Convert to sf dataframe</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>accidents_sf <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"data/thai_road_accident_2019_2022.csv"</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(longitude) <span class="sc">&amp;</span> longitude <span class="sc">!=</span> <span class="st">""</span>, <span class="sc">!</span><span class="fu">is.na</span>(latitude) <span class="sc">&amp;</span> latitude <span class="sc">!=</span> <span class="st">""</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(province_en <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"Bangkok"</span>, <span class="st">"Nonthaburi"</span>, <span class="st">"Pathum Thani"</span>, </span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>                              <span class="st">"Samut Prakan"</span>, <span class="st">"Samut Sakhon"</span>, <span class="st">"Nakhon Pathom"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_as_sf</span>(<span class="at">coords =</span> <span class="fu">c</span>(<span class="st">"longitude"</span>, <span class="st">"latitude"</span>), <span class="at">crs =</span> <span class="dv">4326</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">32647</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Rows: 81735 Columns: 18
 ── Column specification ────────────────────────────────────────────────────────
@@ -345,91 +712,84 @@ dttm  (2): incident_datetime, report_datetime
 ℹ Use `spec()` to retrieve the full column specification for this data.
 ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>accidents_sf <span class="ot">&lt;-</span> accidents <span class="sc">%&gt;%</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(longitude) <span class="sc">&amp;</span> longitude <span class="sc">!=</span> <span class="st">""</span>, <span class="sc">!</span><span class="fu">is.na</span>(latitude) <span class="sc">&amp;</span> latitude <span class="sc">!=</span> <span class="st">""</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_as_sf</span>(<span class="at">coords =</span> <span class="fu">c</span>(<span class="st">"longitude"</span>, <span class="st">"latitude"</span>), <span class="at">crs =</span> <span class="dv">4326</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">32647</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(accidents_sf) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 12,986
+Columns: 17
+$ acc_code                    &lt;dbl&gt; 571882, 600001, 605043, 629691, 571887, 59…
+$ incident_datetime           &lt;dttm&gt; 2019-01-01 02:25:00, 2019-01-01 03:00:00,…
+$ report_datetime             &lt;dttm&gt; 2019-01-02 17:32:00, 2019-01-05 10:33:00,…
+$ province_th                 &lt;chr&gt; "นครปฐม", "นนทบุรี", "สมุทรปราการ", "กรุงเทพมห…
+$ province_en                 &lt;chr&gt; "Nakhon Pathom", "Nonthaburi", "Samut Prak…
+$ agency                      &lt;chr&gt; "department of rural roads", "department o…
+$ route                       &lt;chr&gt; "แยกทางหลวงหมายเลข 4 (กม.ที่ 51+920) - บ้านวัด…
+$ vehicle_type                &lt;chr&gt; "motorcycle", "private/passenger car", "pr…
+$ presumed_cause              &lt;chr&gt; "speeding", "speeding", "running red light…
+$ accident_type               &lt;chr&gt; "rollover/fallen on straight road", "rollo…
+$ number_of_vehicles_involved &lt;dbl&gt; 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 2, 3, 2, …
+$ number_of_fatalities        &lt;dbl&gt; 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, …
+$ number_of_injuries          &lt;dbl&gt; 2, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, …
+$ weather_condition           &lt;chr&gt; "clear", "clear", "clear", "clear", "clear…
+$ road_description            &lt;chr&gt; "straight road", "straight road", "other",…
+$ slope_description           &lt;chr&gt; "no slope", "no slope", "other", "other", …
+$ geometry                    &lt;POINT [m]&gt; POINT (627012.3 1533381), POINT (655…</code></pre>
+</div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">st_geometry</span>(accidents_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load thai road for only Bangkok Metropolitan Region</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>thai_bound <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="at">dsn =</span> <span class="st">"data/tha_adm_rtsd_itos_20210121_shp/"</span>, <span class="at">layer =</span> <span class="st">"tha_admbnda_adm1_rtsd_20220121"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">32647</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(ADM1_EN <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"Bangkok"</span>, <span class="st">"Nonthaburi"</span>, <span class="st">"Pathum Thani"</span>, </span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>                              <span class="st">"Samut Prakan"</span>, <span class="st">"Samut Sakhon"</span>, <span class="st">"Nakhon Pathom"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Geometry set for 81376 features 
-Geometry type: POINT
+<pre><code>Reading layer `tha_admbnda_adm1_rtsd_20220121' from data source 
+  `C:\Users\Henry\Desktop\SMU Masters\2024-2025 T1\Geospatial Analytics &amp; Applications\Project\GeospatialWebsite\In-Class_Ex\In-Class_Ex_02\data\tha_adm_rtsd_itos_20210121_shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 77 features and 16 fields
+Geometry type: MULTIPOLYGON
 Dimension:     XY
-Bounding box:  xmin: -16183190 ymin: -936.228 xmax: 1200243 ymax: 4918525
-Projected CRS: WGS 84 / UTM zone 47N
-First 5 geometries:</code></pre>
+Bounding box:  xmin: 97.34336 ymin: 5.613038 xmax: 105.637 ymax: 20.46507
+Geodetic CRS:  WGS 84</code></pre>
 </div>
-<div class="cell-output cell-output-stderr">
-<pre><code>POINT (701480.8 1654653)</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>POINT (1130617 1690121)</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>POINT (598703.8 1368107)</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>POINT (479343.9 2056771)</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>POINT (670249 1754802)</code></pre>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(thai_bound)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 6
+Columns: 17
+$ Shape_Leng &lt;dbl&gt; 2.417227, 1.695100, 1.251111, 1.884945, 2.463030, 1.566369
+$ Shape_Area &lt;dbl&gt; 0.13133873, 0.07926199, 0.05323766, 0.12698345, 0.17891420,…
+$ ADM1_EN    &lt;chr&gt; "Bangkok", "Samut Prakan", "Nonthaburi", "Pathum Thani", "N…
+$ ADM1_TH    &lt;chr&gt; "กรุงเทพมหานคร", "สมุทรปราการ", "นนทบุรี", "ปทุมธานี", "นครปฐม", …
+$ ADM1_PCODE &lt;chr&gt; "TH10", "TH11", "TH12", "TH13", "TH73", "TH74"
+$ ADM1_REF   &lt;chr&gt; NA, NA, NA, NA, NA, NA
+$ ADM1ALT1EN &lt;chr&gt; NA, NA, NA, NA, NA, NA
+$ ADM1ALT2EN &lt;chr&gt; NA, NA, NA, NA, NA, NA
+$ ADM1ALT1TH &lt;chr&gt; NA, NA, NA, NA, NA, NA
+$ ADM1ALT2TH &lt;chr&gt; NA, NA, NA, NA, NA, NA
+$ ADM0_EN    &lt;chr&gt; "Thailand", "Thailand", "Thailand", "Thailand", "Thailand",…
+$ ADM0_TH    &lt;chr&gt; "ประเทศไทย", "ประเทศไทย", "ประเทศไทย", "ประเทศไทย", "ประเทศ…
+$ ADM0_PCODE &lt;chr&gt; "TH", "TH", "TH", "TH", "TH", "TH"
+$ date       &lt;date&gt; 2019-02-18, 2019-02-18, 2019-02-18, 2019-02-18, 2019-02-18,…
+$ validOn    &lt;date&gt; 2022-01-22, 2022-01-22, 2022-01-22, 2022-01-22, 2022-01-22,…
+$ validTo    &lt;date&gt; -001-11-30, -001-11-30, -001-11-30, -001-11-30, -001-11-30,…
+$ geometry   &lt;MULTIPOLYGON [m]&gt; MULTIPOLYGON (((674339.8 15..., MULTIPOLYGON (((687139.8 15…</code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(accidents_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>Coordinate Reference System:
-  User input: EPSG:32647 
-  wkt:
-PROJCRS["WGS 84 / UTM zone 47N",
-    BASEGEOGCRS["WGS 84",
-        ENSEMBLE["World Geodetic System 1984 ensemble",
-            MEMBER["World Geodetic System 1984 (Transit)"],
-            MEMBER["World Geodetic System 1984 (G730)"],
-            MEMBER["World Geodetic System 1984 (G873)"],
-            MEMBER["World Geodetic System 1984 (G1150)"],
-            MEMBER["World Geodetic System 1984 (G1674)"],
-            MEMBER["World Geodetic System 1984 (G1762)"],
-            MEMBER["World Geodetic System 1984 (G2139)"],
-            ELLIPSOID["WGS 84",6378137,298.257223563,
-                LENGTHUNIT["metre",1]],
-            ENSEMBLEACCURACY[2.0]],
-        PRIMEM["Greenwich",0,
-            ANGLEUNIT["degree",0.0174532925199433]],
-        ID["EPSG",4326]],
-    CONVERSION["UTM zone 47N",
-        METHOD["Transverse Mercator",
-            ID["EPSG",9807]],
-        PARAMETER["Latitude of natural origin",0,
-            ANGLEUNIT["degree",0.0174532925199433],
-            ID["EPSG",8801]],
-        PARAMETER["Longitude of natural origin",99,
-            ANGLEUNIT["degree",0.0174532925199433],
-            ID["EPSG",8802]],
-        PARAMETER["Scale factor at natural origin",0.9996,
-            SCALEUNIT["unity",1],
-            ID["EPSG",8805]],
-        PARAMETER["False easting",500000,
-            LENGTHUNIT["metre",1],
-            ID["EPSG",8806]],
-        PARAMETER["False northing",0,
-            LENGTHUNIT["metre",1],
-            ID["EPSG",8807]]],
-    CS[Cartesian,2],
-        AXIS["(E)",east,
-            ORDER[1],
-            LENGTHUNIT["metre",1]],
-        AXIS["(N)",north,
-            ORDER[2],
-            LENGTHUNIT["metre",1]],
-    USAGE[
-        SCOPE["Navigation and medium accuracy spatial referencing."],
-        AREA["Between 96°E and 102°E, northern hemisphere between equator and 84°N, onshore and offshore. China. Indonesia. Laos. Malaysia - West Malaysia. Mongolia. Myanmar (Burma). Russian Federation. Thailand."],
-        BBOX[0,96,84,102]],
-    ID["EPSG",32647]]</code></pre>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize accident data</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_mode</span>(<span class="st">"plot"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>tmap mode set to plotting</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(thai_bound) <span class="sc">+</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>() <span class="sc">+</span></span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(accidents_sf) <span class="sc">+</span></span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">size =</span> <span class="fl">0.01</span>, <span class="at">col =</span> <span class="st">"black"</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="In-Class_Ex02_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
 </div>
 </div>
 

@@ -1,7 +1,7 @@
 ---
 title: "Hands-On Exercise 03"
 author: "Henry Low"
-date: "Sep 1 2024"
+date: "Sep 7 2024"
 date-modified: "last-modified"
 execute:
   evalu: true
@@ -12,4 +12,10 @@ format: html
 editor: visual
 ---
 
-TBC
+# Data Sources
+
+*(saved under 'data' folder)*\
+Study Area - Punggol Planning Area
+Punggol_St - line feature geospatial dataset containing road network
+Punggol_CC - point feature geospatial dataset containing location of childcare centres
+
