@@ -13,16 +13,52 @@ website:
             href: Hands-On_Ex/Hands-On_Ex_01/Hands-On_Ex01.html
           - text: "Hands-on Exercise 02"
             href: Hands-On_Ex/Hands-On_Ex_02/Hands-On_Ex02.html
+          - text: "Hands-on Exercise 03"
+            href: Hands-On_Ex/Hands-On_Ex_03/Hands-On_Ex03.html
+          - text: "Hands-on Exercise 04"
+            href: Hands-On_Ex/Hands-On_Ex_04/Hands-On_Ex04.html
+          - text: "Hands-on Exercise 05"
+            href: Hands-On_Ex/Hands-On_Ex_05/Hands-On_Ex05.html
+          - text: "Hands-on Exercise 06"
+            href: Hands-On_Ex/Hands-On_Ex_06/Hands-On_Ex06.html
+          - text: "Hands-on Exercise 07"
+            href: Hands-On_Ex/Hands-On_Ex_07/Hands-On_Ex07.html
+          - text: "Hands-on Exercise 08"
+            href: Hands-On_Ex/Hands-On_Ex_08/Hands-On_Ex08.html
+          - text: "Hands-on Exercise 09"
+            href: Hands-On_Ex/Hands-On_Ex_09/Hands-On_Ex09.html
+          - text: "Hands-on Exercise 10"
+            href: Hands-On_Ex/Hands-On_Ex_10/Hands-On_Ex10.html
       - text: "In-class Exercise"
         menu: 
           - text: "In-Class Exercise 01"
             href: In-Class_Ex/In-Class_Ex_01/In-Class_Ex01.html
           - text: "In-Class Exercise 02"
             href: In-Class_Ex/In-Class_Ex_02/In-Class_Ex02.html
+          - text: "In-Class Exercise 03"
+            href: In-Class_Ex/In-Class_Ex_03/In-Class_Ex03.html
+          - text: "In-Class Exercise 04"
+            href: In-Class_Ex/In-Class_Ex_04/In-Class_Ex04.html
+          - text: "In-Class Exercise 05"
+            href: In-Class_Ex/In-Class_Ex_05/In-Class_Ex05.html
+          - text: "In-Class Exercise 06"
+            href: In-Class_Ex/In-Class_Ex_06/In-Class_Ex06.html
+          - text: "In-Class Exercise 07"
+            href: In-Class_Ex/In-Class_Ex_07/In-Class_Ex07.html
+          - text: "In-Class Exercise 08"
+            href: In-Class_Ex/In-Class_Ex_08/In-Class_Ex08.html
+          - text: "In-Class Exercise 09"
+            href: In-Class_Ex/In-Class_Ex_09/In-Class_Ex09.html
+          - text: "In-Class Exercise 10"
+            href: In-Class_Ex/In-Class_Ex_10/In-Class_Ex10.html
       - text: "Take-Home Exercise"
         menu:
           - text: "Take-Home Exercise 01"
             href: Take-Home_Ex/Take-Home_Ex_01/Take-Home_Ex01.html
+          - text: "Take-Home Exercise 02"
+            href: Take-Home_Ex/Take-Home_Ex_02/Take-Home_Ex02.html
+          - text: "Take-Home Exercise 03"
+            href: Take-Home_Ex/Take-Home_Ex_03/Take-Home_Ex03.html
 
 format:
   html:

@@ -1,0 +1,15 @@
+---
+title: "In Class Exercise 04"
+author: "Henry Low"
+date: "Aug 26 2024"
+date-modified: "last-modified"
+execute:
+  evalu: true
+  echo: true
+  message: false
+  freeze: true
+format: html
+editor: visual
+---
+
+TBC
