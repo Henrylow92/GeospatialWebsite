@@ -1,7 +1,7 @@
 ---
 title: "In Class Exercise 03"
 author: "Henry Low"
-date: "Aug 26 2024"
+date: "Sep 12 2024"
 date-modified: "last-modified"
 execute:
   evalu: true
@@ -12,4 +12,4 @@ format: html
 editor: visual
 ---
 
-TBC
+Not Applicable

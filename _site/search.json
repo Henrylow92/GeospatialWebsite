@@ -347,7 +347,7 @@
     "href": "In-Class_Ex/In-Class_Ex_03/In-Class_Ex03.html",
     "title": "In Class Exercise 03",
     "section": "",
-    "text": "TBC"
+    "text": "Not Applicable"
   },
   {
     "objectID": "Hands-On_Ex/Hands-On_Ex_09/Hands-On_Ex09.html",
@@ -375,7 +375,7 @@
     "href": "Hands-On_Ex/Hands-On_Ex_03/Hands-On_Ex03.html",
     "title": "Hands-On Exercise 03",
     "section": "",
-    "text": "(saved under ‘data’ folder)\nStudy Area - Punggol Planning Area Punggol_St - line feature geospatial dataset containing road network Punggol_CC - point feature geospatial dataset containing location of childcare centres"
+    "text": "(saved under ‘data’ folder)\nStudy Area - Punggol Planning Area\nPunggol_St - line feature geospatial dataset containing road network\nPunggol_CC - point feature geospatial dataset containing location of childcare centres"
   },
   {
     "objectID": "Hands-On_Ex/Hands-On_Ex_04/Hands-On_Ex04.html",
@@ -473,7 +473,7 @@
     "href": "Hands-On_Ex/Hands-On_Ex_03/Hands-On_Ex03.html#visualize-geospatial-data",
     "title": "Hands-On Exercise 03",
     "section": "7.2 Visualize Geospatial Data",
-    "text": "7.2 Visualize Geospatial Data\n\n# Visualize both geospatial data\nplot(st_geometry(network)) # Use st_geomettry to plot only the network without corresponding attributes\nplot(childcare,add=T,col='red',pch = 19)\n\n\n\n\n\n\n\n\n\n# Interactive Visualization with tmap \ntmap_mode('plot')\n\ntmap mode set to plotting\n\ntm_shape(childcare) +\n  tm_dots(col = \"red\") +\n  tm_shape(network) +\n  tm_lines()\n\n\n\n\n\n\n\n\n\n# Set tmap_mode back to plot\ntmap_mode('plot')\n\ntmap mode set to plotting"
+    "text": "7.2 Visualize Geospatial Data\n\n# Visualize both geospatial data\nplot(st_geometry(network)) # Use st_geometry to plot only the network without corresponding attributes\nplot(childcare,add=T,col='red',pch = 19)\n\n\n\n\n\n\n\n\n\n# Interactive Visualization with tmap \ntmap_mode('view')\n\ntmap mode set to interactive viewing\n\ntm_shape(childcare) +\n  tm_dots() +\n  tm_shape(network) +\n  tm_lines()\n\n\n\n\n\n\n# Set tmap_mode back to plot\ntmap_mode('plot')\n\ntmap mode set to plotting"
   },
   {
     "objectID": "Hands-On_Ex/Hands-On_Ex_03/Hands-On_Ex03.html#network-kde-nkde-analysis",
