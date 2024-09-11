@@ -15,7 +15,9 @@ editor: visual
 # Data Sources
 
 *(saved under 'data' folder)*\
-Study Area - Punggol Planning Area Punggol_St - line feature geospatial dataset containing road network Punggol_CC - point feature geospatial dataset containing location of childcare centres
+Study Area - Punggol Planning Area\
+Punggol_St - line feature geospatial dataset containing road network\
+Punggol_CC - point feature geospatial dataset containing location of childcare centres
 
 # Chapter 7: Network Constrained Spatial Point Patterns Analysis
 
@@ -76,7 +78,7 @@ plot(childcare,add=T,col='red',pch = 19)
 
 ```{r}
 # Interactive Visualization with tmap 
-tmap_mode('plot')
+tmap_mode('view')
 tm_shape(childcare) +
   tm_dots(col = "red") +
   tm_shape(network) +

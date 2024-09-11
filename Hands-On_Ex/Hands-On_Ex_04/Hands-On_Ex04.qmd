@@ -1,7 +1,7 @@
 ---
 title: "Hands-On Exercise 04"
 author: "Henry Low"
-date: "Sep 1 2024"
+date: "Sep 11 2024"
 date-modified: "last-modified"
 execute:
   evalu: true
@@ -12,4 +12,62 @@ format: html
 editor: visual
 ---
 
-TBC
+# Data Sources
+
+*(saved under 'data' folder)*\
+Hunan county boundary layer - geospatial dataset\
+Hunan_2012 - csv dataset containing Hunan's 2012 local development indicators
+
+# Chapter 8: Spatial Weights and Applications
+
+## 8.1 Setting Up
+
+### 8.1.1 Loading the R packages
+
+```{r}
+pacman::p_load(sf, spdep, tmap, tidyverse, knitr)
+```
+
+### 8.1.2 Importing spatial data
+
+::: panel-tabset
+# Hunan Shapefile
+
+```{r}
+# Load shapefile
+hunan <- st_read(dsn = "data/geospatial", layer = "Hunan")
+```
+
+```{r}
+# Check crs
+st_crs(hunan)
+```
+
+# Hunan 2012
+
+```{r}
+# Load csv file
+hunan2012 <- read_csv("data/aspatial/Hunan_2012.csv")
+```
+
+```{r}
+# Check file
+glimpse(hunan2012)
+```
+:::
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
