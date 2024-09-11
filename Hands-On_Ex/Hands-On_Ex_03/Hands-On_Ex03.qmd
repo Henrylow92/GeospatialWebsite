@@ -31,17 +31,13 @@ pacman::p_load(sf, spNetwork, tmap, tidyverse)
 
 ```{r}
 # Load network dataset
-network <- st_read(dsn="data", layer="Punggol_St")
+network <- st_read(dsn="data", layer="Punggol_St") # Check that geometry is Linestring and not multilinestring
 ```
 
 ```{r}
 # Load childcare dataset
-childcare <- st_read(dsn="data", layer="Punggol_CC")
-```
-
-```{r}
-# Load childcare dataset
-childcare <- st_read(dsn="data", layer="Punggol_CC")
+childcare <- st_read(dsn="data", layer="Punggol_CC") %>%
+  st_zm(drop = TRUE, what = "ZM") # Remove Z dimension
 ```
 
 ::: panel-tabset
@@ -70,23 +66,22 @@ st_crs(network)
 ```
 :::
 
-
 ## 7.2 Visualize Geospatial Data
 
 ```{r}
 # Visualize both geospatial data
-plot(st_geometry(network))
+plot(st_geometry(network)) # Use st_geomettry to plot only the network without corresponding attributes
 plot(childcare,add=T,col='red',pch = 19)
 ```
+
 ```{r}
 # Interactive Visualization with tmap 
-tmap_mode('view')
-tm_shape(childcare) + 
-  tm_dots() + 
+tmap_mode('plot')
+tm_shape(childcare) +
+  tm_dots(col = "red") +
   tm_shape(network) +
   tm_lines()
 ```
-
 
 ```{r}
 # Set tmap_mode back to plot
@@ -100,6 +95,7 @@ tmap_mode('plot')
 ```{r}
 # Cut spatiallines objects into lixels with specified minimal distance using lixelize_lines from spNetwork
 lixels <- lixelize_lines(network, 700, mindist = 375)
+# Use nearest neighbour to gauge the appropriate distance - bottom ~25%-10%
 ```
 
 ### 7.3.2 Generate line centre points
@@ -107,21 +103,27 @@ lixels <- lixelize_lines(network, 700, mindist = 375)
 ```{r}
 # create line centre points with lines_center from spNetwork
 samples <- lines_center(lixels) 
-```
 
+tmap_mode('view')
+tm_shape(lixels) + 
+  tm_lines() + 
+  tm_shape(samples) + 
+  tm_dots(size =0.01)
+tmap_mode("plot")
+```
 
 ### 7.3.3 Perform NKDE
 
 ```{r}
-# Remove Z-dimension from childcare
-childcare_rmz <- st_zm(childcare)
+# # Remove Z-dimension from childcare (No longer required)
+# childcare_rmz <- st_zm(childcare)
 
 # Perform NKDE
 densities <- nkde(network, 
-                  events = childcare_rmz,
-                  w = rep(1, nrow(childcare_rmz)),
+                  events = childcare,
+                  w = rep(1, nrow(childcare)),
                   samples = samples,
-                  kernel_name = "quartic",
+                  kernel_name = "quartic", # Try to avoid gaussian if intensity is negative
                   bw = 300, 
                   div= "bw", 
                   method = "simple", 
@@ -132,8 +134,8 @@ densities <- nkde(network,
                   agg = 5, 
                   sparse = TRUE,
                   verbose = FALSE)
+# Densities - represents intensity
 ```
-
 
 ```{r}
 # Insert computed density values as density field
@@ -165,17 +167,18 @@ kfun_childcare <- kfunctions(network,
                              end = 1000, 
                              step = 50, 
                              width = 50, 
-                             nsim = 50, 
+                             nsim = 50, # 51 simulations 
                              resolution = 50,
                              verbose = FALSE, 
                              conf_int = 0.05)
 ```
-
 
 ```{r}
 # Visualize k-function output
 kfun_childcare$plotk
 ```
 
-
-
+Conclusion\
+- There is non complete spatial randomness\
+- In certain distances (\~250-500), childcares are regularly spaced out\
+- At higher distances (\>600), childcares are randomly spaced out

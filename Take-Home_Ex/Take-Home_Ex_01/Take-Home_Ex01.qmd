@@ -10,11 +10,78 @@ execute:
   freeze: true
 format: html
 editor: visual
-date-format: "DD MM YYYY"
 ---
+
+# Background
+
+Road traffic accidents cause 1.19 million deaths and 20 to 50 million injuries annually, with most fatalities occurring in low- and middle-income countries (World Health Organisation (WHO)). Road traffic injuries are the leading cause of death for individuals aged 5–29 and place a heavy economic burden on nations, costing up to 3% of GDP. Thailand has some of the deadliest roads globally, with about 20,000 fatalities annually. From 2014 to 2021, accidents rose, especially on national highways, with black spots frequently found on straight roads and intersections.
+
+# Objectives
+
+Focusing in the Bangkok Metropolitan Region (BMR), Spatial Point Patterns Analysis (SPPA) will be used to explore and identify factors influencing road traffic accidents. Such facts are mainly behavioral and environmental, with this exercise aiming to incorporate temporal factors as well. Specific objectives are as follows:\
+- To visualize the spatio-temporal dynamics of road traffic accidents in BMR using appropriate statistical graphics and geovisualization methods.\
+- To conduct detailed spatial analysis of road traffic accidents using appropriate Network Spatial Point Patterns Analysis methods.\
+- To conduct detailed spatio-temporal analysis of road traffic accidents using appropriate Temporal Network Spatial Point Patterns Analysis methods.
 
 # Data Sources
 
-[Thailand Road Accident 2019-2022](https://www.kaggle.com/datasets/thaweewatboy/thailand-road-accident-2019-2022)\
+*(saved under 'data' folder)*\
+[Thailand Road Accident 2019-2022](https://www.kaggle.com/datasets/thaweewatboy/thailand-road-accident-2019-2022) from Kaggle\
 [Thailand Roads (OpenStreetMap Export) from HDX](https://s3.dualstack.us-east-1.amazonaws.com/production-raw-data-api/ISO3/THA/roads/lines/hotosm_tha_roads_lines_shp.zip)\
 [Thailand - Subnational Administrative Boundaries from HDX](https://data.humdata.org/dataset/d24bdc45-eb4c-4e3d-8b16-44db02667c27/resource/d0c722ff-6939-4423-ac0d-6501830b1759/download/tha_adm_rtsd_itos_20210121_shp.zip)
+
+# 1. Setting Up
+
+## 1.1 Loading R Packages
+
+I will be using the following R packages:\
+-`sf` package to perform geospatial wrangling tasks
+
+```{r}
+pacman::p_load(tidyverse, sf, tmap)
+```
+
+## 1.2 Loading Datasets
+
+```{r}
+# Load 2019-2020 Road Accidents Data
+ra_tbl <- read_csv('data/thai_road_accident_2019_2022.csv')
+# Check data
+glimpse(ra_tbl)
+```
+
+```{r}
+# Load 2019-2020 Road Accidents Data
+ra_tbl <- read_csv('data/thai_road_accident_2019_2022.csv')
+# Check data
+glimpse(ra_tbl)
+```
+
+```{r}
+# Load Thailand Roads from Openstreet Map
+th_road <- st_read(dsn = "data/hotosm_tha_roads_lines_shp/", layer = "hotosm_tha_roads_lines_shp")
+```
+
+```{r}
+# Check data
+# glimpse(th_road)
+head(th_road, n=5)
+```
+
+```{r}
+# Load Thailand Country from HDX
+th_bound_l0 <- st_read(dsn = "data/tha_adm_rtsd_itos_20210121_shp/", layer = "tha_admbnda_adm0_rtsd_20220121")
+glimpse(th_bound_l0)
+plot(st_geometry(th_bound_l0))
+```
+
+```{r}
+# Load Thailand Province from HDX
+th_bound_l1 <- st_read(dsn = "data/tha_adm_rtsd_itos_20210121_shp/", layer = "tha_admbnda_adm1_rtsd_20220121")
+glimpse(th_bound_l1)
+plot(st_geometry(th_bound_l1))
+```
+
+
+
+
