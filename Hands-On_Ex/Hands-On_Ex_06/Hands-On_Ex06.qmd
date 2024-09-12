@@ -1,7 +1,7 @@
 ---
 title: "Hands-On Exercise 06"
 author: "Henry Low"
-date: "Sep 1 2024"
+date: "Sep 13 2024"
 date-modified: "last-modified"
 execute:
   evalu: true
@@ -12,4 +12,55 @@ format: html
 editor: visual
 ---
 
-TBC
+# Data Sources
+
+*(saved under 'data' folder)*\
+Myanmar Township Boundary Data - geospatial dataset\
+Shan-ICT - csv dataset containing [2014 Myanmar Population and Housing Census Myanmar](https://myanmar.unfpa.org/en/publications/2014-population-and-housing-census-myanmar-data-sheet)\
+
+# Chapter 12: Geographical Segmentation with Spatially Constrained Clustering Techniques
+
+## 12.1 Setting Up
+
+### 12.1.1 Loading the R packages
+
+```{r}
+pacman::p_load(spdep, tmap, sf, ClustGeo, 
+               ggpubr, cluster, factoextra, NbClust,
+               heatmaply, corrplot, psych, tidyverse, GGally)
+```
+
+### 12.1.2 Importing spatial data
+
+### 12.1.3 Data Wrangling
+
+
+## 12.2 Exploratory Data Analysis (EDA)
+
+
+
+## 12.3 Correlation Analysis
+
+
+
+
+## 12.4 Hierarchy Cluster Analysis
+
+
+
+## 12.5 Spatially Constrained Clustering (SKATER approach)
+
+
+
+
+
+
+
+
+## 12.6 Spatially Constrained Clustering (ClustGeo method)
+
+
+
+
+
+## 12.7 Visual Interpretation of Clusters

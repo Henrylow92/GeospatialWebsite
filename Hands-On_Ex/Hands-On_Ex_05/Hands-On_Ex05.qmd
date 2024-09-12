@@ -79,7 +79,7 @@ hunan <- left_join(hunan, hunan2012, by = "County") %>%
 glimpse(hunan)
 ```
 
-### 9.2 Exploratory Visualization
+## 9.2 Exploratory Visualization
 
 ```{r}
 # Show GDPPC - equal interval and quantile classification
