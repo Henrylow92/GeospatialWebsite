@@ -1,7 +1,7 @@
 ---
 title: "Hands-On Exercise 05"
 author: "Henry Low"
-date: "Sep 1 2024"
+date: "Sep 12 2024"
 date-modified: "last-modified"
 execute:
   evalu: true
@@ -12,4 +12,555 @@ format: html
 editor: visual
 ---
 
-TBC
+# Data Sources
+
+*(saved under 'data' folder)*\
+
+Chapter 9:\
+Hunan county boundary layer - geospatial dataset\
+Hunan_2012 - csv dataset containing Hunan's 2012 local development indicators\
+
+Chapter 13:\
+URA Master Plan subzone boundary condo_resale_2015 - csv dataset
+
+# Chapter 9: Global Measures of Spatial Autocorrelation
+
+## 9.1 Setting Up
+
+### 9.1.1 Loading the R packages
+
+```{r}
+pacman::p_load(sf, spdep, tmap, tidyverse)
+```
+
+### 9.1.2 Importing spatial data
+
+::: panel-tabset
+# Hunan Shapefile
+
+```{r}
+# Load shapefile
+hunan <- st_read(dsn = "data/geospatial", layer = "Hunan")
+```
+
+```{r}
+# Check crs
+st_crs(hunan)
+```
+
+```{r}
+# Check crs
+glimpse(hunan)
+```
+
+# Hunan 2012
+
+```{r}
+# Load csv file
+hunan2012 <- read_csv("data/aspatial/Hunan_2012.csv")
+```
+
+```{r}
+# Check file
+glimpse(hunan2012)
+```
+:::
+
+### 9.1.3 Merging both datasets
+
+Both datasets have the common field "County"
+
+```{r}
+# Merge both datasets
+hunan <- left_join(hunan, hunan2012, by = "County") %>%
+  # select(1:4, 7, 15)
+  select(`NAME_2`, `ID_3`, `NAME_3`, `ENGTYPE_3`, `County`, `GDPPC`, `geometry`) # Using Column names for readability
+# See result
+glimpse(hunan)
+```
+
+### 9.2 Exploratory Visualization
+
+```{r}
+# Show GDPPC - equal interval and quantile classification
+equal <- tm_shape(hunan) +
+  tm_fill("GDPPC",
+          n = 5,
+          style = "equal") +
+  tm_borders(alpha = 0.5) +
+  tm_layout(main.title = "Equal interval classification", main.title.size = 1) + 
+  tm_layout(legend.text.size = 0.5,  
+            legend.title.size = 0.8) 
+
+quantile <- tm_shape(hunan) +
+  tm_fill("GDPPC",
+          n = 5,
+          style = "quantile") +
+  tm_borders(alpha = 0.5) +
+  tm_layout(main.title = "Equal quantile classification", main.title.size = 1) + 
+  tm_layout(legend.text.size = 0.5,  
+            legend.title.size = 0.8) 
+
+tmap_arrange(equal, 
+             quantile, 
+             asp=1, 
+             ncol=2)
+```
+
+## 9.3 Global Measures of Spatial Autocorrelation
+
+```{r}
+# Compute Queen contiguity weight matrices
+wm_q <- poly2nb(hunan, 
+                queen=TRUE)
+summary(wm_q)
+```
+
+```{r}
+# Assign weights to each neighbouring polygon
+rswm_q <- nb2listw(wm_q, 
+                   style="W", 
+                   zero.policy = TRUE)
+rswm_q
+```
+
+-   *Input of nb2listw() must be nb object class.* 
+-   *Style:* 
+    -   *B \>\> basic binary coding* 
+    -   *W \>\> row standardised (sums over all links to n)* 
+    -   *C \>\> globally standardised (sums over all links to n)* 
+    -   *U \>\> C divided by the number of neighbours (sums over all links to unity)* 
+    -   *S \>\> variance-stabilizing coding scheme (sums over all links to n)* 
+-   *If zero policy = TRUE, spatially lagged value x for zero-neighbour region = 0*
+
+## 9.4 Global Measures of Spatial Autocorrelation (Moran's I)
+
+```{r}
+# Perform Moran's I statistical test with moran.test() of spdep
+moran.test(hunan$GDPPC, 
+           listw=rswm_q, 
+           zero.policy = TRUE, 
+           na.action=na.omit)
+```
+
+```{r}
+# Permutation test for Moran's I statistic with moran.mc() of spdep
+set.seed(1234)
+bperm= moran.mc(hunan$GDPPC, 
+                listw=rswm_q, 
+                nsim=999, 
+                zero.policy = TRUE, 
+                na.action=na.omit)
+bperm
+```
+
+*P-value \< 0.05, reject null hypothesis and conclude that there is some level of spatial clustering in GPD per capita with strong evidence of positive spatial autocorrelation*
+
+```{r}
+# Mean
+mean(bperm$res[1:999])
+# Variance
+var(bperm$res[1:999])
+# Sumamry
+summary(bperm$res[1:999])
+```
+
+```{r}
+# Plot histogram of permutations
+hist(bperm$res, 
+     freq=TRUE, 
+     breaks=20, 
+     xlab="Simulated Moran's I")
+abline(v=0, 
+       col="red") 
+```
+
+*From random simulations, most of Moran's I values fall close to 0, which results in not rejecting the null hypothesis that there is no spatial autocorrelation.*\
+*However, given that observed Moran's I is \~0.3, it suggests that there is positive spatial autocorrelation*
+
+```{r}
+# Plotting with ggplot2 package instead
+bperm_res <- data.frame(Simulated_I = bperm$res)
+ggplot2::ggplot(bperm_res, aes(x = Simulated_I)) +
+  geom_histogram(binwidth = 0.02, fill = "gray", color = "black") +
+  geom_vline(xintercept = 0, color = "red") +
+  labs(title = "Histogram of bperm$res", 
+       x = "Simulated Moran's I", 
+       y = "Frequency") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+## 9.5 Global Measures of Spatial Autocorrelation (Geary's C)
+
+```{r}
+# Perform Geary's C statistical test with geary.test() of spdep
+geary.test(hunan$GDPPC, listw=rswm_q)
+```
+
+*P value \< 0.05 (from theoretical distribution), reject null hypothesis and conclude that there is positive spatial autocorrelation (given that Geary's C statistic is \<1.)*
+
+```{r}
+# Permutation test for Geary's C statistic with geary.mc() of spdep
+set.seed(1234)
+bperm <- geary.mc(hunan$GDPPC, 
+               listw=rswm_q, 
+               nsim=999)
+bperm
+```
+
+*P value \< 0.05 (from random permuations), reject null hypothesis and conclude that there is positive spatial autocorrelation (given that Geary's C statistic is \<1.)*
+
+```{r}
+# Mean
+mean(bperm$res[1:999])
+# Variance
+var(bperm$res[1:999])
+# Sumamry
+summary(bperm$res[1:999])
+```
+
+```{r}
+# Plot histogram of permutations
+hist(bperm$res, freq=TRUE, breaks=20, xlab="Simulated Geary c")
+abline(v=1, col="red") 
+```
+
+*Generally random permutations of Geary C will fall close to 1*
+
+## 9.6 Spatial Correlogram
+
+Compute 6-lag spatial correlogram of GDPPC
+
+```{r}
+# Compute 6-lag spatial correlogram of GDPPC with Moran's I global spatial autocorrelation
+MI_corr <- sp.correlogram(wm_q, 
+                          hunan$GDPPC, 
+                          order=6, 
+                          method="I", 
+                          style="W")
+plot(MI_corr)
+```
+
+```{r}
+# Check analysis results
+print(MI_corr)
+```
+
+-   *Lag 1 - highly statistically significant (\*\*\*), strong positive spatial autocorrelation (0.3007)*.
+-   *Lag 2 - highly statistically significant (\*\*\*), positive spatial autocorrelation (0.206)*.
+-   *Lag 3 - statistically significant (\*), weak positive spatial autocorrelation (0.0668)*.
+-   *Lag 4 - not statistically significant*.
+-   *Lag 5 - highly statistically significant (\*\*\*), negative spatial autocorrelation (-0.153)*.
+-   *Lag 6 - statistically significant (\*\*), negative spatial autocorrelation (-0.1187)*.
+
+*Regions that are closer together have stronger positive autocorrelation with similar GDPPC values. But as the lag increases, regions have stronger negative autocorrelation with dissimilar GDPPC values.*
+
+```{r}
+# Compute 6-lag spatial correlogram of GDPPC with Geary's C global spatial autocorrelation
+GC_corr <- sp.correlogram(wm_q, 
+                          hunan$GDPPC, 
+                          order=6, 
+                          method="C", 
+                          style="W")
+# Plot results
+plot(GC_corr)
+```
+
+```{r}
+# Check analysis results
+print(GC_corr)
+```
+
+# Chapter 10: Local Measures of Spatial Autocorrelation
+
+
+## 10.1 Local Indicators of Spatial Association (LISA)
+
+```{r}
+# Compute local Moran's I
+fips <- order(hunan$County)
+localMI <- localmoran(hunan$GDPPC, rswm_q)
+head(localMI)
+```
+
+```{r}
+# Content of local Moran matrix
+printCoefmat(data.frame(
+  localMI[fips,], 
+  row.names=hunan$County[fips]),
+  check.names=FALSE)
+```
+
+```{r}
+# Append local Moran's I dataframe to hunan SpatialPolygonDataFrame
+hunan.localMI <- cbind(hunan,localMI) %>%
+  rename(Pr.Ii = Pr.z....E.Ii..)
+```
+
+```{r}
+# Plot local Moran's I values
+tm_shape(hunan.localMI) +
+  tm_fill(col = "Ii", 
+          style = "pretty",
+          palette = "RdBu",
+          title = "local moran statistics") +
+  tm_borders(alpha = 0.5)
+```
+
+```{r}
+# Plot local Moran's P values
+tm_shape(hunan.localMI) +
+  tm_fill(col = "Pr.Ii", 
+          breaks=c(-Inf, 0.001, 0.01, 0.05, 0.1, Inf),
+          palette="-Blues", 
+          title = "local Moran's I p-values") +
+  tm_borders(alpha = 0.5)
+```
+
+```{r}
+# Plot both local Moran's I values and p-values map side by side
+localMI.map <- tm_shape(hunan.localMI) +
+  tm_fill(col = "Ii", 
+          style = "pretty", 
+          title = "local moran statistics") +
+  tm_borders(alpha = 0.5) +
+  tm_layout(legend.text.size = 0.5, 
+            legend.title.size = 0.8) 
+
+pvalue.map <- tm_shape(hunan.localMI) +
+  tm_fill(col = "Pr.Ii", 
+          breaks=c(-Inf, 0.001, 0.01, 0.05, 0.1, Inf),
+          palette="-Blues", 
+          title = "local Moran's I p-values") +
+  tm_borders(alpha = 0.5) +
+  tm_layout(legend.text.size = 0.5, 
+            legend.title.size = 0.8) 
+
+tmap_arrange(localMI.map, pvalue.map, asp=1, ncol=2)
+```
+
+
+
+## 10.2 Visualize LISA Cluster Map
+
+### 10.2.1 Plot Moran scatterplot
+
+```{r}
+# Plot Moran scatterplot with mornan.plot() of spdep
+nci <- moran.plot(hunan$GDPPC, rswm_q,
+                  labels=as.character(hunan$County), 
+                  xlab="GDPPC 2012", 
+                  ylab="Spatially Lag GDPPC 2012")
+```
+### 10.2.2 Plot Moran scatterplot (standardised variable)
+
+```{r}
+# Scale variable
+hunan$Z.GDPPC <- scale(hunan$GDPPC) %>% 
+  as.vector 
+
+# Plot Moran scatterplot with standardised variable
+nci2 <- moran.plot(hunan$Z.GDPPC, rswm_q,
+                   labels=as.character(hunan$County),
+                   xlab="z-GDPPC 2012", 
+                   ylab="Spatially Lag z-GDPPC 2012")
+```
+### 10.2.3 Plot LISA map
+
+```{r}
+# Initialise quadrant  
+quadrant <- vector(mode="numeric",length=nrow(localMI))
+
+# Derive spatially lagged variable (GDPPC) and center spatially lagged variable around its mean
+hunan$lag_GDPPC <- lag.listw(rswm_q, hunan$GDPPC)
+DV <- hunan$lag_GDPPC - mean(hunan$lag_GDPPC)
+
+# Center local Moran's around it mean
+LM_I <- localMI[,1] - mean(localMI[,1])    
+
+# Set statistical significance level for local Moran
+signif <- 0.05
+
+# Define low-low (1), low-high (2), high-low (3) and high-high (4) categories
+quadrant[DV <0 & LM_I>0] <- 1
+quadrant[DV >0 & LM_I<0] <- 2
+quadrant[DV <0 & LM_I<0] <- 3  
+quadrant[DV >0 & LM_I>0] <- 4      
+
+# Place non-significant Moran in category 0
+quadrant[localMI[,5]>signif] <- 0
+```
+
+```{r}
+# Plot LISA map
+hunan.localMI$quadrant <- quadrant
+colors <- c("#ffffff", "#2c7bb6", "#abd9e9", "#fdae61", "#d7191c")
+clusters <- c("insignificant", "low-low", "low-high", "high-low", "high-high")
+
+tm_shape(hunan.localMI) +
+  tm_fill(col = "quadrant", 
+          style = "cat", 
+          palette = colors[c(sort(unique(quadrant)))+1], 
+          labels = clusters[c(sort(unique(quadrant)))+1],
+          popup.vars = c("")) +
+  tm_view(set.zoom.limits = c(11,17)) +
+  tm_borders(alpha=0.5)
+```
+
+
+```{r}
+# Plot both local Moran's I values and p-values map side by side
+gdppc <- qtm(hunan, "GDPPC") +
+  tm_layout(legend.text.size = 0.5, 
+            legend.title.size = 0.8) 
+
+hunan.localMI$quadrant <- quadrant
+colors <- c("#ffffff", "#2c7bb6", "#abd9e9", "#fdae61", "#d7191c")
+clusters <- c("insignificant", "low-low", "low-high", "high-low", "high-high")
+
+LISAmap <- tm_shape(hunan.localMI) +
+  tm_fill(col = "quadrant", 
+          style = "cat", 
+          palette = colors[c(sort(unique(quadrant)))+1], 
+          labels = clusters[c(sort(unique(quadrant)))+1],
+          popup.vars = c("")) +
+  tm_view(set.zoom.limits = c(11,17)) +
+  tm_borders(alpha=0.5) +
+  tm_layout(legend.text.size = 0.5, 
+            legend.title.size = 0.8) 
+
+tmap_arrange(gdppc, LISAmap, 
+             asp=1, ncol=2)
+```
+*Certain regions show significant clustering in both high-high and low-low patterns*
+
+## 10.3 Hot and Cold Spot Area Analysis
+
+Getis and Ord’s G-Statistics consists of the following steps
+
+### 10.3.1 Deriving spatial weight matrix
+
+#### 10.3.1.1 Derive distance-based weight matrix
+
+```{r}
+# Get longitude from 1st value in centroid
+longitude <- map_dbl(hunan$geometry, ~st_centroid(.x)[[1]])
+
+# Get latitude from 2nd value in centroid
+latitude <- map_dbl(hunan$geometry, ~st_centroid(.x)[[2]])
+
+# Combine longitude and latitude
+coords <- cbind(longitude, latitude)
+
+# Determine cut-off distance
+k1 <- knn2nb(knearneigh(coords))
+k1dists <- unlist(nbdists(k1, coords, longlat = TRUE))
+summary(k1dists)
+```
+
+```{r}
+# Compute distance weight matrix with dnearneigh()
+wm_d62 <- dnearneigh(coords, 0, 62, longlat = TRUE)
+wm_d62
+```
+```{r}
+# Convert nb object into spatial weights object
+wm62_lw <- nb2listw(wm_d62, style = 'B')
+summary(wm62_lw)
+```
+
+#### 10.3.1.2 Compute adaptive distance weight matrix
+
+```{r}
+# Use k-nearest neighbours to control number of neighbours
+knn <- knn2nb(knearneigh(coords, k=8))
+knn
+```
+
+
+```{r}
+# Convert nb object into spatial weights object
+knn_lw <- nb2listw(knn, style = 'B')
+summary(knn_lw)
+```
+
+
+### 10.3.2 Compute Gi Statistics
+
+#### 10.3.2.1 Gi Statistics using fixed distance
+
+```{r}
+# Calculate Gi statistics with localG
+fips <- order(hunan$County)
+gi.fixed <- localG(hunan$GDPPC, wm62_lw)
+gi.fixed
+```
+
+```{r}
+# Join Gi values to corresponding hunan sf dataframe
+hunan.gi.fixed <- cbind(hunan, as.matrix(gi.fixed)) %>%
+  rename(gstat_fixed = as.matrix.gi.fixed.)
+```
+
+
+#### 10.3.2.2 Gi Statistics using adaptive distance
+
+```{r}
+# Calculate Gi statistics with localG
+fips <- order(hunan$County)
+gi.adaptive <- localG(hunan$GDPPC, knn_lw)
+
+# Join Gi values to corresponding hunan sf dataframe
+hunan.gi.adaptive <- cbind(hunan, as.matrix(gi.adaptive)) %>%
+  rename(gstat_adaptive = as.matrix.gi.adaptive.)
+```
+
+### 10.3.3 Mapping Gi Statistiscs
+
+#### 10.3.3.1 Mapping Gi values with fixed distance weights
+
+```{r}
+# Plot Gi values with fixed distance weight matrix 
+gdppc <- qtm(hunan, "GDPPC") +
+  tm_layout(legend.text.size = 0.5, 
+            legend.title.size = 0.8) 
+
+Gimap <-tm_shape(hunan.gi.fixed) +
+  tm_fill(col = "gstat_fixed", 
+          style = "pretty",
+          palette="-RdBu",
+          title = "local Gi") +
+  tm_borders(alpha = 0.5) +
+  tm_layout(legend.text.size = 0.5, 
+            legend.title.size = 0.8) 
+
+tmap_arrange(gdppc, Gimap, asp=1, ncol=2)
+```
+*There are hotspots (red with high positive Gi values), and coldspots (blue with negative Gi values). This shows how high GDPPC regions are clustered together, and low GDPPC regions are likewise clustered together. Low GDPPC regsions are more clustered in multiple regions as compared to the high GDPPC regions.*
+
+
+#### 10.3.3.2 Mapping Gi values with adaptive distance weights
+
+```{r}
+# Plot Gi values with fixed distance weight matrix 
+gdppc<- qtm(hunan, "GDPPC") +
+  tm_layout(legend.text.size = 0.5, 
+            legend.title.size = 0.8) 
+
+Gimap <- tm_shape(hunan.gi.adaptive) + 
+  tm_fill(col = "gstat_adaptive", 
+          style = "pretty", 
+          palette="-RdBu", 
+          title = "local Gi") + 
+  tm_borders(alpha = 0.5) +
+  tm_layout(legend.text.size = 0.5, 
+            legend.title.size = 0.8) 
+
+tmap_arrange(gdppc, 
+             Gimap, 
+             asp=1, 
+             ncol=2) 
+```
+*There are hotspots (red with high positive Gi values), and coldspots (blue with negative Gi values). This shows how high GDPPC regions are clustered together, and low GDPPC regions are likewise clustered together. With adaptive distance however, the high and low GDPPC regions are clustered more strongly together, with only 1 cluster of low GDPPC region.*
+
