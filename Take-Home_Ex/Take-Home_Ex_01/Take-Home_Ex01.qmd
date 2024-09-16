@@ -28,14 +28,14 @@ Focusing in the Bangkok Metropolitan Region (BMR), Spatial Point Patterns Analys
 *(saved under 'data' folder)*\
 [Thailand Road Accident 2019-2022](https://www.kaggle.com/datasets/thaweewatboy/thailand-road-accident-2019-2022) from Kaggle\
 [Thailand Roads (OpenStreetMap Export) from HDX](https://s3.dualstack.us-east-1.amazonaws.com/production-raw-data-api/ISO3/THA/roads/lines/hotosm_tha_roads_lines_shp.zip)\
-[Thailand - Subnational Administrative Boundaries from HDX](https://data.humdata.org/dataset/d24bdc45-eb4c-4e3d-8b16-44db02667c27/resource/d0c722ff-6939-4423-ac0d-6501830b1759/download/tha_adm_rtsd_itos_20210121_shp.zip)
+[Thailand - Subnational Administrative Boundaries from HDX](https://data.humdata.org/dataset/cod-ab-tha?)...[Click here to download here](https://data.humdata.org/dataset/d24bdc45-eb4c-4e3d-8b16-44db02667c27/resource/d0c722ff-6939-4423-ac0d-6501830b1759/download/tha_adm_rtsd_itos_20210121_shp.zip)
 
 # 1. Setting Up
 
 ## 1.1 Loading R Packages
 
 I will be using the following R packages:\
--`sf` package to perform geospatial wrangling tasks
+-`sf` package to perform geospatial wrangling tasks - `tidyverse` package for reading csv files, dataframe processing tasks - `tmap` for plotting tasks
 
 ```{r}
 pacman::p_load(tidyverse, sf, tmap)
@@ -59,7 +59,7 @@ glimpse(ra_tbl)
 
 ```{r}
 # Load Thailand Roads from Openstreet Map
-th_road <- st_read(dsn = "data/hotosm_tha_roads_lines_shp/", layer = "hotosm_tha_roads_lines_shp")
+th_road <- st_read(dsn = "data/hotosm_tha_roads_lines_shp/", layer = "hotosm_tha_roads_lines_shp") 
 ```
 
 ```{r}
@@ -82,6 +82,49 @@ glimpse(th_bound_l1)
 plot(st_geometry(th_bound_l1))
 ```
 
+```{r}
+# Load Thailand Province from HDX
+th_bound_l2 <- st_read(dsn = "data/tha_adm_rtsd_itos_20210121_shp/", layer = "tha_admbnda_adm2_rtsd_20220121") %>%
+  st_transform(crs = 32647) %>%
+  filter(ADM1_EN %in% c("Bangkok", "Nonthaburi", "Pathum Thani", 
+                              "Samut Prakan", "Samut Sakhon", "Nakhon Pathom"))
+glimpse(th_bound_l2)
+plot(st_geometry(th_bound_l2))
+```
+
+```{r}
+# Load Thailand Province from HDX
+th_bound_l3 <- st_read(dsn = "data/tha_adm_rtsd_itos_20210121_shp/", layer = "tha_admbnda_adm3_rtsd_20220121") %>%
+  st_transform(crs = 32647) %>%
+  filter(ADM1_EN %in% c("Bangkok", "Nonthaburi", "Pathum Thani", 
+                              "Samut Prakan", "Samut Sakhon", "Nakhon Pathom"))
+glimpse(th_bound_l3)
+plot(st_geometry(th_bound_l3))
+```
+
+```{r}
+# Load Thailand Province from HDX
+th_bound_lall <- st_read(dsn = "data/tha_adm_rtsd_itos_20210121_shp/", layer = "tha_admbndl_admALL_rtsd_itos_20220121") %>% 
+  st_transform(crs = 32647) %>%
+  filter(admLevel == 3)
+glimpse(th_bound_lall)
+plot(st_geometry(th_bound_lall))
+```
+
+```{r}
+# Load Thailand Province from HDX
+th_bound_lallndp <- st_read(dsn = "data/tha_adm_rtsd_itos_20210121_shp/", layer = "tha_admbndp_admALL_rtsd_itos_20220121") %>%
+  st_transform(crs = 32647) %>%
+  filter(ADM1_EN %in% c("Bangkok", "Nonthaburi", "Pathum Thani", 
+                              "Samut Prakan", "Samut Sakhon", "Nakhon Pathom"))
+glimpse(th_bound_lallndp)
+plot(st_geometry(th_bound_lallndp))
+```
 
 
+```{r}
+th_road_nonna <- th_road %>%
+  filter(!is.na(highway), !is.na(name_en))
+plot(st_geometry(th_road_nonna))
+```
 
