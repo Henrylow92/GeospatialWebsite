@@ -259,12 +259,39 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#background" id="toc-background" class="nav-link active" data-scroll-target="#background">Background</a></li>
   <li><a href="#objectives" id="toc-objectives" class="nav-link" data-scroll-target="#objectives">Objectives</a></li>
+  <li><a href="#study-area" id="toc-study-area" class="nav-link" data-scroll-target="#study-area">Study Area</a></li>
   <li><a href="#data-sources" id="toc-data-sources" class="nav-link" data-scroll-target="#data-sources">Data Sources</a></li>
   <li><a href="#setting-up" id="toc-setting-up" class="nav-link" data-scroll-target="#setting-up">1. Setting Up</a>
   <ul class="collapse">
   <li><a href="#loading-r-packages" id="toc-loading-r-packages" class="nav-link" data-scroll-target="#loading-r-packages">1.1 Loading R Packages</a></li>
-  <li><a href="#loading-datasets" id="toc-loading-datasets" class="nav-link" data-scroll-target="#loading-datasets">1.2 Loading Datasets</a></li>
+  <li><a href="#loading-datasets" id="toc-loading-datasets" class="nav-link" data-scroll-target="#loading-datasets">1.2 Loading Datasets</a>
+  <ul class="collapse">
+  <li><a href="#thailand-road-accidents-data" id="toc-thailand-road-accidents-data" class="nav-link" data-scroll-target="#thailand-road-accidents-data">1.2.1 Thailand Road Accidents Data</a></li>
+  <li><a href="#thailand-openstreet-map-data" id="toc-thailand-openstreet-map-data" class="nav-link" data-scroll-target="#thailand-openstreet-map-data">1.2.2 Thailand Openstreet Map Data</a></li>
+  <li><a href="#thailand-subnational-administrative-boundaries" id="toc-thailand-subnational-administrative-boundaries" class="nav-link" data-scroll-target="#thailand-subnational-administrative-boundaries">1.2.3 Thailand Subnational Administrative Boundaries</a></li>
+  <li><a href="#basic-preprocessing" id="toc-basic-preprocessing" class="nav-link" data-scroll-target="#basic-preprocessing">1.2.4 Basic Preprocessing</a></li>
   </ul></li>
+  </ul></li>
+  <li><a href="#exploratory-data-analysis" id="toc-exploratory-data-analysis" class="nav-link" data-scroll-target="#exploratory-data-analysis">2. Exploratory Data Analysis</a></li>
+  <li><a href="#setting-up-environtment-from-processed-datasets" id="toc-setting-up-environtment-from-processed-datasets" class="nav-link" data-scroll-target="#setting-up-environtment-from-processed-datasets">2.1 Setting Up Environtment from Processed Datasets</a>
+  <ul class="collapse">
+  <li><a href="#microsoft-power-bi-visualization" id="toc-microsoft-power-bi-visualization" class="nav-link" data-scroll-target="#microsoft-power-bi-visualization">2.2 Microsoft Power Bi Visualization</a></li>
+  </ul></li>
+  <li><a href="#spatial-point-pattern-analysis" id="toc-spatial-point-pattern-analysis" class="nav-link" data-scroll-target="#spatial-point-pattern-analysis">3. Spatial Point Pattern Analysis</a>
+  <ul class="collapse">
+  <li><a href="#first-order-spatial-point-pattern-analysis" id="toc-first-order-spatial-point-pattern-analysis" class="nav-link" data-scroll-target="#first-order-spatial-point-pattern-analysis">3.1 First-Order Spatial Point Pattern Analysis</a>
+  <ul class="collapse">
+  <li><a href="#section" id="toc-section" class="nav-link" data-scroll-target="#section">3.1.1</a></li>
+  </ul></li>
+  <li><a href="#second-order-spatial-point-pattern-analysis" id="toc-second-order-spatial-point-pattern-analysis" class="nav-link" data-scroll-target="#second-order-spatial-point-pattern-analysis">3.2 Second-Order Spatial Point Pattern Analysis</a>
+  <ul class="collapse">
+  <li><a href="#section-1" id="toc-section-1" class="nav-link" data-scroll-target="#section-1">3.2.1</a></li>
+  </ul></li>
+  <li><a href="#section-2" id="toc-section-2" class="nav-link" data-scroll-target="#section-2">3.3</a></li>
+  </ul></li>
+  <li><a href="#network-spatial-point-pattern-analysis" id="toc-network-spatial-point-pattern-analysis" class="nav-link" data-scroll-target="#network-spatial-point-pattern-analysis">4 Network Spatial Point Pattern Analysis</a></li>
+  <li><a href="#temporal-network-spatial-point-patterns-analysis" id="toc-temporal-network-spatial-point-patterns-analysis" class="nav-link" data-scroll-target="#temporal-network-spatial-point-patterns-analysis">5 Temporal Network Spatial Point Patterns Analysis</a></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">6. Conclusion</a></li>
   </ul>
 </nav>
     </div>
@@ -297,7 +324,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">September 16, 2024</p>
+      <p class="date-modified">September 18, 2024</p>
     </div>
   </div>
     
@@ -319,25 +346,36 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 - To conduct detailed spatial analysis of road traffic accidents using appropriate Network Spatial Point Patterns Analysis methods.<br>
 - To conduct detailed spatio-temporal analysis of road traffic accidents using appropriate Temporal Network Spatial Point Patterns Analysis methods.</p>
 </section>
+<section id="study-area" class="level1">
+<h1>Study Area</h1>
+<p>The study area will be Bangkok Metropolitan Region, which is defined <a href="https://en.wikipedia.org/wiki/Bangkok_Metropolitan_Region">here</a>.</p>
+</section>
 <section id="data-sources" class="level1">
 <h1>Data Sources</h1>
 <p><em>(saved under ‘data’ folder)</em><br>
 <a href="https://www.kaggle.com/datasets/thaweewatboy/thailand-road-accident-2019-2022">Thailand Road Accident 2019-2022</a> from Kaggle<br>
 <a href="https://s3.dualstack.us-east-1.amazonaws.com/production-raw-data-api/ISO3/THA/roads/lines/hotosm_tha_roads_lines_shp.zip">Thailand Roads (OpenStreetMap Export) from HDX</a><br>
-<a href="https://data.humdata.org/dataset/d24bdc45-eb4c-4e3d-8b16-44db02667c27/resource/d0c722ff-6939-4423-ac0d-6501830b1759/download/tha_adm_rtsd_itos_20210121_shp.zip">Thailand - Subnational Administrative Boundaries from HDX</a></p>
+<a href="https://data.humdata.org/dataset/cod-ab-tha?">Thailand - Subnational Administrative Boundaries from HDX</a>…<a href="https://data.humdata.org/dataset/d24bdc45-eb4c-4e3d-8b16-44db02667c27/resource/d0c722ff-6939-4423-ac0d-6501830b1759/download/tha_adm_rtsd_itos_20210121_shp.zip">Click here to download here</a></p>
 </section>
 <section id="setting-up" class="level1">
 <h1>1. Setting Up</h1>
 <section id="loading-r-packages" class="level2">
 <h2 class="anchored" data-anchor-id="loading-r-packages">1.1 Loading R Packages</h2>
 <p>I will be using the following R packages:<br>
--<code>sf</code> package to perform geospatial wrangling tasks</p>
+-<code>sf</code> package to perform geospatial wrangling tasks&nbsp;<br>
+- <code>spatstat</code> package to perform 1st- and 2nd-order spatial point patterns analysis&nbsp;<br>
+- <code>spNetwork</code> package to perform network kernel density estimation (NKDE) and temporal network kernel density estimation&nbsp;<br>
+- <code>tidyverse</code> package for reading csv files, dataframe processing tasks&nbsp;<br>
+- <code>tmap</code> package for plotting tasks&nbsp;<br>
+</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(tidyverse, sf, tmap)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(tidyverse, spatstat, sf, spNetwork, tmap)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="loading-datasets" class="level2">
 <h2 class="anchored" data-anchor-id="loading-datasets">1.2 Loading Datasets</h2>
+<section id="thailand-road-accidents-data" class="level3">
+<h3 class="anchored" data-anchor-id="thailand-road-accidents-data">1.2.1 Thailand Road Accidents Data</h3>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load 2019-2020 Road Accidents Data</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>ra_tbl <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">'data/thai_road_accident_2019_2022.csv'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -377,48 +415,12 @@ $ road_description            &lt;chr&gt; "straight road", "straight road", "wid
 $ slope_description           &lt;chr&gt; "no slope", "no slope", "slope area", "no …</code></pre>
 </div>
 </div>
+</section>
+<section id="thailand-openstreet-map-data" class="level3">
+<h3 class="anchored" data-anchor-id="thailand-openstreet-map-data">1.2.2 Thailand Openstreet Map Data</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load 2019-2020 Road Accidents Data</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>ra_tbl <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">'data/thai_road_accident_2019_2022.csv'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Rows: 81735 Columns: 18
-── Column specification ────────────────────────────────────────────────────────
-Delimiter: ","
-chr  (10): province_th, province_en, agency, route, vehicle_type, presumed_c...
-dbl   (6): acc_code, number_of_vehicles_involved, number_of_fatalities, numb...
-dttm  (2): incident_datetime, report_datetime
-
-ℹ Use `spec()` to retrieve the full column specification for this data.
-ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check data</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(ra_tbl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>Rows: 81,735
-Columns: 18
-$ acc_code                    &lt;dbl&gt; 571905, 3790870, 599075, 571924, 599523, 5…
-$ incident_datetime           &lt;dttm&gt; 2019-01-01 00:00:00, 2019-01-01 00:03:00,…
-$ report_datetime             &lt;dttm&gt; 2019-01-02 06:11:00, 2020-02-20 13:48:00,…
-$ province_th                 &lt;chr&gt; "ลพบุรี", "อุบลราชธานี", "ประจวบคีรีขันธ์", "เชียงใ…
-$ province_en                 &lt;chr&gt; "Loburi", "Ubon Ratchathani", "Prachuap Kh…
-$ agency                      &lt;chr&gt; "department of rural roads", "department o…
-$ route                       &lt;chr&gt; "แยกทางหลวงหมายเลข 21 (กม.ที่ 31+000) - บ้านวั…
-$ vehicle_type                &lt;chr&gt; "motorcycle", "private/passenger car", "mo…
-$ presumed_cause              &lt;chr&gt; "driving under the influence of alcohol", …
-$ accident_type               &lt;chr&gt; "other", "rollover/fallen on straight road…
-$ number_of_vehicles_involved &lt;dbl&gt; 1, 1, 2, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 1, …
-$ number_of_fatalities        &lt;dbl&gt; 0, 0, 1, 0, 0, 0, 0, 1, 3, 0, 0, 1, 0, 0, …
-$ number_of_injuries          &lt;dbl&gt; 2, 2, 0, 1, 0, 2, 2, 0, 0, 1, 1, 0, 1, 1, …
-$ weather_condition           &lt;chr&gt; "clear", "clear", "clear", "clear", "clear…
-$ latitude                    &lt;dbl&gt; 14.959105, 15.210738, 12.374259, 18.601721…
-$ longitude                   &lt;dbl&gt; 100.87346, 104.86269, 99.90795, 98.80420, …
-$ road_description            &lt;chr&gt; "straight road", "straight road", "wide cu…
-$ slope_description           &lt;chr&gt; "no slope", "no slope", "slope area", "no …</code></pre>
-</div>
-</div>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load Thailand Roads from Openstreet Map</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>th_road <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="at">dsn =</span> <span class="st">"data/hotosm_tha_roads_lines_shp/"</span>, <span class="at">layer =</span> <span class="st">"hotosm_tha_roads_lines_shp"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load Thailand Roads from Openstreet Map</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>th_road <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="at">dsn =</span> <span class="st">"data/hotosm_tha_roads_lines_shp/"</span>, <span class="at">layer =</span> <span class="st">"hotosm_tha_roads_lines_shp"</span>) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Reading layer `hotosm_tha_roads_lines_shp' from data source 
   `C:\Users\Henry\Desktop\SMU Masters\2024-2025 T1\Geospatial Analytics &amp; Applications\Project\GeospatialWebsite\Take-Home_Ex\Take-Home_Ex_01\data\hotosm_tha_roads_lines_shp' 
@@ -431,9 +433,9 @@ CRS:           NA</code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check data</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="co"># glimpse(th_road)</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(th_road, <span class="at">n=</span><span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check data</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co"># glimpse(th_road)</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(th_road, <span class="at">n=</span><span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Simple feature collection with 5 features and 14 fields
 Geometry type: MULTILINESTRING
@@ -460,9 +462,22 @@ CRS:           NA
 5 MULTILINESTRING ((100.7831 ...</code></pre>
 </div>
 </div>
+</section>
+<section id="thailand-subnational-administrative-boundaries" class="level3">
+<h3 class="anchored" data-anchor-id="thailand-subnational-administrative-boundaries">1.2.3 Thailand Subnational Administrative Boundaries</h3>
+<p>Based on the description from HDX, there are a few administrative boundaries:<br>
+- Level 0: Country<br>
+- Level 1: Province<br>
+- Level 2: District<br>
+- Level 3: Sub-District, Tambon</p>
+<p>While the dataset contains other <code>shp</code> files, the focus will be on those levels.</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true">Level 0</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false">Level 1</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-3" role="tab" aria-controls="tabset-1-3" aria-selected="false">Level 2</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-4-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-4" role="tab" aria-controls="tabset-1-4" aria-selected="false">Level 3</a></li></ul>
+<div class="tab-content">
+<div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
 <div class="cell">
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load Thailand Country from HDX</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>th_bound_l0 <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="at">dsn =</span> <span class="st">"data/tha_adm_rtsd_itos_20210121_shp/"</span>, <span class="at">layer =</span> <span class="st">"tha_admbnda_adm0_rtsd_20220121"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load Thailand Country from HDX</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>th_bound_l0 <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="at">dsn =</span> <span class="st">"data/tha_adm_rtsd_itos_20210121_shp/"</span>, <span class="at">layer =</span> <span class="st">"tha_admbnda_adm0_rtsd_20220121"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Reading layer `tha_admbnda_adm0_rtsd_20220121' from data source 
   `C:\Users\Henry\Desktop\SMU Masters\2024-2025 T1\Geospatial Analytics &amp; Applications\Project\GeospatialWebsite\Take-Home_Ex\Take-Home_Ex_01\data\tha_adm_rtsd_itos_20210121_shp' 
@@ -473,7 +488,7 @@ Dimension:     XY
 Bounding box:  xmin: 97.34336 ymin: 5.613038 xmax: 105.637 ymax: 20.46507
 Geodetic CRS:  WGS 84</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(th_bound_l0)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(th_bound_l0)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Rows: 1
 Columns: 14
@@ -492,18 +507,21 @@ $ validOn    &lt;date&gt; 2022-01-22
 $ validTo    &lt;date&gt; -001-11-30
 $ geometry   &lt;MULTIPOLYGON [°]&gt; MULTIPOLYGON (((100.0903 6....</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">st_geometry</span>(th_bound_l0))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize the boundaries</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">st_geometry</span>(th_bound_l0))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 </div>
+</div>
+<div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
 <div class="cell">
-<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load Thailand Province from HDX</span></span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>th_bound_l1 <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="at">dsn =</span> <span class="st">"data/tha_adm_rtsd_itos_20210121_shp/"</span>, <span class="at">layer =</span> <span class="st">"tha_admbnda_adm1_rtsd_20220121"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load Thailand Province from HDX</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>th_bound_l1 <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="at">dsn =</span> <span class="st">"data/tha_adm_rtsd_itos_20210121_shp/"</span>, <span class="at">layer =</span> <span class="st">"tha_admbnda_adm1_rtsd_20220121"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Reading layer `tha_admbnda_adm1_rtsd_20220121' from data source 
   `C:\Users\Henry\Desktop\SMU Masters\2024-2025 T1\Geospatial Analytics &amp; Applications\Project\GeospatialWebsite\Take-Home_Ex\Take-Home_Ex_01\data\tha_adm_rtsd_itos_20210121_shp' 
@@ -514,7 +532,7 @@ Dimension:     XY
 Bounding box:  xmin: 97.34336 ymin: 5.613038 xmax: 105.637 ymax: 20.46507
 Geodetic CRS:  WGS 84</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(th_bound_l1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(th_bound_l1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Rows: 77
 Columns: 17
@@ -536,7 +554,58 @@ $ validOn    &lt;date&gt; 2022-01-22, 2022-01-22, 2022-01-22, 2022-01-22, 2022-0
 $ validTo    &lt;date&gt; -001-11-30, -001-11-30, -001-11-30, -001-11-30, -001-11-30…
 $ geometry   &lt;MULTIPOLYGON [°]&gt; MULTIPOLYGON (((100.6139 13..., MULTIPOLYGON (…</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">st_geometry</span>(th_bound_l1))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize the boundaries</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">st_geometry</span>(th_bound_l1))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<div id="tabset-1-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-3-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load Thailand Province from HDX</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>th_bound_l2 <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="at">dsn =</span> <span class="st">"data/tha_adm_rtsd_itos_20210121_shp/"</span>, <span class="at">layer =</span> <span class="st">"tha_admbnda_adm2_rtsd_20220121"</span>) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reading layer `tha_admbnda_adm2_rtsd_20220121' from data source 
+  `C:\Users\Henry\Desktop\SMU Masters\2024-2025 T1\Geospatial Analytics &amp; Applications\Project\GeospatialWebsite\Take-Home_Ex\Take-Home_Ex_01\data\tha_adm_rtsd_itos_20210121_shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 928 features and 19 fields
+Geometry type: MULTIPOLYGON
+Dimension:     XY
+Bounding box:  xmin: 97.34336 ymin: 5.613038 xmax: 105.637 ymax: 20.46507
+Geodetic CRS:  WGS 84</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(th_bound_l2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 928
+Columns: 20
+$ Shape_Leng &lt;dbl&gt; 0.08541733, 0.13413177, 0.67634217, 0.08588647, 0.30172202,…
+$ Shape_Area &lt;dbl&gt; 0.0004504685, 0.0009501914, 0.0198588627, 0.0003369561, 0.0…
+$ ADM2_EN    &lt;chr&gt; "Phra Nakhon", "Dusit", "Nong Chok", "Bang Rak", "Bang Khen…
+$ ADM2_TH    &lt;chr&gt; "พระนคร", "ดุสิต", "หนองจอก", "บางรัก", "บางเขน", "บางกะปิ", "ป…
+$ ADM2_PCODE &lt;chr&gt; "TH1001", "TH1002", "TH1003", "TH1004", "TH1005", "TH1006",…
+$ ADM2_REF   &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ ADM2ALT1EN &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ ADM2ALT2EN &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ ADM2ALT1TH &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ ADM2ALT2TH &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ ADM1_EN    &lt;chr&gt; "Bangkok", "Bangkok", "Bangkok", "Bangkok", "Bangkok", "Ban…
+$ ADM1_TH    &lt;chr&gt; "กรุงเทพมหานคร", "กรุงเทพมหานคร", "กรุงเทพมหานคร", "กรุงเทพมหาน…
+$ ADM1_PCODE &lt;chr&gt; "TH10", "TH10", "TH10", "TH10", "TH10", "TH10", "TH10", "TH…
+$ ADM0_EN    &lt;chr&gt; "Thailand", "Thailand", "Thailand", "Thailand", "Thailand",…
+$ ADM0_TH    &lt;chr&gt; "ประเทศไทย", "ประเทศไทย", "ประเทศไทย", "ประเทศไทย", "ประเทศ…
+$ ADM0_PCODE &lt;chr&gt; "TH", "TH", "TH", "TH", "TH", "TH", "TH", "TH", "TH", "TH",…
+$ date       &lt;date&gt; 2019-02-18, 2019-02-18, 2019-02-18, 2019-02-18, 2019-02-18…
+$ validOn    &lt;date&gt; 2022-01-22, 2022-01-22, 2022-01-22, 2022-01-22, 2022-01-22…
+$ validTo    &lt;date&gt; -001-11-30, -001-11-30, -001-11-30, -001-11-30, -001-11-30…
+$ geometry   &lt;MULTIPOLYGON [°]&gt; MULTIPOLYGON (((100.5007 13..., MULTIPOLYGON (…</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize the boundaries</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">st_geometry</span>(th_bound_l2))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -545,9 +614,559 @@ $ geometry   &lt;MULTIPOLYGON [°]&gt; MULTIPOLYGON (((100.6139 13..., MULTIPOLY
 </div>
 </div>
 </div>
-
-
+</div>
+<div id="tabset-1-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-4-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load Thailand Province from HDX</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>th_bound_l3 <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="at">dsn =</span> <span class="st">"data/tha_adm_rtsd_itos_20210121_shp/"</span>, <span class="at">layer =</span> <span class="st">"tha_admbnda_adm3_rtsd_20220121"</span>) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reading layer `tha_admbnda_adm3_rtsd_20220121' from data source 
+  `C:\Users\Henry\Desktop\SMU Masters\2024-2025 T1\Geospatial Analytics &amp; Applications\Project\GeospatialWebsite\Take-Home_Ex\Take-Home_Ex_01\data\tha_adm_rtsd_itos_20210121_shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 7425 features and 22 fields
+Geometry type: MULTIPOLYGON
+Dimension:     XY
+Bounding box:  xmin: 97.34336 ymin: 5.613038 xmax: 105.637 ymax: 20.46507
+Geodetic CRS:  WGS 84</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(th_bound_l3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 7,425
+Columns: 23
+$ Shape_Leng &lt;dbl&gt; 0.04769920, 0.03355050, 0.01728931, 0.01904576, 0.01523190,…
+$ Shape_Area &lt;dbl&gt; 1.284175e-04, 6.068479e-05, 1.769761e-05, 1.920433e-05, 1.2…
+$ ADM3_EN    &lt;chr&gt; "Phraborom Maharatchawang", "Wang Burapha Phirom", "Wat Rat…
+$ ADM3_TH    &lt;chr&gt; "พระบรมมหาราชวัง", "วังบูรพาภิรมย์", "วัดราชบพิธ", "สำราญราษฎร์", "…
+$ ADM3_PCODE &lt;chr&gt; "TH100101", "TH100102", "TH100103", "TH100104", "TH100105",…
+$ ADM3_REF   &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ ADM3ALT1EN &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ ADM3ALT2EN &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ ADM3ALT1TH &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ ADM3ALT2TH &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ ADM2_EN    &lt;chr&gt; "Phra Nakhon", "Phra Nakhon", "Phra Nakhon", "Phra Nakhon",…
+$ ADM2_TH    &lt;chr&gt; "พระนคร", "พระนคร", "พระนคร", "พระนคร", "พระนคร", "พระนคร",…
+$ ADM2_PCODE &lt;chr&gt; "TH1001", "TH1001", "TH1001", "TH1001", "TH1001", "TH1001",…
+$ ADM1_EN    &lt;chr&gt; "Bangkok", "Bangkok", "Bangkok", "Bangkok", "Bangkok", "Ban…
+$ ADM1_TH    &lt;chr&gt; "กรุงเทพมหานคร", "กรุงเทพมหานคร", "กรุงเทพมหานคร", "กรุงเทพมหาน…
+$ ADM1_PCODE &lt;chr&gt; "TH10", "TH10", "TH10", "TH10", "TH10", "TH10", "TH10", "TH…
+$ ADM0_EN    &lt;chr&gt; "Thailand", "Thailand", "Thailand", "Thailand", "Thailand",…
+$ ADM0_TH    &lt;chr&gt; "ประเทศไทย", "ประเทศไทย", "ประเทศไทย", "ประเทศไทย", "ประเทศ…
+$ ADM0_PCODE &lt;chr&gt; "TH", "TH", "TH", "TH", "TH", "TH", "TH", "TH", "TH", "TH",…
+$ date       &lt;date&gt; 2019-02-18, 2019-02-18, 2019-02-18, 2019-02-18, 2019-02-18…
+$ validOn    &lt;date&gt; 2022-01-22, 2022-01-22, 2022-01-22, 2022-01-22, 2022-01-22…
+$ validTo    &lt;date&gt; -001-11-30, -001-11-30, -001-11-30, -001-11-30, -001-11-30…
+$ geometry   &lt;MULTIPOLYGON [°]&gt; MULTIPOLYGON (((100.4945 13..., MULTIPOLYGON (…</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize the boundaries</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">st_geometry</span>(th_bound_l3))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
 </section>
+<section id="basic-preprocessing" class="level3">
+<h3 class="anchored" data-anchor-id="basic-preprocessing">1.2.4 Basic Preprocessing</h3>
+<p>From a quick look of the various datasets, it is clear that preprocessing is required in order to filter the datasets to:<br>
+1. Focus on the study area (Bangkok Metropolitan Region)<br>
+2. Work with smaller data to better manage R session memory handling</p>
+<p>Other geospatial preprocessing steps will also be taken accordingly. Once done, these datasets will be saved as RDS files for easy retrieval.</p>
+<section id="processing-thailand-road-accident" class="level4">
+<h4 class="anchored" data-anchor-id="processing-thailand-road-accident">1.2.4.1 Processing Thailand Road Accident</h4>
+<p>The Thailand road accident dataset will be processed to: - remove blanks/na from longitude/latitude (mitigate errors when converting into sf object) - filtered to Bangkok Metropolitan Region - convert tibble dataframe to sf dataframe - project to Thailand coordinate reference system for alignment and visualization</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Transform Thailand Road Accident data</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>ra_tbl_flt <span class="ot">&lt;-</span> ra_tbl <span class="sc">%&gt;%</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(longitude) <span class="sc">&amp;</span> longitude <span class="sc">!=</span> <span class="st">""</span>, <span class="sc">!</span><span class="fu">is.na</span>(latitude) <span class="sc">&amp;</span> latitude <span class="sc">!=</span> <span class="st">""</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(province_en <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"Bangkok"</span>, <span class="st">"Nonthaburi"</span>, <span class="st">"Pathum Thani"</span>, </span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>                              <span class="st">"Samut Prakan"</span>, <span class="st">"Samut Sakhon"</span>, <span class="st">"Nakhon Pathom"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_as_sf</span>(<span class="at">coords =</span> <span class="fu">c</span>(<span class="st">"longitude"</span>, <span class="st">"latitude"</span>), <span class="at">crs =</span> <span class="dv">4326</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">32647</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The processed data is then exported as RDS.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Export to processed sub-folder as RDS</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds</span>(ra_tbl_flt, <span class="st">'data/processed/th_acc.rds'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="processing-thailand-subnational-administrative-boundaries" class="level4">
+<h4 class="anchored" data-anchor-id="processing-thailand-subnational-administrative-boundaries">1.2.4.2 Processing Thailand Subnational Administrative Boundaries</h4>
+<p>While level 1 was sufficient to filter the boundary to the study area, level 3 was selected for the flexibility purposes.</p>
+<p>The level 3 Thailand Subnational Administrative Boundaries will be processed based to: - filtered to Bangkok Metropolitan Region - project to Thailand coordinate reference system for alignment and visualization</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter Thai boundary for only Bangkok Metropolitan Region</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>th_bound_l3_flt <span class="ot">&lt;-</span> th_bound_l3 <span class="sc">%&gt;%</span></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(ADM1_EN <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"Bangkok"</span>, <span class="st">"Nonthaburi"</span>, <span class="st">"Pathum Thani"</span>, </span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>                              <span class="st">"Samut Prakan"</span>, <span class="st">"Samut Sakhon"</span>, <span class="st">"Nakhon Pathom"</span>))<span class="sc">%&gt;%</span></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">32647</span>) </span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(th_bound_l3_flt)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 477
+Columns: 23
+$ Shape_Leng &lt;dbl&gt; 0.04769920, 0.03355050, 0.01728931, 0.01904576, 0.01523190,…
+$ Shape_Area &lt;dbl&gt; 1.284175e-04, 6.068479e-05, 1.769761e-05, 1.920433e-05, 1.2…
+$ ADM3_EN    &lt;chr&gt; "Phraborom Maharatchawang", "Wang Burapha Phirom", "Wat Rat…
+$ ADM3_TH    &lt;chr&gt; "พระบรมมหาราชวัง", "วังบูรพาภิรมย์", "วัดราชบพิธ", "สำราญราษฎร์", "…
+$ ADM3_PCODE &lt;chr&gt; "TH100101", "TH100102", "TH100103", "TH100104", "TH100105",…
+$ ADM3_REF   &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ ADM3ALT1EN &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ ADM3ALT2EN &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ ADM3ALT1TH &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ ADM3ALT2TH &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ ADM2_EN    &lt;chr&gt; "Phra Nakhon", "Phra Nakhon", "Phra Nakhon", "Phra Nakhon",…
+$ ADM2_TH    &lt;chr&gt; "พระนคร", "พระนคร", "พระนคร", "พระนคร", "พระนคร", "พระนคร",…
+$ ADM2_PCODE &lt;chr&gt; "TH1001", "TH1001", "TH1001", "TH1001", "TH1001", "TH1001",…
+$ ADM1_EN    &lt;chr&gt; "Bangkok", "Bangkok", "Bangkok", "Bangkok", "Bangkok", "Ban…
+$ ADM1_TH    &lt;chr&gt; "กรุงเทพมหานคร", "กรุงเทพมหานคร", "กรุงเทพมหานคร", "กรุงเทพมหาน…
+$ ADM1_PCODE &lt;chr&gt; "TH10", "TH10", "TH10", "TH10", "TH10", "TH10", "TH10", "TH…
+$ ADM0_EN    &lt;chr&gt; "Thailand", "Thailand", "Thailand", "Thailand", "Thailand",…
+$ ADM0_TH    &lt;chr&gt; "ประเทศไทย", "ประเทศไทย", "ประเทศไทย", "ประเทศไทย", "ประเทศ…
+$ ADM0_PCODE &lt;chr&gt; "TH", "TH", "TH", "TH", "TH", "TH", "TH", "TH", "TH", "TH",…
+$ date       &lt;date&gt; 2019-02-18, 2019-02-18, 2019-02-18, 2019-02-18, 2019-02-18…
+$ validOn    &lt;date&gt; 2022-01-22, 2022-01-22, 2022-01-22, 2022-01-22, 2022-01-22…
+$ validTo    &lt;date&gt; -001-11-30, -001-11-30, -001-11-30, -001-11-30, -001-11-30…
+$ geometry   &lt;MULTIPOLYGON [m]&gt; MULTIPOLYGON (((661579 1521..., MULTIPOLYGON (…</code></pre>
+</div>
+</div>
+<p>The processed data is again exported as RDS.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Export to processed sub-folder as RDS</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds</span>(th_bound_l3_flt, <span class="st">'data/processed/th_bound_l3.rds'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="processing-thailand-openstreet-map-data" class="level4">
+<h4 class="anchored" data-anchor-id="processing-thailand-openstreet-map-data">1.2.4.1 Processing Thailand Openstreet Map Data</h4>
+<p>Given the large openstreet map dataset (~2.7m objects), the dataset needs to be filtered prior to performing <code>st_intersects</code>.<br>
+This will be done by selecting the relevant highway attributes. Relevant highway attributes are defined following the <a href="https://wiki.openstreetmap.org/wiki/WikiProject_Thailand#Default_Access_Restrictions">default access restrictions</a> based on the Road Traffic Act, 1979 for various different vehicle types.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check types of highway in Openstreet Map data</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(ra_tbl_flt<span class="sc">$</span>vehicle_type)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+        4-wheel pickup truck                6-wheel truck 
+                        3522                          472 
+            7-10-wheel truck                      bicycle 
+                         389                           18 
+     large passenger vehicle     large truck with trailer 
+                          76                          998 
+                  motorcycle           motorized tricycle 
+                        1687                           14 
+                       other       passenger pickup truck 
+                        1088                           63 
+                  pedestrian        private/passenger car 
+                          18                         4486 
+tractor/agricultural vehicle                          van 
+                           1                          154 </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check types of highway in Openstreet Map data</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(th_road<span class="sc">$</span>highway)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+     abandoned        barrier      bridleway         busway   construction 
+             5              1              6             35           1008 
+      corridor       cycleway         escape        footway  living_street 
+            77            961              3          55110             35 
+      motorway  motorway_link          parth           path          paved 
+          2330           2122              1          26824              1 
+    pedestrian        primary   primary_link       proposed        raceway 
+           847          15026           6690             17             53 
+   residential           road      secondary secondary_link        service 
+       1323154            730          26754           5063         896514 
+         steps       tertiary  tertiary_link          track          trunk 
+          5330          34507           1371         254299          14433 
+    trunk_link   unclassified 
+          9304         109979 </code></pre>
+</div>
+</div>
+<p>Given that accidents involving pedestrian and bicycle etc are proportionately smaller than those involving motorcar and motorcycle, the openstreet map data will be filtered to include relevant highway attribute for the latter vehicle types.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter Thai Openstreet Map data by highway types </span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>th_road_flt <span class="ot">&lt;-</span> th_road <span class="sc">%&gt;%</span></span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(highway <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">'motorway'</span>, <span class="st">'trunk'</span>, <span class="st">'primary'</span>, <span class="st">'secondary'</span>, <span class="st">'tertiary'</span>, <span class="st">'unclassified'</span>, <span class="st">'residential'</span>,  <span class="co"># Roads</span></span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>                        <span class="st">'motorway_link'</span>, <span class="st">'trunk_link'</span>, <span class="st">'primary_link'</span>, <span class="st">'secondary_link'</span>, <span class="st">'tertiary_link'</span>,  <span class="co"># Link Roads</span></span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>                        <span class="st">'living_street'</span>, <span class="st">'road'</span>, <span class="st">'path'</span></span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>                        ) </span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>         ) <span class="sc">%&gt;%</span></span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_set_crs</span>(., <span class="dv">4326</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">32647</span>) </span>
+<span id="cb39-10"><a href="#cb39-10" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(th_road_flt)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 1,578,322
+Columns: 15
+$ name       &lt;chr&gt; "ถนนฉลองกรุง", "ซอยฉลองกรุง 1/1", NA, "ถนนฉลองกรุง", "ถนนเอราวั…
+$ name_en    &lt;chr&gt; "Chalong Krung Road", "Soi Chalong Krung 1/1", NA, "Chalong…
+$ highway    &lt;chr&gt; "secondary", "residential", "secondary_link", "secondary", …
+$ surface    &lt;chr&gt; "paved", NA, NA, "concrete", NA, "unpaved", NA, NA, NA, NA,…
+$ smoothness &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ width      &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ lanes      &lt;chr&gt; NA, NA, NA, "2", NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA…
+$ oneway     &lt;chr&gt; "yes", NA, "yes", "yes", NA, NA, NA, NA, NA, NA, NA, NA, NA…
+$ bridge     &lt;chr&gt; NA, NA, NA, "yes", NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, …
+$ layer      &lt;chr&gt; NA, NA, NA, "1", NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA…
+$ source     &lt;chr&gt; NA, NA, NA, "Bing", NA, "GPS", NA, "digitalglobe", "digital…
+$ name_th    &lt;chr&gt; "ถนนฉลองกรุง", "ซอยฉลองกรุง 1/1", NA, "ถนนฉลองกรุง", "ถนนเอราวั…
+$ osm_id     &lt;dbl&gt; 1125681229, 594401607, 472283206, 116847248, 378672881, 123…
+$ osm_type   &lt;chr&gt; "ways_line", "ways_line", "ways_line", "ways_line", "ways_l…
+$ geometry   &lt;MULTILINESTRING [m]&gt; MULTILINESTRING ((693686.1 ..., MULTILINEST…</code></pre>
+</div>
+</div>
+<p><code>st_intersects</code> is then used to return openstreet map objects that are within the study area.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="co"># # Use st_union to get overall study area boundary</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>th_bound_union <span class="ot">&lt;-</span> th_bound_l3_flt <span class="sc">%&gt;%</span></span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_union</span>()</span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Use st_intersects to get roads within the study area</span></span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>th_roads_intersects <span class="ot">&lt;-</span> <span class="fu">st_intersects</span>(th_road_flt, th_bound_union)</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Get index mask of roads objects that intersects with study area </span></span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>roads_logical <span class="ot">&lt;-</span> <span class="fu">lengths</span>(th_roads_intersects) <span class="sc">&gt;</span> <span class="dv">0</span></span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter openstreet map with the index mask</span></span>
+<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a>th_roads_bmr <span class="ot">&lt;-</span> th_road_flt[roads_logical, ]</span>
+<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-14"><a href="#cb41-14" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(th_roads_bmr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 306,168
+Columns: 15
+$ name       &lt;chr&gt; "ถนนฉลองกรุง", "ซอยฉลองกรุง 1/1", NA, "ถนนฉลองกรุง", "ถนนเอราวั…
+$ name_en    &lt;chr&gt; "Chalong Krung Road", "Soi Chalong Krung 1/1", NA, "Chalong…
+$ highway    &lt;chr&gt; "secondary", "residential", "secondary_link", "secondary", …
+$ surface    &lt;chr&gt; "paved", NA, NA, "concrete", NA, NA, NA, NA, NA, NA, NA, NA…
+$ smoothness &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ width      &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ lanes      &lt;chr&gt; NA, NA, NA, "2", NA, NA, NA, NA, NA, NA, "3", NA, NA, NA, N…
+$ oneway     &lt;chr&gt; "yes", NA, "yes", "yes", NA, NA, NA, NA, NA, NA, "yes", NA,…
+$ bridge     &lt;chr&gt; NA, NA, NA, "yes", NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, …
+$ layer      &lt;chr&gt; NA, NA, NA, "1", NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA…
+$ source     &lt;chr&gt; NA, NA, NA, "Bing", NA, NA, NA, "Bing", NA, NA, NA, NA, NA,…
+$ name_th    &lt;chr&gt; "ถนนฉลองกรุง", "ซอยฉลองกรุง 1/1", NA, "ถนนฉลองกรุง", "ถนนเอราวั…
+$ osm_id     &lt;dbl&gt; 1125681229, 594401607, 472283206, 116847248, 378672881, 694…
+$ osm_type   &lt;chr&gt; "ways_line", "ways_line", "ways_line", "ways_line", "ways_l…
+$ geometry   &lt;MULTILINESTRING [m]&gt; MULTILINESTRING ((693686.1 ..., MULTILINEST…</code></pre>
+</div>
+</div>
+<p>The processed openstreet map dataset is then exported in a similar fashion</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Export to processed sub-folder as RDS</span></span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds</span>(th_roads_bmr, <span class="st">'data/processed/th_osm.rds'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+</section>
+</section>
+<section id="exploratory-data-analysis" class="level1">
+<h1>2. Exploratory Data Analysis</h1>
+</section>
+<section id="setting-up-environtment-from-processed-datasets" class="level1">
+<h1>2.1 Setting Up Environtment from Processed Datasets</h1>
+<p>First, we clear the R console, then load in the processed datasets. This is a suitable starting point to bypass the long loading/processing time of the various large datasets.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Clear R console</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span>(<span class="at">list =</span> <span class="fu">ls</span>(<span class="at">all.names =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true">Accidents</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false">Administrative Boundary</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-3" role="tab" aria-controls="tabset-2-3" aria-selected="false">Openstreet Map</a></li></ul>
+<div class="tab-content">
+<div id="tabset-2-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-2-1-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load data</span></span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>ra_sf <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/processed/th_acc.rds'</span>)</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Check data</span></span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(ra_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 12,986
+Columns: 17
+$ acc_code                    &lt;dbl&gt; 571882, 600001, 605043, 629691, 571887, 59…
+$ incident_datetime           &lt;dttm&gt; 2019-01-01 02:25:00, 2019-01-01 03:00:00,…
+$ report_datetime             &lt;dttm&gt; 2019-01-02 17:32:00, 2019-01-05 10:33:00,…
+$ province_th                 &lt;chr&gt; "นครปฐม", "นนทบุรี", "สมุทรปราการ", "กรุงเทพมห…
+$ province_en                 &lt;chr&gt; "Nakhon Pathom", "Nonthaburi", "Samut Prak…
+$ agency                      &lt;chr&gt; "department of rural roads", "department o…
+$ route                       &lt;chr&gt; "แยกทางหลวงหมายเลข 4 (กม.ที่ 51+920) - บ้านวัด…
+$ vehicle_type                &lt;chr&gt; "motorcycle", "private/passenger car", "pr…
+$ presumed_cause              &lt;chr&gt; "speeding", "speeding", "running red light…
+$ accident_type               &lt;chr&gt; "rollover/fallen on straight road", "rollo…
+$ number_of_vehicles_involved &lt;dbl&gt; 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 2, 3, 2, …
+$ number_of_fatalities        &lt;dbl&gt; 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, …
+$ number_of_injuries          &lt;dbl&gt; 2, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, …
+$ weather_condition           &lt;chr&gt; "clear", "clear", "clear", "clear", "clear…
+$ road_description            &lt;chr&gt; "straight road", "straight road", "other",…
+$ slope_description           &lt;chr&gt; "no slope", "no slope", "other", "other", …
+$ geometry                    &lt;POINT [m]&gt; POINT (627012.3 1533381), POINT (655…</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check crs</span></span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(ra_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Coordinate Reference System:
+  User input: EPSG:32647 
+  wkt:
+PROJCRS["WGS 84 / UTM zone 47N",
+    BASEGEOGCRS["WGS 84",
+        ENSEMBLE["World Geodetic System 1984 ensemble",
+            MEMBER["World Geodetic System 1984 (Transit)"],
+            MEMBER["World Geodetic System 1984 (G730)"],
+            MEMBER["World Geodetic System 1984 (G873)"],
+            MEMBER["World Geodetic System 1984 (G1150)"],
+            MEMBER["World Geodetic System 1984 (G1674)"],
+            MEMBER["World Geodetic System 1984 (G1762)"],
+            MEMBER["World Geodetic System 1984 (G2139)"],
+            ELLIPSOID["WGS 84",6378137,298.257223563,
+                LENGTHUNIT["metre",1]],
+            ENSEMBLEACCURACY[2.0]],
+        PRIMEM["Greenwich",0,
+            ANGLEUNIT["degree",0.0174532925199433]],
+        ID["EPSG",4326]],
+    CONVERSION["UTM zone 47N",
+        METHOD["Transverse Mercator",
+            ID["EPSG",9807]],
+        PARAMETER["Latitude of natural origin",0,
+            ANGLEUNIT["degree",0.0174532925199433],
+            ID["EPSG",8801]],
+        PARAMETER["Longitude of natural origin",99,
+            ANGLEUNIT["degree",0.0174532925199433],
+            ID["EPSG",8802]],
+        PARAMETER["Scale factor at natural origin",0.9996,
+            SCALEUNIT["unity",1],
+            ID["EPSG",8805]],
+        PARAMETER["False easting",500000,
+            LENGTHUNIT["metre",1],
+            ID["EPSG",8806]],
+        PARAMETER["False northing",0,
+            LENGTHUNIT["metre",1],
+            ID["EPSG",8807]]],
+    CS[Cartesian,2],
+        AXIS["(E)",east,
+            ORDER[1],
+            LENGTHUNIT["metre",1]],
+        AXIS["(N)",north,
+            ORDER[2],
+            LENGTHUNIT["metre",1]],
+    USAGE[
+        SCOPE["Navigation and medium accuracy spatial referencing."],
+        AREA["Between 96°E and 102°E, northern hemisphere between equator and 84°N, onshore and offshore. China. Indonesia. Laos. Malaysia - West Malaysia. Mongolia. Myanmar (Burma). Russian Federation. Thailand."],
+        BBOX[0,96,84,102]],
+    ID["EPSG",32647]]</code></pre>
+</div>
+</div>
+</div>
+<div id="tabset-2-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-2-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load data</span></span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>th_bound_sf <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/processed/th_bound_l3.rds'</span>)</span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Check data</span></span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(th_bound_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 477
+Columns: 23
+$ Shape_Leng &lt;dbl&gt; 0.04769920, 0.03355050, 0.01728931, 0.01904576, 0.01523190,…
+$ Shape_Area &lt;dbl&gt; 1.284175e-04, 6.068479e-05, 1.769761e-05, 1.920433e-05, 1.2…
+$ ADM3_EN    &lt;chr&gt; "Phraborom Maharatchawang", "Wang Burapha Phirom", "Wat Rat…
+$ ADM3_TH    &lt;chr&gt; "พระบรมมหาราชวัง", "วังบูรพาภิรมย์", "วัดราชบพิธ", "สำราญราษฎร์", "…
+$ ADM3_PCODE &lt;chr&gt; "TH100101", "TH100102", "TH100103", "TH100104", "TH100105",…
+$ ADM3_REF   &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ ADM3ALT1EN &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ ADM3ALT2EN &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ ADM3ALT1TH &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ ADM3ALT2TH &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ ADM2_EN    &lt;chr&gt; "Phra Nakhon", "Phra Nakhon", "Phra Nakhon", "Phra Nakhon",…
+$ ADM2_TH    &lt;chr&gt; "พระนคร", "พระนคร", "พระนคร", "พระนคร", "พระนคร", "พระนคร",…
+$ ADM2_PCODE &lt;chr&gt; "TH1001", "TH1001", "TH1001", "TH1001", "TH1001", "TH1001",…
+$ ADM1_EN    &lt;chr&gt; "Bangkok", "Bangkok", "Bangkok", "Bangkok", "Bangkok", "Ban…
+$ ADM1_TH    &lt;chr&gt; "กรุงเทพมหานคร", "กรุงเทพมหานคร", "กรุงเทพมหานคร", "กรุงเทพมหาน…
+$ ADM1_PCODE &lt;chr&gt; "TH10", "TH10", "TH10", "TH10", "TH10", "TH10", "TH10", "TH…
+$ ADM0_EN    &lt;chr&gt; "Thailand", "Thailand", "Thailand", "Thailand", "Thailand",…
+$ ADM0_TH    &lt;chr&gt; "ประเทศไทย", "ประเทศไทย", "ประเทศไทย", "ประเทศไทย", "ประเทศ…
+$ ADM0_PCODE &lt;chr&gt; "TH", "TH", "TH", "TH", "TH", "TH", "TH", "TH", "TH", "TH",…
+$ date       &lt;date&gt; 2019-02-18, 2019-02-18, 2019-02-18, 2019-02-18, 2019-02-18…
+$ validOn    &lt;date&gt; 2022-01-22, 2022-01-22, 2022-01-22, 2022-01-22, 2022-01-22…
+$ validTo    &lt;date&gt; -001-11-30, -001-11-30, -001-11-30, -001-11-30, -001-11-30…
+$ geometry   &lt;MULTIPOLYGON [m]&gt; MULTIPOLYGON (((661579 1521..., MULTIPOLYGON (…</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check crs</span></span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(th_bound_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Coordinate Reference System:
+  User input: EPSG:32647 
+  wkt:
+PROJCRS["WGS 84 / UTM zone 47N",
+    BASEGEOGCRS["WGS 84",
+        ENSEMBLE["World Geodetic System 1984 ensemble",
+            MEMBER["World Geodetic System 1984 (Transit)"],
+            MEMBER["World Geodetic System 1984 (G730)"],
+            MEMBER["World Geodetic System 1984 (G873)"],
+            MEMBER["World Geodetic System 1984 (G1150)"],
+            MEMBER["World Geodetic System 1984 (G1674)"],
+            MEMBER["World Geodetic System 1984 (G1762)"],
+            MEMBER["World Geodetic System 1984 (G2139)"],
+            ELLIPSOID["WGS 84",6378137,298.257223563,
+                LENGTHUNIT["metre",1]],
+            ENSEMBLEACCURACY[2.0]],
+        PRIMEM["Greenwich",0,
+            ANGLEUNIT["degree",0.0174532925199433]],
+        ID["EPSG",4326]],
+    CONVERSION["UTM zone 47N",
+        METHOD["Transverse Mercator",
+            ID["EPSG",9807]],
+        PARAMETER["Latitude of natural origin",0,
+            ANGLEUNIT["degree",0.0174532925199433],
+            ID["EPSG",8801]],
+        PARAMETER["Longitude of natural origin",99,
+            ANGLEUNIT["degree",0.0174532925199433],
+            ID["EPSG",8802]],
+        PARAMETER["Scale factor at natural origin",0.9996,
+            SCALEUNIT["unity",1],
+            ID["EPSG",8805]],
+        PARAMETER["False easting",500000,
+            LENGTHUNIT["metre",1],
+            ID["EPSG",8806]],
+        PARAMETER["False northing",0,
+            LENGTHUNIT["metre",1],
+            ID["EPSG",8807]]],
+    CS[Cartesian,2],
+        AXIS["(E)",east,
+            ORDER[1],
+            LENGTHUNIT["metre",1]],
+        AXIS["(N)",north,
+            ORDER[2],
+            LENGTHUNIT["metre",1]],
+    USAGE[
+        SCOPE["Navigation and medium accuracy spatial referencing."],
+        AREA["Between 96°E and 102°E, northern hemisphere between equator and 84°N, onshore and offshore. China. Indonesia. Laos. Malaysia - West Malaysia. Mongolia. Myanmar (Burma). Russian Federation. Thailand."],
+        BBOX[0,96,84,102]],
+    ID["EPSG",32647]]</code></pre>
+</div>
+</div>
+</div>
+<div id="tabset-2-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-3-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load data</span></span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>th_osm_sf <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/processed/th_osm.rds'</span>)</span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Check data</span></span>
+<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(th_osm_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 306,168
+Columns: 15
+$ name       &lt;chr&gt; "ถนนฉลองกรุง", "ซอยฉลองกรุง 1/1", NA, "ถนนฉลองกรุง", "ถนนเอราวั…
+$ name_en    &lt;chr&gt; "Chalong Krung Road", "Soi Chalong Krung 1/1", NA, "Chalong…
+$ highway    &lt;chr&gt; "secondary", "residential", "secondary_link", "secondary", …
+$ surface    &lt;chr&gt; "paved", NA, NA, "concrete", NA, NA, NA, NA, NA, NA, NA, NA…
+$ smoothness &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ width      &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ lanes      &lt;chr&gt; NA, NA, NA, "2", NA, NA, NA, NA, NA, NA, "3", NA, NA, NA, N…
+$ oneway     &lt;chr&gt; "yes", NA, "yes", "yes", NA, NA, NA, NA, NA, NA, "yes", NA,…
+$ bridge     &lt;chr&gt; NA, NA, NA, "yes", NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, …
+$ layer      &lt;chr&gt; NA, NA, NA, "1", NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA…
+$ source     &lt;chr&gt; NA, NA, NA, "Bing", NA, NA, NA, "Bing", NA, NA, NA, NA, NA,…
+$ name_th    &lt;chr&gt; "ถนนฉลองกรุง", "ซอยฉลองกรุง 1/1", NA, "ถนนฉลองกรุง", "ถนนเอราวั…
+$ osm_id     &lt;dbl&gt; 1125681229, 594401607, 472283206, 116847248, 378672881, 694…
+$ osm_type   &lt;chr&gt; "ways_line", "ways_line", "ways_line", "ways_line", "ways_l…
+$ geometry   &lt;MULTILINESTRING [m]&gt; MULTILINESTRING ((693686.1 ..., MULTILINEST…</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check crs</span></span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(th_osm_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Coordinate Reference System:
+  User input: EPSG:32647 
+  wkt:
+PROJCRS["WGS 84 / UTM zone 47N",
+    BASEGEOGCRS["WGS 84",
+        ENSEMBLE["World Geodetic System 1984 ensemble",
+            MEMBER["World Geodetic System 1984 (Transit)"],
+            MEMBER["World Geodetic System 1984 (G730)"],
+            MEMBER["World Geodetic System 1984 (G873)"],
+            MEMBER["World Geodetic System 1984 (G1150)"],
+            MEMBER["World Geodetic System 1984 (G1674)"],
+            MEMBER["World Geodetic System 1984 (G1762)"],
+            MEMBER["World Geodetic System 1984 (G2139)"],
+            ELLIPSOID["WGS 84",6378137,298.257223563,
+                LENGTHUNIT["metre",1]],
+            ENSEMBLEACCURACY[2.0]],
+        PRIMEM["Greenwich",0,
+            ANGLEUNIT["degree",0.0174532925199433]],
+        ID["EPSG",4326]],
+    CONVERSION["UTM zone 47N",
+        METHOD["Transverse Mercator",
+            ID["EPSG",9807]],
+        PARAMETER["Latitude of natural origin",0,
+            ANGLEUNIT["degree",0.0174532925199433],
+            ID["EPSG",8801]],
+        PARAMETER["Longitude of natural origin",99,
+            ANGLEUNIT["degree",0.0174532925199433],
+            ID["EPSG",8802]],
+        PARAMETER["Scale factor at natural origin",0.9996,
+            SCALEUNIT["unity",1],
+            ID["EPSG",8805]],
+        PARAMETER["False easting",500000,
+            LENGTHUNIT["metre",1],
+            ID["EPSG",8806]],
+        PARAMETER["False northing",0,
+            LENGTHUNIT["metre",1],
+            ID["EPSG",8807]]],
+    CS[Cartesian,2],
+        AXIS["(E)",east,
+            ORDER[1],
+            LENGTHUNIT["metre",1]],
+        AXIS["(N)",north,
+            ORDER[2],
+            LENGTHUNIT["metre",1]],
+    USAGE[
+        SCOPE["Navigation and medium accuracy spatial referencing."],
+        AREA["Between 96°E and 102°E, northern hemisphere between equator and 84°N, onshore and offshore. China. Indonesia. Laos. Malaysia - West Malaysia. Mongolia. Myanmar (Burma). Russian Federation. Thailand."],
+        BBOX[0,96,84,102]],
+    ID["EPSG",32647]]</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<section id="microsoft-power-bi-visualization" class="level2">
+<h2 class="anchored" data-anchor-id="microsoft-power-bi-visualization">2.2 Microsoft Power Bi Visualization</h2>
+<div style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%;">
+<p><iframe title="Geospatial TakeHome Ex01" src="https://app.powerbi.com/view?r=eyJrIjoiZmMxMTNjMzEtYzhmMy00NTgwLTlkMjctODE1ZTA5YjNmN2E3IiwidCI6ImRmNGU4MzA3LWRjNjQtNDcyYS1iNGI1LWE2ZGQ2YmExMTU2NiIsImMiOjEwfQ%3D%3D" frameborder="0" allowfullscreen="true" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"> </iframe></p>
+</div>
+</section>
+</section>
+<section id="spatial-point-pattern-analysis" class="level1">
+<h1>3. Spatial Point Pattern Analysis</h1>
+<section id="first-order-spatial-point-pattern-analysis" class="level2">
+<h2 class="anchored" data-anchor-id="first-order-spatial-point-pattern-analysis">3.1 First-Order Spatial Point Pattern Analysis</h2>
+<section id="section" class="level3">
+<h3 class="anchored" data-anchor-id="section">3.1.1</h3>
+</section>
+</section>
+<section id="second-order-spatial-point-pattern-analysis" class="level2">
+<h2 class="anchored" data-anchor-id="second-order-spatial-point-pattern-analysis">3.2 Second-Order Spatial Point Pattern Analysis</h2>
+<section id="section-1" class="level3">
+<h3 class="anchored" data-anchor-id="section-1">3.2.1</h3>
+</section>
+</section>
+<section id="section-2" class="level2">
+<h2 class="anchored" data-anchor-id="section-2">3.3</h2>
+</section>
+</section>
+<section id="network-spatial-point-pattern-analysis" class="level1">
+<h1>4 Network Spatial Point Pattern Analysis</h1>
+</section>
+<section id="temporal-network-spatial-point-patterns-analysis" class="level1">
+<h1>5 Temporal Network Spatial Point Patterns Analysis</h1>
+</section>
+<section id="conclusion" class="level1">
+<h1>6. Conclusion</h1>
+
+
 </section>
 
 </main> <!-- /main -->

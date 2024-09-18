@@ -30,7 +30,6 @@ Punggol_CC - point feature geospatial dataset containing location of childcare c
 pacman::p_load(sf, spNetwork, tmap, tidyverse)
 ```
 
-
 ### 7.1.2 Importing spatial data
 
 ```{r}
@@ -115,7 +114,6 @@ tm_shape(lixels) +
   tm_dots(size =0.01)
 tmap_mode("plot")
 ```
-
 
 ### 7.3.3 Perform NKDE
 

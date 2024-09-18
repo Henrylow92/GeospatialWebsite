@@ -23,6 +23,10 @@ Focusing in the Bangkok Metropolitan Region (BMR), Spatial Point Patterns Analys
 - To conduct detailed spatial analysis of road traffic accidents using appropriate Network Spatial Point Patterns Analysis methods.\
 - To conduct detailed spatio-temporal analysis of road traffic accidents using appropriate Temporal Network Spatial Point Patterns Analysis methods.
 
+# Study Area
+
+The study area will be Bangkok Metropolitan Region, which is defined [here](https://en.wikipedia.org/wiki/Bangkok_Metropolitan_Region).
+
 # Data Sources
 
 *(saved under 'data' folder)*\
@@ -35,20 +39,19 @@ Focusing in the Bangkok Metropolitan Region (BMR), Spatial Point Patterns Analys
 ## 1.1 Loading R Packages
 
 I will be using the following R packages:\
--`sf` package to perform geospatial wrangling tasks - `tidyverse` package for reading csv files, dataframe processing tasks - `tmap` for plotting tasks
+-`sf` package to perform geospatial wrangling tasks \
+- `spatstat` package to perform 1st- and 2nd-order spatial point patterns analysis \
+- `spNetwork` package to perform network kernel density estimation (NKDE) and temporal network kernel density estimation \
+- `tidyverse` package for reading csv files, dataframe processing tasks \
+- `tmap` package for plotting tasks \
 
 ```{r}
-pacman::p_load(tidyverse, sf, tmap)
+pacman::p_load(tidyverse, spatstat, sf, spNetwork, tmap)
 ```
 
 ## 1.2 Loading Datasets
 
-```{r}
-# Load 2019-2020 Road Accidents Data
-ra_tbl <- read_csv('data/thai_road_accident_2019_2022.csv')
-# Check data
-glimpse(ra_tbl)
-```
+### 1.2.1 Thailand Road Accidents Data
 
 ```{r}
 # Load 2019-2020 Road Accidents Data
@@ -56,6 +59,8 @@ ra_tbl <- read_csv('data/thai_road_accident_2019_2022.csv')
 # Check data
 glimpse(ra_tbl)
 ```
+
+### 1.2.2 Thailand Openstreet Map Data
 
 ```{r}
 # Load Thailand Roads from Openstreet Map
@@ -68,63 +73,253 @@ th_road <- st_read(dsn = "data/hotosm_tha_roads_lines_shp/", layer = "hotosm_tha
 head(th_road, n=5)
 ```
 
+### 1.2.3 Thailand Subnational Administrative Boundaries
+
+Based on the description from HDX, there are a few administrative boundaries:\
+- Level 0: Country\
+- Level 1: Province\
+- Level 2: District\
+- Level 3: Sub-District, Tambon
+
+While the dataset contains other `shp` files, the focus will be on those levels.
+
+::: panel-tabset
+# Level 0
+
 ```{r}
 # Load Thailand Country from HDX
 th_bound_l0 <- st_read(dsn = "data/tha_adm_rtsd_itos_20210121_shp/", layer = "tha_admbnda_adm0_rtsd_20220121")
 glimpse(th_bound_l0)
+
+# Visualize the boundaries
 plot(st_geometry(th_bound_l0))
 ```
+
+# Level 1
 
 ```{r}
 # Load Thailand Province from HDX
 th_bound_l1 <- st_read(dsn = "data/tha_adm_rtsd_itos_20210121_shp/", layer = "tha_admbnda_adm1_rtsd_20220121")
 glimpse(th_bound_l1)
+
+# Visualize the boundaries
 plot(st_geometry(th_bound_l1))
 ```
 
+# Level 2
+
 ```{r}
 # Load Thailand Province from HDX
-th_bound_l2 <- st_read(dsn = "data/tha_adm_rtsd_itos_20210121_shp/", layer = "tha_admbnda_adm2_rtsd_20220121") %>%
-  st_transform(crs = 32647) %>%
-  filter(ADM1_EN %in% c("Bangkok", "Nonthaburi", "Pathum Thani", 
-                              "Samut Prakan", "Samut Sakhon", "Nakhon Pathom"))
+th_bound_l2 <- st_read(dsn = "data/tha_adm_rtsd_itos_20210121_shp/", layer = "tha_admbnda_adm2_rtsd_20220121") 
 glimpse(th_bound_l2)
+
+# Visualize the boundaries
 plot(st_geometry(th_bound_l2))
 ```
 
+# Level 3
+
 ```{r}
 # Load Thailand Province from HDX
-th_bound_l3 <- st_read(dsn = "data/tha_adm_rtsd_itos_20210121_shp/", layer = "tha_admbnda_adm3_rtsd_20220121") %>%
-  st_transform(crs = 32647) %>%
-  filter(ADM1_EN %in% c("Bangkok", "Nonthaburi", "Pathum Thani", 
-                              "Samut Prakan", "Samut Sakhon", "Nakhon Pathom"))
+th_bound_l3 <- st_read(dsn = "data/tha_adm_rtsd_itos_20210121_shp/", layer = "tha_admbnda_adm3_rtsd_20220121") 
 glimpse(th_bound_l3)
+
+# Visualize the boundaries
 plot(st_geometry(th_bound_l3))
 ```
+:::
+
+### 1.2.4 Basic Preprocessing
+
+From a quick look of the various datasets, it is clear that preprocessing is required in order to filter the datasets to:\
+1. Focus on the study area (Bangkok Metropolitan Region)\
+2. Work with smaller data to better manage R session memory handling
+
+Other geospatial preprocessing steps will also be taken accordingly. Once done, these datasets will be saved as RDS files for easy retrieval.
+
+#### 1.2.4.1 Processing Thailand Road Accident
+
+The Thailand road accident dataset will be processed to: - remove blanks/na from longitude/latitude (mitigate errors when converting into sf object) - filtered to Bangkok Metropolitan Region - convert tibble dataframe to sf dataframe - project to Thailand coordinate reference system for alignment and visualization
 
 ```{r}
-# Load Thailand Province from HDX
-th_bound_lall <- st_read(dsn = "data/tha_adm_rtsd_itos_20210121_shp/", layer = "tha_admbndl_admALL_rtsd_itos_20220121") %>% 
-  st_transform(crs = 32647) %>%
-  filter(admLevel == 3)
-glimpse(th_bound_lall)
-plot(st_geometry(th_bound_lall))
+# Transform Thailand Road Accident data
+ra_tbl_flt <- ra_tbl %>%
+  filter(!is.na(longitude) & longitude != "", !is.na(latitude) & latitude != "") %>%
+  filter(province_en %in% c("Bangkok", "Nonthaburi", "Pathum Thani", 
+                              "Samut Prakan", "Samut Sakhon", "Nakhon Pathom")) %>%
+  st_as_sf(coords = c("longitude", "latitude"), crs = 4326) %>%
+  st_transform(crs = 32647)
 ```
 
+The processed data is then exported as RDS.
+
 ```{r}
-# Load Thailand Province from HDX
-th_bound_lallndp <- st_read(dsn = "data/tha_adm_rtsd_itos_20210121_shp/", layer = "tha_admbndp_admALL_rtsd_itos_20220121") %>%
-  st_transform(crs = 32647) %>%
+# Export to processed sub-folder as RDS
+write_rds(ra_tbl_flt, 'data/processed/th_acc.rds')
+```
+
+#### 1.2.4.2 Processing Thailand Subnational Administrative Boundaries
+
+While level 1 was sufficient to filter the boundary to the study area, level 3 was selected for the flexibility purposes.
+
+The level 3 Thailand Subnational Administrative Boundaries will be processed based to: - filtered to Bangkok Metropolitan Region - project to Thailand coordinate reference system for alignment and visualization
+
+```{r}
+# Filter Thai boundary for only Bangkok Metropolitan Region
+th_bound_l3_flt <- th_bound_l3 %>%
   filter(ADM1_EN %in% c("Bangkok", "Nonthaburi", "Pathum Thani", 
-                              "Samut Prakan", "Samut Sakhon", "Nakhon Pathom"))
-glimpse(th_bound_lallndp)
-plot(st_geometry(th_bound_lallndp))
+                              "Samut Prakan", "Samut Sakhon", "Nakhon Pathom"))%>%
+  st_transform(crs = 32647) 
+
+glimpse(th_bound_l3_flt)
 ```
 
+The processed data is again exported as RDS.
 
 ```{r}
-th_road_nonna <- th_road %>%
-  filter(!is.na(highway), !is.na(name_en))
-plot(st_geometry(th_road_nonna))
+# Export to processed sub-folder as RDS
+write_rds(th_bound_l3_flt, 'data/processed/th_bound_l3.rds')
 ```
 
+#### 1.2.4.1 Processing Thailand Openstreet Map Data
+
+Given the large openstreet map dataset (\~2.7m objects), the dataset needs to be filtered prior to performing `st_intersects`.\
+This will be done by selecting the relevant highway attributes. Relevant highway attributes are defined following the [default access restrictions](https://wiki.openstreetmap.org/wiki/WikiProject_Thailand#Default_Access_Restrictions) based on the Road Traffic Act, 1979 for various different vehicle types.
+
+```{r}
+# Check types of highway in Openstreet Map data
+table(ra_tbl_flt$vehicle_type)
+```
+
+```{r}
+# Check types of highway in Openstreet Map data
+table(th_road$highway)
+```
+
+Given that accidents involving pedestrian and bicycle etc are proportionately smaller than those involving motorcar and motorcycle, the openstreet map data will be filtered to include relevant highway attribute for the latter vehicle types. 
+
+```{r}
+# Filter Thai Openstreet Map data by highway types 
+th_road_flt <- th_road %>%
+  filter(highway %in% c('motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'unclassified', 'residential',  # Roads
+                        'motorway_link', 'trunk_link', 'primary_link', 'secondary_link', 'tertiary_link',  # Link Roads
+                        'living_street', 'road', 'path'
+                        ) 
+         ) %>%
+  st_set_crs(., 4326) %>%
+  st_transform(crs = 32647) 
+glimpse(th_road_flt)
+```
+
+`st_intersects` is then used to return openstreet map objects that are within the study area.
+
+```{r}
+# # Use st_union to get overall study area boundary
+th_bound_union <- th_bound_l3_flt %>%
+  st_union()
+
+# Use st_intersects to get roads within the study area
+th_roads_intersects <- st_intersects(th_road_flt, th_bound_union)
+
+# Get index mask of roads objects that intersects with study area 
+roads_logical <- lengths(th_roads_intersects) > 0
+# Filter openstreet map with the index mask
+th_roads_bmr <- th_road_flt[roads_logical, ]
+
+
+glimpse(th_roads_bmr)
+```
+
+The processed openstreet map dataset is then exported in a similar fashion 
+
+```{r}
+# Export to processed sub-folder as RDS
+write_rds(th_roads_bmr, 'data/processed/th_osm.rds')
+```
+
+
+# 2. Exploratory Data Analysis
+
+## 2.1 Setting Up Environtment from Processed Datasets
+
+First, we clear the R console, then load in the processed datasets. This is a suitable starting point to bypass the long loading/processing time of the various large datasets.
+
+```{r}
+# Clear R console
+rm(list = ls(all.names = TRUE))
+```
+
+::: panel-tabset
+# Accidents 
+
+```{r}
+# Load data
+ra_sf <- read_rds('data/processed/th_acc.rds')
+
+# Check data
+glimpse(ra_sf)
+
+# Check crs
+st_crs(ra_sf)
+```
+
+# Administrative Boundary
+
+```{r}
+# Load data
+th_bound_sf <- read_rds('data/processed/th_bound_l3.rds')
+
+# Check data
+glimpse(th_bound_sf)
+
+# Check crs
+st_crs(th_bound_sf)
+```
+
+# Openstreet Map
+
+```{r}
+# Load data
+th_osm_sf <- read_rds('data/processed/th_osm.rds')
+
+# Check data
+glimpse(th_osm_sf)
+
+# Check crs
+st_crs(th_osm_sf)
+```
+
+:::
+
+## 2.2 Microsoft Power Bi Visualization
+
+<div style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%;">
+  <iframe title="Geospatial TakeHome Ex01" 
+          src="https://app.powerbi.com/view?r=eyJrIjoiZmMxMTNjMzEtYzhmMy00NTgwLTlkMjctODE1ZTA5YjNmN2E3IiwidCI6ImRmNGU4MzA3LWRjNjQtNDcyYS1iNGI1LWE2ZGQ2YmExMTU2NiIsImMiOjEwfQ%3D%3D" 
+          frameborder="0" 
+          allowFullScreen="true"
+          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+  </iframe>
+</div>
+
+# 3. Spatial Point Pattern Analysis
+
+Before any meaningful geospatial analysis can be made, we have to establish that the accidents do not occur at random.
+
+## 3.1 First-Order Spatial Point Pattern Analysis
+
+
+
+### 3.1.1
+
+## 3.2 Second-Order Spatial Point Pattern Analysis
+
+### 3.2.1
+
+## 3.3
+
+# 4 Network Spatial Point Pattern Analysis
+
+# 5 Temporal Network Spatial Point Patterns Analysis
+
+# 6. Conclusion

@@ -158,6 +158,7 @@ head(coords)
 plot(hunan$geometry, border="lightgrey")
 plot(wm_q, coords, pch = 19, cex = 0.6, add = TRUE, col= "red")
 ```
+
 ```{r}
 # Plot Rook contiguity based neighbours map
 plot(hunan$geometry, border="lightgrey")
@@ -173,8 +174,7 @@ plot(hunan$geometry, border="lightgrey", main="Rook Contiguity", cex.main = 0.7)
 plot(wm_r, coords, pch = 19, cex = 0.6, add = TRUE, col = "red")
 ```
 
-
-## 8.4 Compute Distance Based Neighbours 
+## 8.4 Compute Distance Based Neighbours
 
 Use dnearaneigh() of spdep package
 
@@ -186,6 +186,7 @@ k1 <- knn2nb(knearneigh(coords))
 k1dists <- unlist(nbdists(k1, coords, longlat = TRUE))
 summary(k1dists)
 ```
+
 ## 8.4.2 Compute fixed distance weight matrix
 
 ```{r}
@@ -193,22 +194,23 @@ summary(k1dists)
 wm_d62 <- dnearneigh(coords, 0, 62, longlat = TRUE)
 wm_d62
 ```
+
 There are 3.681818 average number of neighbours per region (324/88)
 
 ::: panel-tabset
-
 # Str method
+
 ```{r}
 # Check weight matrix
 str(wm_d62)
 ```
 
 # Table & Card method
+
 ```{r}
 # Combine table() and card() from spdep
 table(hunan$County, card(wm_d62))
 ```
-
 :::
 
 ```{r}
@@ -218,6 +220,7 @@ n_comp <- n.comp.nb(wm_d62)
 # Number of disjoint connected subgraphs
 n_comp$nc
 ```
+
 All regions are part of a single fully connected component
 
 ```{r}
@@ -242,21 +245,21 @@ plot(k1, coords, add=TRUE, col="red", length=0.08)
 plot(hunan$geometry, border="lightgrey", main="Distance link", cex.main = 0.7)
 plot(wm_d62, coords, add=TRUE, pch = 19, cex = 0.6)
 ```
-### 8.4.3 Compute adaptive distance weight matrix
 
+### 8.4.3 Compute adaptive distance weight matrix
 
 ```{r}
 # Compute adaptive distance weight matrix
 knn6 <- knn2nb(knearneigh(coords, k=6))
 knn6
 ```
+
 ```{r}
 # Check weight matrix
 str(knn6)
 ```
 
 #### 8.4.3.1 Visualize adaptive distance weight matrix
-
 
 ```{r}
 # Plot adaptive distance weight matrix
@@ -275,7 +278,6 @@ ids <- lapply(dist, function(x) 1/(x))
 ids
 ```
 
-
 ## 8.6 Compute Row-standardised Weights Matrix
 
 Use nb2listw() of spdep package
@@ -285,6 +287,7 @@ Use nb2listw() of spdep package
 rswm_q <- nb2listw(wm_q, style="W", zero.policy = TRUE)
 rswm_q
 ```
+
 ```{r}
 # Weight of first polygon's 8 neighbours type
 rswm_q$weights[10]
@@ -295,14 +298,17 @@ rswm_q$weights[10]
 rswm_ids <- nb2listw(wm_q, glist=ids, style="B", zero.policy=TRUE)
 rswm_ids
 ```
+
 ```{r}
 # Check weights
 rswm_ids$weights[1]
 ```
+
 ```{r}
 # See summary of the weights
 summary(unlist(rswm_ids$weights))
 ```
+
 ## 8.7 Spatial Weight Matrix Application
 
 ### 8.7.1 Spatial lag with row standardised weights
@@ -318,7 +324,8 @@ nb1 <- wm_q[[1]]
 nb1 <- hunan$GDPPC[nb1]
 nb1
 ```
-Spatial lag is the weighted average of neighbouring region's values of the variable 
+
+Spatial lag is the weighted average of neighbouring region's values of the variable
 
 ```{r}
 # Append spatially lag GDPPC values onto hunan sf dataframe
@@ -330,7 +337,6 @@ hunan <- left_join(hunan,lag.res)
 # Check resulting hunan dataframe
 head(hunan)
 ```
-
 
 ```{r}
 # Plot both GDPPC and spatial lag GDPPC side by side
@@ -353,6 +359,7 @@ b_weights2 <- nb2listw(wm_q,
                        style = "B")
 b_weights2
 ```
+
 ```{r}
 # Compute lag variable from weight and GDPPC 
 lag_sum <- list(hunan$NAME_3, lag.listw(b_weights2, hunan$GDPPC))
@@ -370,6 +377,7 @@ hunan <- left_join(hunan, lag.res)
 # Check resulting hunan dataframe
 head(hunan)
 ```
+
 ```{r}
 # Plot both GDPPC and spatial lag sum GDPPC side by side 
 gdppc <- qtm(hunan, "GDPPC") + 
@@ -390,17 +398,20 @@ wm_qs <- include.self(wm_q)
 # Look at neighbour list of area [1]
 wm_qs[[1]]
 ```
+
 ```{r}
 # Get weights of the area [1] neighbours
 wm_qs <- nb2listw(wm_qs)
 wm_qs
 ```
+
 ```{r}
 # Creeate lag variable from weight structure and GDPPC variable
 lag_w_avg_gpdpc <- lag.listw(wm_qs, 
                              hunan$GDPPC)
 lag_w_avg_gpdpc
 ```
+
 ```{r}
 # Convert lag variable listw object into dataframe
 lag.list.wm_qs <- list(hunan$NAME_3, lag.listw(wm_qs, hunan$GDPPC))
@@ -413,6 +424,7 @@ hunan <- left_join(hunan, lag_wm_qs.res)
 # Check hunan dataframe
 head(hunan)
 ```
+
 ```{r}
 # Compare values of lag GDPPC and Spatial window average with kable() from Knitr
 hunan %>%
@@ -422,7 +434,6 @@ hunan %>%
   kable()
 ```
 
-
 ```{r}
 # Plot both lag_gdppc and w_ave_gdppc side by side 
 w_avg_gdppc <- qtm(hunan, "lag_window_avg GDPPC") + 
@@ -430,7 +441,6 @@ w_avg_gdppc <- qtm(hunan, "lag_window_avg GDPPC") +
             legend.title.size = 0.8)    # Adjust the size of the legend title
 tmap_arrange(lag_gdppc, w_avg_gdppc, asp=1, ncol=2)
 ```
-
 
 ### 8.7.4 Spatial window sum
 
@@ -471,6 +481,7 @@ hunan <- left_join(hunan, w_sum_gdppc.res)
 # Check hunan dataframe
 head(hunan)
 ```
+
 ```{r}
 # Compare values of lag sum GDPPC and Spatial window average with kable() from Knitr
 hunan %>%
@@ -485,12 +496,3 @@ w_sum_gdppc <- qtm(hunan, "w_sum GDPPC") +
             legend.title.size = 0.8)    # Adjust the size of the legend title
 tmap_arrange(lag_sum_gdppc, w_sum_gdppc, asp=1, ncol=2)
 ```
-
-
-
-
-
-
-
-
-
