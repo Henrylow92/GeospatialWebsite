@@ -196,7 +196,7 @@ table(ra_tbl_flt$vehicle_type)
 table(th_road$highway)
 ```
 
-Given that accidents involving pedestrian and bicycle etc are proportionately smaller than those involving motorcar and motorcycle, the openstreet map data will be filtered to include relevant highway attribute for the latter vehicle types. 
+Given that accidents involving pedestrian and bicycle etc are proportionately smaller than those involving motorcar and motorcycle, the openstreet map data will be filtered to include relevant highway attribute for the latter vehicle types.
 
 ```{r}
 # Filter Thai Openstreet Map data by highway types 
@@ -230,13 +230,12 @@ th_roads_bmr <- th_road_flt[roads_logical, ]
 glimpse(th_roads_bmr)
 ```
 
-The processed openstreet map dataset is then exported in a similar fashion 
+The processed openstreet map dataset is then exported in a similar fashion
 
 ```{r}
 # Export to processed sub-folder as RDS
 write_rds(th_roads_bmr, 'data/processed/th_osm.rds')
 ```
-
 
 # 2. Exploratory Data Analysis
 
@@ -250,7 +249,7 @@ rm(list = ls(all.names = TRUE))
 ```
 
 ::: panel-tabset
-# Accidents 
+# Accidents
 
 ```{r}
 # Load data
@@ -288,35 +287,356 @@ glimpse(th_osm_sf)
 # Check crs
 st_crs(th_osm_sf)
 ```
-
 :::
 
 ## 2.2 Microsoft Power Bi Visualization
 
-<div style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%;">
-  <iframe title="Geospatial TakeHome Ex01" 
-          src="https://app.powerbi.com/view?r=eyJrIjoiZmMxMTNjMzEtYzhmMy00NTgwLTlkMjctODE1ZTA5YjNmN2E3IiwidCI6ImRmNGU4MzA3LWRjNjQtNDcyYS1iNGI1LWE2ZGQ2YmExMTU2NiIsImMiOjEwfQ%3D%3D" 
-          frameborder="0" 
-          allowFullScreen="true"
-          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
-  </iframe>
-</div>
+::: {style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%;"}
+<iframe title="Geospatial TakeHome Ex01" src="https://app.powerbi.com/view?r=eyJrIjoiZmMxMTNjMzEtYzhmMy00NTgwLTlkMjctODE1ZTA5YjNmN2E3IiwidCI6ImRmNGU4MzA3LWRjNjQtNDcyYS1iNGI1LWE2ZGQ2YmExMTU2NiIsImMiOjEwfQ%3D%3D" frameborder="0" allowFullScreen="true" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+
+</iframe>
+:::
 
 # 3. Spatial Point Pattern Analysis
 
-Before any meaningful geospatial analysis can be made, we have to establish that the accidents do not occur at random.
+Before any meaningful analysis between any factors and accidents can be made, we need to know if the accidents events occur following a pattern or at random via spatial point patterns analysis. This analysis can also help us to understand if the events vary due to changes in underlying property (e.g. road types) or if they vary due to interaction effects betwee This will be established through first-order and second-order spatial point pattern analysis.
 
 ## 3.1 First-Order Spatial Point Pattern Analysis
 
+Under this section, Kernel Density Estimation and Nearest Neighbour Distance will be explored as density-based and distance-based techniques respectively. This is bearing in mind their respective strengths.
+
+### 3.1.1 Density-Based: Kernel Density Estimation
+
+Additional preparation is required to perform the analysis. These include:\
+- Preparing the accident data in ppp object for `spatstat`\
+- Checking the accident data for duplicates\
+- Preparing the owin object\
 
 
-### 3.1.1
+```{r}
+# Set seed to ensure reproducibility of all subsequent analysis
+set.seed(42)
+
+# Convert accidents data to ppp format
+ra_ppp <- as.ppp(ra_sf)
+
+# Check accidents events for duplicates
+any(duplicated(ra_ppp))
+```
+
+```{r}
+# Create owin object
+th_bound_owin <- as.owin(th_bound_sf)
+
+# Combine events object and owin object
+ra_th_bound_ppp <-  ra_ppp[th_bound_owin]
+
+# Rescale ppp from meter to kilometer
+ra_th_bound_ppp_km <- rescale.ppp(ra_th_bound_ppp, 1000, "km")
+```
+
+### 3.1.1.1 Adaptive Kernel Density Estimation
+
+Based on the context of road accidents, adaptive kernel density estimation is more appropriate than fixed kernel density estimation as the accidents are more heterogeneous as observed from the EDA.
+
+```{r}
+# Perform adative bandwith KDE
+kde_ra_adp <- adaptive.density(ra_th_bound_ppp_km, method="kernel")
+plot(kde_ra_adp, 
+     main = paste0("Adaptive KDE"),
+     cex.axis = 0.8)
+```
+
+The intensities can be observed as small strips, which are notable roads (i.e. Kanchanaphisek Road) where sizable proportions of the accidents happen. This
+
+Lets see if there are any differences when looking at individual provinces.
+
+::: panel-tabset
+# Bangkok
+
+```{r}
+# Create Bangkok ppp object
+ra_bk_ppp <- ra_sf %>%
+  filter(province_en == 'Bangkok') %>%
+  as.ppp()
+
+# Create Bangkok owin object
+bk_owin <- th_bound_sf %>%
+  filter(ADM1_EN == 'Bangkok') %>%
+  as.owin()
+
+# Combine events object and owin object
+ra_bk_bound <-  ra_bk_ppp[bk_owin]
+
+# Rescale ppp from meter to kilometer
+ra_bk_bound_km <- rescale.ppp(ra_bk_bound, 1000, "km")
+
+# Perform adaptive bandwidth KDE
+kde_ra_adp_bk <- adaptive.density(ra_bk_bound_km, method="kernel")
+plot(kde_ra_adp_bk, 
+     main = paste0("Adaptive KDE: Bangkok"),
+     cex.axis = 0.8)
+
+```
+
+# Nonthaburi
+
+```{r}
+# Create Nonthaburi ppp object
+ra_ntb_ppp <- ra_sf %>%
+  filter(province_en == 'Nonthaburi') %>%
+  as.ppp()
+
+# Create Nonthaburi owin object
+ntb_owin <- th_bound_sf %>%
+  filter(ADM1_EN == 'Nonthaburi') %>%
+  as.owin()
+
+# Combine events object and owin object
+ra_ntb_bound <-  ra_ntb_ppp[ntb_owin]
+
+# Rescale ppp from meter to kilometer
+ra_ntb_bound_km <- rescale.ppp(ra_ntb_bound, 1000, "km")
+
+# Perform adaptive bandwidth KDE
+kde_ra_adp_ntb <- adaptive.density(ra_ntb_bound_km, method="kernel")
+plot(kde_ra_adp_ntb, 
+     main = paste0("Adaptive KDE: Nonthaburi"),
+     cex.axis = 0.8)
+
+```
+
+# Pathum Thani
+
+```{r}
+# Create Pathum Thani ppp object
+ra_pt_ppp <- ra_sf %>%
+  filter(province_en == 'Pathum Thani') %>%
+  as.ppp()
+
+# Create Pathum Thani owin object
+pt_owin <- th_bound_sf %>%
+  filter(ADM1_EN == 'Pathum Thani') %>%
+  as.owin()
+
+# Combine events object and owin object
+ra_pt_bound <-  ra_pt_ppp[pt_owin]
+
+# Rescale ppp from meter to kilometer
+ra_pt_bound_km <- rescale.ppp(ra_pt_bound, 1000, "km")
+
+# Perform adaptive bandwidth KDE
+kde_ra_adp_pt <- adaptive.density(ra_pt_bound_km, method="kernel")
+plot(kde_ra_adp_pt, 
+     main = paste0("Adaptive KDE: Pathum Thani"),
+     cex.axis = 0.8)
+
+```
+
+# Samut Prakan
+
+```{r}
+# Create Samut Prakan ppp object
+ra_sp_ppp <- ra_sf %>%
+  filter(province_en == 'Samut Prakan') %>%
+  as.ppp()
+
+# Create Samut Prakan owin object
+sp_owin <- th_bound_sf %>%
+  filter(ADM1_EN == 'Samut Prakan') %>%
+  as.owin()
+
+# Combine events object and owin object
+ra_sp_bound <-  ra_sp_ppp[sp_owin]
+
+# Rescale ppp from meter to kilometer
+ra_sp_bound_km <- rescale.ppp(ra_sp_bound, 1000, "km")
+
+# Perform adaptive bandwidth KDE
+kde_ra_adp_sp <- adaptive.density(ra_sp_bound_km, method="kernel")
+plot(kde_ra_adp_sp, 
+     main = paste0("Adaptive KDE: Samut Prakan"),
+     cex.axis = 0.8)
+
+```
+
+# Samut Sakhon
+
+```{r}
+# Create Samut Sakhon ppp object
+ra_ss_ppp <- ra_sf %>%
+  filter(province_en == 'Samut Sakhon') %>%
+  as.ppp()
+
+# Create Samut Sakhon owin object
+ss_owin <- th_bound_sf %>%
+  filter(ADM1_EN == 'Samut Sakhon') %>%
+  as.owin()
+
+# Combine events object and owin object
+ra_ss_bound <-  ra_ss_ppp[ss_owin]
+
+# Rescale ppp from meter to kilometer
+ra_ss_bound_km <- rescale.ppp(ra_ss_bound, 1000, "km")
+
+# Perform adaptive bandwidth KDE
+kde_ra_adp_ss <- adaptive.density(ra_ss_bound_km, method="kernel")
+plot(kde_ra_adp_ss, 
+     main = paste0("Adaptive KDE: Samut Sakhon"),
+     cex.axis = 0.8)
+
+```
+
+# Nakhon Pathom
+
+```{r}
+# Create Nakhon Pathom ppp object
+ra_np_ppp <- ra_sf %>%
+  filter(province_en == 'Nakhon Pathom') %>%
+  as.ppp()
+
+# Create Nakhon Pathom owin object
+np_owin <- th_bound_sf %>%
+  filter(ADM1_EN == 'Nakhon Pathom') %>%
+  as.owin()
+
+# Combine events object and owin object
+ra_np_bound <-  ra_np_ppp[np_owin]
+
+# Rescale ppp from meter to kilometer
+ra_np_bound_km <- rescale.ppp(ra_np_bound, 1000, "km")
+
+# Perform adaptive bandwidth KDE
+kde_ra_adp_np <- adaptive.density(ra_np_bound_km, method="kernel")
+plot(kde_ra_adp_np, 
+     main = paste0("Adaptive KDE: Nakhon Pathom"),
+     cex.axis = 0.8)
+
+```
+:::
+
+Conclusion: 
+
+### 3.1.1.2 Fixed Kernel Density Estimation
+
+While fixed KDE is less applicable, it will be interesting to compare the output with adaptive KDE.
+
+`bw.ppl()` will be used as the automatic kernel method to determine the sigma as the pattern seems to consist mostly of tight clusters around major roads.\
+Gaussian will be the smoothing kernel of choice, as it is widely used and there are no negative events in the current context.
+
+```{r}
+# Get fixed bandwidth 
+fixed_bw <- bw.ppl(ra_th_bound_ppp_km)
+
+# Perform fixed kernel density estimation
+plot(density(ra_th_bound_ppp_km, sigma=fixed_bw, edge=TRUE, kernel="gaussian"), 
+     main = paste0("Fixed KDE: Bandwidth=", round(fixed_bw, 4)),
+     cex.axis = 0.8)
+```
+
+Interestingly,
+
+### 3.1.2 Distance-Based: Nearest Neighbour Index
+
+`clarkevans.test()` of spatstat will be used to perform the Clark-Evans test of aggregation.\
+H0: Distribution of road accidents are randomly distributed 
+H1: Distribution of road accidents are *not* randomly distributed
+
+```{r}
+# Perform Clark-Evans on study area 
+clarkevans.test(ra_th_bound_ppp,
+                correction="none",
+                clipregion="th_bound_owin",
+                alternative=c("clustered"),
+                nsim=99 # 100 simulation runs
+                )
+```
+
+Conclusion: 
+
+Now lets do the same for each province
+
+::: panel-tabset
+# Bangkok
+
+```{r}
+# Perform Clark-Evans on Bangkok
+clarkevans.test(ra_bk_bound,
+                correction="none",
+                clipregion="bk_owin",
+                alternative=c("clustered"),
+                nsim=99 # 100 simulation runs
+                )
+```
+
+# Nonthaburi
+
+```{r}
+# Perform Clark-Evans on Nonthaburi
+clarkevans.test(ra_ntb_bound,
+                correction="none",
+                clipregion="ntb_owin",
+                alternative=c("clustered"),
+                nsim=99 # 100 simulation runs
+                )
+```
+
+# Pathum Thani
+
+```{r}
+# Perform Clark-Evans on Pathum Thani
+clarkevans.test(ra_pt_bound,
+                correction="none",
+                clipregion="pt_owin",
+                alternative=c("clustered"),
+                nsim=99 # 100 simulation runs
+                )
+```
+
+# Samut Prakan
+
+```{r}
+# Perform Clark-Evans on Samut Prakan
+clarkevans.test(ra_sp_bound,
+                correction="none",
+                clipregion="sp_owin",
+                alternative=c("clustered"),
+                nsim=99 # 100 simulation runs
+                )
+```
+
+# Samut Sakhon
+
+```{r}
+# Perform Clark-Evans on Samut Sakhon
+clarkevans.test(ra_ss_bound,
+                correction="none",
+                clipregion="ss_owin",
+                alternative=c("clustered"),
+                nsim=99 # 100 simulation runs
+                )
+```
+
+# Nakhon Pathom
+
+```{r}
+# Perform Clark-Evans on Nakhon Pathom
+clarkevans.test(ra_np_bound,
+                correction="none",
+                clipregion="np_owin",
+                alternative=c("clustered"),
+                nsim=99 # 100 simulation runs
+                )
+```
+:::
+
+Conclusion: 
 
 ## 3.2 Second-Order Spatial Point Pattern Analysis
 
 ### 3.2.1
 
-## 3.3
+
 
 # 4 Network Spatial Point Pattern Analysis
 
