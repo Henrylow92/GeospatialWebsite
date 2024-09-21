@@ -4,8 +4,8 @@
 .httr-oauth
 .DS_Store
 .quarto
-
 **/data/*
 !**/data/
 !**/data/.gitignore
 /.quarto/
+about.qmd

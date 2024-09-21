@@ -40,7 +40,6 @@ The study area will be Bangkok Metropolitan Region, which is defined [here](http
 
 I will be using the following R packages:\
 -`sf` package to perform geospatial wrangling tasks \
-- `spatstat` package to perform 1st- and 2nd-order spatial point patterns analysis \
 - `spNetwork` package to perform network kernel density estimation (NKDE) and temporal network kernel density estimation \
 - `tidyverse` package for reading csv files, dataframe processing tasks \
 - `tmap` package for plotting tasks \
@@ -149,13 +148,22 @@ ra_tbl_flt <- ra_tbl %>%
                               "Samut Prakan", "Samut Sakhon", "Nakhon Pathom")) %>%
   st_as_sf(coords = c("longitude", "latitude"), crs = 4326) %>%
   st_transform(crs = 32647)
+
+# Check for duplicates
+any(duplicated(st_coordinates(ra_tbl_flt)))
 ```
+Since there are duplicates, as this may affect further analysis, `st_jitter` of sf will be used
+
+```{r}
+ra_tbl_flt_jittered <- st_jitter(ra_tbl_flt, amount = 0.1)
+```
+
 
 The processed data is then exported as RDS.
 
 ```{r}
 # Export to processed sub-folder as RDS
-write_rds(ra_tbl_flt, 'data/processed/th_acc.rds')
+write_rds(ra_tbl_flt_jittered, 'data/processed/th_acc.rds')
 ```
 
 #### 1.2.4.2 Processing Thailand Subnational Administrative Boundaries
@@ -196,12 +204,12 @@ table(ra_tbl_flt$vehicle_type)
 table(th_road$highway)
 ```
 
-Given that accidents involving pedestrian and bicycle etc are proportionately smaller than those involving motorcar and motorcycle, the openstreet map data will be filtered to include relevant highway attribute for the latter vehicle types.
+Given that accidents involving pedestrian and bicycle etc are proportionately smaller than those involving motorcar and motorcycle, the openstreet map data will be filtered to include relevant highway attribute for the latter vehicle types. Residental is additionally excluded for computation efficiency (large number of residential objects) and the less influential nature of the attribute (road within a residential area that gives the public access to one or multiple residences).
 
 ```{r}
 # Filter Thai Openstreet Map data by highway types 
 th_road_flt <- th_road %>%
-  filter(highway %in% c('motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'unclassified', 'residential',  # Roads
+  filter(highway %in% c('motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'unclassified',  # Roads
                         'motorway_link', 'trunk_link', 'primary_link', 'secondary_link', 'tertiary_link',  # Link Roads
                         'living_street', 'road', 'path'
                         ) 
@@ -230,11 +238,133 @@ th_roads_bmr <- th_road_flt[roads_logical, ]
 glimpse(th_roads_bmr)
 ```
 
+::: panel-tabset
+# Bangkok
+
+```{r}
+# Use st_union to get Bangkok boundary
+bk_bound_union <- th_bound_l3_flt  %>%
+  filter(ADM1_EN == "Bangkok") %>%
+  st_union()
+
+# Use st_intersects to get roads within Bangkok
+bk_roads_intersects <- st_intersects(th_road_flt, bk_bound_union)
+
+# Get index mask of roads objects that intersects with Bangkok
+roads_logical_bk <- lengths(bk_roads_intersects) > 0
+# Filter openstreet map with the index mask
+th_roads_bk <- th_road_flt[roads_logical_bk, ]
+```
+
+# Nonthaburi
+
+```{r}
+# Use st_union to get Nonthaburi boundary
+ntb_bound_union <- th_bound_l3_flt  %>%
+  filter(ADM1_EN == "Nonthaburi") %>%
+  st_union()
+
+# Use st_intersects to get roads within Nonthaburi
+ntb_roads_intersects <- st_intersects(th_road_flt, ntb_bound_union)
+
+# Get index mask of roads objects that intersects with Nonthaburi
+roads_logical_ntb <- lengths(ntb_roads_intersects) > 0
+# Filter openstreet map with the index mask
+th_roads_ntb <- th_road_flt[roads_logical_ntb, ]
+```
+
+# Pathum Thani
+
+```{r}
+# Use st_union to get Pathum Thani boundary
+pt_bound_union <- th_bound_l3_flt  %>%
+  filter(ADM1_EN == "Pathum Thani") %>%
+  st_union()
+
+# Use st_intersects to get roads within Pathum Thani
+pt_roads_intersects <- st_intersects(th_road_flt, pt_bound_union)
+
+# Get index mask of roads objects that intersects with Pathum Thani
+roads_logical_pt <- lengths(pt_roads_intersects) > 0
+# Filter openstreet map with the index mask
+th_roads_pt <- th_road_flt[roads_logical_pt, ]
+```
+
+# Samut Prakan
+
+```{r}
+# Use st_union to get Samut Prakan boundary
+sp_bound_union <- th_bound_l3_flt  %>%
+  filter(ADM1_EN == "Samut Prakan") %>%
+  st_union()
+
+# Use st_intersects to get roads within Samut Prakan
+sp_roads_intersects <- st_intersects(th_road_flt, sp_bound_union)
+
+# Get index mask of roads objects that intersects with Samut Prakan
+roads_logical_sp <- lengths(sp_roads_intersects) > 0
+# Filter openstreet map with the index mask
+th_roads_sp <- th_road_flt[roads_logical_sp, ]
+```
+
+# Samut Sakhon
+
+```{r}
+# Use st_union to get Samut Sakhon boundary
+ss_bound_union <- th_bound_l3_flt  %>%
+  filter(ADM1_EN == "Samut Sakhon") %>%
+  st_union()
+
+# Use st_intersects to get roads within Samut Sakhon
+ss_roads_intersects <- st_intersects(th_road_flt, ss_bound_union)
+
+# Get index mask of roads objects that intersects with Samut Sakhon
+roads_logical_ss <- lengths(ss_roads_intersects) > 0
+# Filter openstreet map with the index mask
+th_roads_ss <- th_road_flt[roads_logical_ss, ]
+```
+
+# Nakhon Pathom
+
+```{r}
+# Use st_union to get Nakhon Pathom boundary
+np_bound_union <- th_bound_l3_flt  %>%
+  filter(ADM1_EN == "Nakhon Pathom") %>%
+  st_union()
+
+# Use st_intersects to get roads within Nakhon Pathom
+np_roads_intersects <- st_intersects(th_road_flt, np_bound_union)
+
+# Get index mask of roads objects that intersects with Nakhon Pathom
+roads_logical_np <- lengths(np_roads_intersects) > 0
+# Filter openstreet map with the index mask
+th_roads_np <- th_road_flt[roads_logical_np, ]
+```
+:::
+
 The processed openstreet map dataset is then exported in a similar fashion
 
 ```{r}
 # Export to processed sub-folder as RDS
 write_rds(th_roads_bmr, 'data/processed/th_osm.rds')
+
+# Bangkok
+write_rds(th_roads_bk, 'data/processed/th_osm_bk.rds')
+
+# Nonthaburi
+write_rds(th_roads_ntb, 'data/processed/th_osm_ntb.rds')
+
+# Pathum Thani
+write_rds(th_roads_pt, 'data/processed/th_osm_pt.rds')
+
+# Samut Prakan
+write_rds(th_roads_sp, 'data/processed/th_osm_sp.rds')
+
+# Samut Sakhon
+write_rds(th_roads_ss, 'data/processed/th_osm_ss.rds')
+
+# Nakhon Pathom
+write_rds(th_roads_np, 'data/processed/th_osm_np.rds')
 ```
 
 # 2. Exploratory Data Analysis
@@ -246,6 +376,9 @@ First, we clear the R console, then load in the processed datasets. This is a su
 ```{r}
 # Clear R console
 rm(list = ls(all.names = TRUE))
+
+# Set seed to ensure reproducibility of all subsequent analysis
+set.seed(42)
 ```
 
 ::: panel-tabset
@@ -279,7 +412,22 @@ st_crs(th_bound_sf)
 
 ```{r}
 # Load data
-th_osm_sf <- read_rds('data/processed/th_osm.rds')
+th_osm_sf <- read_rds('data/processed/th_osm.rds') %>%
+  st_cast("LINESTRING") # Cast as linestring as 
+
+# Load other province data
+bk_osm_sf <- read_rds('data/processed/th_osm_bk.rds') %>%
+  st_cast("LINESTRING") # Cast as linestring as 
+ntb_osm_sf <- read_rds('data/processed/th_osm_ntb.rds') %>%
+  st_cast("LINESTRING") # Cast as linestring as 
+pt_osm_sf <- read_rds('data/processed/th_osm_pt.rds') %>%
+  st_cast("LINESTRING") # Cast as linestring as 
+sp_osm_sf <- read_rds('data/processed/th_osm_sp.rds') %>%
+  st_cast("LINESTRING") # Cast as linestring as 
+ss_osm_sf <- read_rds('data/processed/th_osm_ss.rds') %>%
+  st_cast("LINESTRING") # Cast as linestring as 
+np_osm_sf <- read_rds('data/processed/th_osm_np.rds') %>%
+  st_cast("LINESTRING") # Cast as linestring as 
 
 # Check data
 glimpse(th_osm_sf)
@@ -297,349 +445,425 @@ st_crs(th_osm_sf)
 </iframe>
 :::
 
-# 3. Spatial Point Pattern Analysis
+adskl;adskl;asdkl;adskl;
 
-Before any meaningful analysis between any factors and accidents can be made, we need to know if the accidents events occur following a pattern or at random via spatial point patterns analysis. This analysis can also help us to understand if the events vary due to changes in underlying property (e.g. road types) or if they vary due to interaction effects betwee This will be established through first-order and second-order spatial point pattern analysis.
+## 2.3 Other Explorations
 
-## 3.1 First-Order Spatial Point Pattern Analysis
-
-Under this section, Kernel Density Estimation and Nearest Neighbour Distance will be explored as density-based and distance-based techniques respectively. This is bearing in mind their respective strengths.
-
-### 3.1.1 Density-Based: Kernel Density Estimation
-
-Additional preparation is required to perform the analysis. These include:\
-- Preparing the accident data in ppp object for `spatstat`\
-- Checking the accident data for duplicates\
-- Preparing the owin object\
-
+Lets try to find out the nearest neighbour distance of each accident. Knowing the distribution of these distances will be useful for determining the parameter values of subsequent analysis.
 
 ```{r}
-# Set seed to ensure reproducibility of all subsequent analysis
-set.seed(42)
+# Simple EDA
+table(th_osm_sf$highway)
 
-# Convert accidents data to ppp format
 ra_ppp <- as.ppp(ra_sf)
 
-# Check accidents events for duplicates
-any(duplicated(ra_ppp))
+nn_distances <- nndist(ra_ppp)
+
+hist(nn_distances, breaks = 100, main = "Nearest Neighbour Distance Distribution",
+     xlab = "Distance (meters)")
+
+summary(nn_distances)
+```
+Knowing that each accident occur very close to one another (median of ~13 meters), 
+
+```{r}
+ra_sf$Time <- as.POSIXct(ra_sf$incident_datetime, fomat = "%Y/%m/%d")
+start <- as.POSIXct("2019/01/01", format = "%Y/%m/%d")
+ra_sf$Time <- difftime(ra_sf$Time, start, units = "days")
+ra_sf$Time <- as.numeric(ra_sf$Time)
+ra_sf$Time_2019 <- as.POSIXct(paste("2019", format(ra_sf$incident_datetime, "%m/%d")), format = "%Y %m/%d ")
+ra_sf$Time_2019 <- difftime(ra_sf$Time_2019, start, units = "days")
+ra_sf$Time_2019 <- as.numeric(ra_sf$Time_2019)
+
+
+years <- as.character(2019:2022)
+months <- as.character(1:12)
+months <- ifelse(nchar(months) == 1, paste0("0", months), months)
+# Create a list of month start dates for each year
+months_starts_labs <- outer(years, months, paste, sep = "/")
+months_starts_labs <- as.vector(t(months_starts_labs))  # Flatten the matrix
+
+# Convert month start labels to POSIXct and then to numeric days
+months_starts_num <- as.POSIXct(paste0(months_starts_labs, "/01"), format = "%Y/%m/%d")
+months_starts_num <- difftime(months_starts_num, start, units = "days")
+months_starts_num <- as.numeric(months_starts_num)
+
+# Create shorter month labels without the year
+months_starts_labs_short <- gsub("^\\d{4}/", "", months_starts_labs)
+
+# Plot the histogram using ggplot2
+ggplot(ra_sf) + 
+  geom_histogram(aes(x = Time), bins = 30, color = "white") + 
+  scale_x_continuous(breaks = months_starts_num, labels = months_starts_labs_short) +
+  labs(x = "Months", y = "Accidents") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+```{r}
+w <- rep(1,nrow(ra_sf))
+samples <- seq(0, max(ra_sf$Time), 0.5)
+
+time_kernel_values <- data.frame(
+  bw_10 = tkde(ra_sf$Time, w = w, samples = samples, bw = 10, kernel_name = "quartic"),
+  bw_20 = tkde(ra_sf$Time, w = w, samples = samples, bw = 20, kernel_name = "quartic"),
+  bw_30 = tkde(ra_sf$Time, w = w, samples = samples, bw = 30, kernel_name = "quartic"),
+  bw_40 = tkde(ra_sf$Time, w = w, samples = samples, bw = 40, kernel_name = "quartic"),
+  bw_50 = tkde(ra_sf$Time, w = w, samples = samples, bw = 50, kernel_name = "quartic"),
+  bw_60 = tkde(ra_sf$Time, w = w, samples = samples, bw = 60, kernel_name = "quartic"),
+  time = samples
+)
+
+df_time <- reshape2::melt(time_kernel_values,id.vars = "time")
+df_time$variable <- as.factor(df_time$variable)
+
+ggplot(data = df_time) + 
+  geom_line(aes(x = time, y = value)) +
+  scale_x_continuous(breaks = months_starts_num, labels = months_starts_labs) +
+  facet_wrap(vars(variable), ncol=2, scales = "free") + 
+  theme(axis.text = element_text(size = 5))
+```
+
+While interesting patterns can be observed across different temporal bandwidths, there are still. Let try to see the remove the year and view the temporal attribute as month of year instead.
+
+```{r}
+ra_sf$start_of_year <- as.POSIXct(paste0(format(ra_sf$incident_datetime, "%Y"), "-01-01"), format = "%Y-%m-%d")
+ra_sf$days_since_start_of_year <- as.numeric(difftime(ra_sf$incident_datetime, ra_sf$start_of_year, units = "days"))
+
+months <- as.character(1:12)
+months <- ifelse(nchar(months)==1, paste0("0", months), months)
+months_starts_labs <- paste("2019/",months,"/01", sep = "")
+months_starts_num <- as.POSIXct(months_starts_labs, format = "%Y/%m/%d")
+months_starts_num <- difftime(months_starts_num, start, units = "days")
+months_starts_num <- as.numeric(months_starts_num)
+months_starts_labs <- gsub("2019/", "", months_starts_labs, fixed = TRUE)
+
+ggplot(ra_sf) + 
+  geom_histogram(aes(x = Time_2019), bins = 30, color = "white") + 
+  scale_x_continuous(breaks = months_starts_num, labels = months_starts_labs)
+```
+
+Now that the we are only looking at months of year, it is clear that there are some months (~April-May and ~October-November) that have more accidents.
+
+```{r}
+w <- rep(1,nrow(ra_sf))
+samples <- seq(0, max(ra_sf$days_since_start_of_year), 0.5)
+
+time_kernel_values <- data.frame(
+  bw_10 = tkde(ra_sf$days_since_start_of_year, w = w, samples = samples, bw = 10, kernel_name = "quartic"),
+  bw_20 = tkde(ra_sf$days_since_start_of_year, w = w, samples = samples, bw = 20, kernel_name = "quartic"),
+  bw_30 = tkde(ra_sf$days_since_start_of_year, w = w, samples = samples, bw = 30, kernel_name = "quartic"),
+  bw_40 = tkde(ra_sf$days_since_start_of_year, w = w, samples = samples, bw = 40, kernel_name = "quartic"),
+  bw_50 = tkde(ra_sf$days_since_start_of_year, w = w, samples = samples, bw = 50, kernel_name = "quartic"),
+  bw_60 = tkde(ra_sf$days_since_start_of_year, w = w, samples = samples, bw = 60, kernel_name = "quartic"),
+  time = samples
+)
+
+df_time <- reshape2::melt(time_kernel_values,id.vars = "time")
+df_time$variable <- as.factor(df_time$variable)
+
+ggplot(data = df_time) + 
+  geom_line(aes(x = time, y = value)) +
+  scale_x_continuous(breaks = months_starts_num, labels = months_starts_labs) +
+  facet_wrap(vars(variable), ncol=2, scales = "free") + 
+  theme(axis.text = element_text(size = 5))
+```
+
+From this, we can clearly see that there might be a seasonal bimodal trend captured with a temporal bandwidth of 30-40 days.
+
+
+
+
+
+
+adsjkladsljkadsjklasdjkl
+
+
+It is important to note that given the context of the issue, it is not encouraged to perform any typical spatial point pattern analysis.
+
+First-order spatial point pattern analysis such as kernel density estimation and nearest neighbours (i.e. Clark-Evans test) may give an indication of whether the events are clustered, regular or randomly occur, possibly highlighting potential accident hotspots. On the other hand second-order spatial point pattern analysis may illustrate spatial dependencies indicating underlying hazard. Nevertheless, techniques under both analysis are likely to be misleading as it will be heavily biased.
+
+From the exploratory data analysis, it is clear that accidents are network constrained. This will induce misleading results as the above analysis techniques assume that events can occur throughout the study area. Therefore, density based analysis such as KDE will naturally cluster around roads, whereas second-order spatial point analysis such as the F-function will calculate the distribution of distances from random locations in the study area to the nearest point in the pattern (including locations impossible for road accident to occur).
+
+Therefore, network spatial point pattern analysis will be the key analysis for this task.
+
+
+
+
+
+
+# 3 Network Spatial Point Pattern Analysis
+
+In network spatial point pattern analysis,
+
+## 3.1 Network Kernel Density Estimation
+
+
+
+## 3.1.1 Preparing objects required for performing NKDE
+
+Before generating lixels with `lixelize_lines()` of spNetwork, we need to know what is the appropriate length of a lixel.
+
+```{r}
+# Check 
+th_road_lengths <- st_length(th_osm_sf)
+summary(th_road_lengths)
 ```
 
 ```{r}
-# Create owin object
-th_bound_owin <- as.owin(th_bound_sf)
-
-# Combine events object and owin object
-ra_th_bound_ppp <-  ra_ppp[th_bound_owin]
-
-# Rescale ppp from meter to kilometer
-ra_th_bound_ppp_km <- rescale.ppp(ra_th_bound_ppp, 1000, "km")
+# Plot histogram of road lengths
+hist(th_road_lengths, breaks = 100, main = "Distribution of Road Segment Lengths",
+     xlab = "Road Segment Length (meters)")
 ```
 
-### 3.1.1.1 Adaptive Kernel Density Estimation
-
-Based on the context of road accidents, adaptive kernel density estimation is more appropriate than fixed kernel density estimation as the accidents are more heterogeneous as observed from the EDA.
+Based on the above, 200 meters will be selected as the lixel length, as it is more than most road segments (median 113 meters) and it is not too computationally intensive. The minimum lixel length in this case will be the default 1/10 of lixel length.
 
 ```{r}
-# Perform adative bandwith KDE
-kde_ra_adp <- adaptive.density(ra_th_bound_ppp_km, method="kernel")
-plot(kde_ra_adp, 
-     main = paste0("Adaptive KDE"),
-     cex.axis = 0.8)
+# Create lixels
+th_lixels <- lixelize_lines(th_osm_sf, 200)
+
+# Create samples
+th_samples <- lines_center(th_lixels) 
 ```
 
-The intensities can be observed as small strips, which are notable roads (i.e. Kanchanaphisek Road) where sizable proportions of the accidents happen. This
+## 3.1.2 Bandwidth selction for performing NKDE
 
-Lets see if there are any differences when looking at individual provinces.
+Main points of consideration for running a network KDE are:\
+- Adaptive: False due to the computation load and also because the entire study area share a relatively similar network (urban throughout) with lesser accident variation across the network.\
+- kernel: quartic as it provides a good balance between local and global estimation\
+- method: simple as most accidents happen along the road rather than at intersections
 
-::: panel-tabset
-# Bangkok
+With those in mind, bandwidth selection will be determined through `bw_cv_likelihood_calc` of spNetwork, using likelihood cross validation (aims to find a bandwidth that gives the most similar results when an event is removed). The bandwidth ranges from 25 to 425 based on the nearest neighbour analysis. 25 meters cover most distances between 2 accidents (median of 13 meters), and after 425 meters it is too wide.
 
 ```{r}
-# Create Bangkok ppp object
-ra_bk_ppp <- ra_sf %>%
-  filter(province_en == 'Bangkok') %>%
-  as.ppp()
-
-# Create Bangkok owin object
-bk_owin <- th_bound_sf %>%
-  filter(ADM1_EN == 'Bangkok') %>%
-  as.owin()
-
-# Combine events object and owin object
-ra_bk_bound <-  ra_bk_ppp[bk_owin]
-
-# Rescale ppp from meter to kilometer
-ra_bk_bound_km <- rescale.ppp(ra_bk_bound, 1000, "km")
-
-# Perform adaptive bandwidth KDE
-kde_ra_adp_bk <- adaptive.density(ra_bk_bound_km, method="kernel")
-plot(kde_ra_adp_bk, 
-     main = paste0("Adaptive KDE: Bangkok"),
-     cex.axis = 0.8)
-
+#| eval: false # eval: false
+th_bws_selection_cv <- bw_cv_likelihood_calc(
+  lines = th_osm_sf, 
+  events = ra_sf,
+  w = rep(1, nrow(ra_sf)),
+  kernel_name = "quartic",
+  bws = seq(25,425,50),
+  method = "simple", 
+  digits = 1, 
+  tol = 0.1,
+  grid_shape = c(5,5), 
+  max_depth = 8,
+  agg = 5, 
+  sparse = TRUE, # Slower but require less memory
+  verbose = TRUE)
 ```
 
-# Nonthaburi
+CV results are exported for ease of rendering.
 
 ```{r}
-# Create Nonthaburi ppp object
-ra_ntb_ppp <- ra_sf %>%
-  filter(province_en == 'Nonthaburi') %>%
-  as.ppp()
+# # Export output object and read it in to minimize rendering time
+# write_rds(th_bws_selection_cv, 'data/output/th_bws_selection_cv.rds') # Uncomment when running the CV again
 
-# Create Nonthaburi owin object
-ntb_owin <- th_bound_sf %>%
-  filter(ADM1_EN == 'Nonthaburi') %>%
-  as.owin()
-
-# Combine events object and owin object
-ra_ntb_bound <-  ra_ntb_ppp[ntb_owin]
-
-# Rescale ppp from meter to kilometer
-ra_ntb_bound_km <- rescale.ppp(ra_ntb_bound, 1000, "km")
-
-# Perform adaptive bandwidth KDE
-kde_ra_adp_ntb <- adaptive.density(ra_ntb_bound_km, method="kernel")
-plot(kde_ra_adp_ntb, 
-     main = paste0("Adaptive KDE: Nonthaburi"),
-     cex.axis = 0.8)
-
+# Read in output object
+th_bws_selection_cv <- read_rds('data/output/th_bws_selection_cv.rds')
 ```
 
-# Pathum Thani
 
 ```{r}
-# Create Pathum Thani ppp object
-ra_pt_ppp <- ra_sf %>%
-  filter(province_en == 'Pathum Thani') %>%
-  as.ppp()
-
-# Create Pathum Thani owin object
-pt_owin <- th_bound_sf %>%
-  filter(ADM1_EN == 'Pathum Thani') %>%
-  as.owin()
-
-# Combine events object and owin object
-ra_pt_bound <-  ra_pt_ppp[pt_owin]
-
-# Rescale ppp from meter to kilometer
-ra_pt_bound_km <- rescale.ppp(ra_pt_bound, 1000, "km")
-
-# Perform adaptive bandwidth KDE
-kde_ra_adp_pt <- adaptive.density(ra_pt_bound_km, method="kernel")
-plot(kde_ra_adp_pt, 
-     main = paste0("Adaptive KDE: Pathum Thani"),
-     cex.axis = 0.8)
-
+# Visualize CV Scores
+plot(th_bws_selection_cv$bw, th_bws_selection_cv$cv_scores, 
+     type = "o", col = "blue", xlab = "Bandwidth (bw)", ylab = "CV Scores",
+     main = "CV Scores vs Bandwidth", pch = 19, lty = 1)
+text(th_bws_selection_cv$bw, th_bws_selection_cv$cv_scores, 
+     labels = round(th_bws_selection_cv$cv_scores, 0), pos = 3, cex = 0.8, col = "black")
+grid()
 ```
 
-# Samut Prakan
+With this in mind, 225 meters is selected as the bandwidth. Although the cross validation scores favor larger bandwidth, 225 is selected as a trade off between cv performance and potential overfitting. 
+
+## 3.1.3 Performing NKDE
 
 ```{r}
-# Create Samut Prakan ppp object
-ra_sp_ppp <- ra_sf %>%
-  filter(province_en == 'Samut Prakan') %>%
-  as.ppp()
+#| eval: false # eval: false
+future::plan(future::multisession(workers=8))
+# Set global option for parallel-safe random number generation
+options(future.seed = TRUE)
 
-# Create Samut Prakan owin object
-sp_owin <- th_bound_sf %>%
-  filter(ADM1_EN == 'Samut Prakan') %>%
-  as.owin()
-
-# Combine events object and owin object
-ra_sp_bound <-  ra_sp_ppp[sp_owin]
-
-# Rescale ppp from meter to kilometer
-ra_sp_bound_km <- rescale.ppp(ra_sp_bound, 1000, "km")
-
-# Perform adaptive bandwidth KDE
-kde_ra_adp_sp <- adaptive.density(ra_sp_bound_km, method="kernel")
-plot(kde_ra_adp_sp, 
-     main = paste0("Adaptive KDE: Samut Prakan"),
-     cex.axis = 0.8)
-
+th_densities <- nkde.mc(th_osm_sf, 
+                  events = ra_sf,
+                  w = rep(1, nrow(ra_sf)),
+                  samples = th_samples,
+                  kernel_name = "quartic",
+                  bw = 225, 
+                  div= "bw", 
+                  method = "simple", 
+                  digits = 1, 
+                  tol = 0.1,
+                  grid_shape = c(5,5), 
+                  max_depth = 8,
+                  agg = 5, 
+                  sparse = TRUE, # Slower but require less memory
+                  verbose = FALSE)
 ```
 
-# Samut Sakhon
+Results are exported for ease of rendering.
 
 ```{r}
-# Create Samut Sakhon ppp object
-ra_ss_ppp <- ra_sf %>%
-  filter(province_en == 'Samut Sakhon') %>%
-  as.ppp()
+# # Export output object and read it in to minimize rendering time
+# write_rds(th_densities, 'data/output/th_nkde_densities.rds') # Uncomment when running the NKDE again
 
-# Create Samut Sakhon owin object
-ss_owin <- th_bound_sf %>%
-  filter(ADM1_EN == 'Samut Sakhon') %>%
-  as.owin()
+# Read in output object
+th_densities <- read_rds('data/output/th_nkde_densities.rds')
 
-# Combine events object and owin object
-ra_ss_bound <-  ra_ss_ppp[ss_owin]
-
-# Rescale ppp from meter to kilometer
-ra_ss_bound_km <- rescale.ppp(ra_ss_bound, 1000, "km")
-
-# Perform adaptive bandwidth KDE
-kde_ra_adp_ss <- adaptive.density(ra_ss_bound_km, method="kernel")
-plot(kde_ra_adp_ss, 
-     main = paste0("Adaptive KDE: Samut Sakhon"),
-     cex.axis = 0.8)
-
+# Check density values
+summary(th_densities)
 ```
-
-# Nakhon Pathom
+Given the small values of the densities, slight scaling adjustments will be made to improve the readability after appending the results to the respective lixels and samples.
 
 ```{r}
-# Create Nakhon Pathom ppp object
-ra_np_ppp <- ra_sf %>%
-  filter(province_en == 'Nakhon Pathom') %>%
-  as.ppp()
+# Append results to the sample and lixel
+th_samples$density <- th_densities
+th_lixels$density <- th_densities
 
-# Create Nakhon Pathom owin object
-np_owin <- th_bound_sf %>%
-  filter(ADM1_EN == 'Nakhon Pathom') %>%
-  as.owin()
-
-# Combine events object and owin object
-ra_np_bound <-  ra_np_ppp[np_owin]
-
-# Rescale ppp from meter to kilometer
-ra_np_bound_km <- rescale.ppp(ra_np_bound, 1000, "km")
-
-# Perform adaptive bandwidth KDE
-kde_ra_adp_np <- adaptive.density(ra_np_bound_km, method="kernel")
-plot(kde_ra_adp_np, 
-     main = paste0("Adaptive KDE: Nakhon Pathom"),
-     cex.axis = 0.8)
-
+# Rescale by 1e6
+th_samples$density <- th_samples$density*1000000
+th_lixels$density <- th_lixels$density*1000000
 ```
-:::
 
-Conclusion: 
+Due to the distribution of density having very small values, log transformation will be made onto the density to improve the contrast 
 
-### 3.1.1.2 Fixed Kernel Density Estimation
+```{r, fig.width=12, fig.height=8}
+# Log transform the density values (small offset to avoid log(0))
+th_lixels$log_density <- log(th_lixels$density + 0.000001)
 
-While fixed KDE is less applicable, it will be interesting to compare the output with adaptive KDE.
+# Create overall TH boundary
+th_bound_all <- th_bound_sf %>%
+  st_union()
 
-`bw.ppl()` will be used as the automatic kernel method to determine the sigma as the pattern seems to consist mostly of tight clusters around major roads.\
-Gaussian will be the smoothing kernel of choice, as it is widely used and there are no negative events in the current context.
+tmap_mode('plot')
+tm_shape(th_lixels)+
+  tm_lines(col="log_density", palette = 'YlOrRd', style = "cont") +
+tm_shape(th_bound_all) +
+  tm_borders()
+```
+
+
+While the plot is largely, it can be seen that there are some patches of roads with higher density, signifying potential hotspots for accidents.
+```{r}
+plot(st_geometry(th_bound_all))
+```
+
+
+## 3.2 Temporal Network Spatial Point Patterns Analysis
+
+
+
+### 3.2.1 Bandwidth selction for performing TNKDE
 
 ```{r}
-# Get fixed bandwidth 
-fixed_bw <- bw.ppl(ra_th_bound_ppp_km)
-
-# Perform fixed kernel density estimation
-plot(density(ra_th_bound_ppp_km, sigma=fixed_bw, edge=TRUE, kernel="gaussian"), 
-     main = paste0("Fixed KDE: Bandwidth=", round(fixed_bw, 4)),
-     cex.axis = 0.8)
+#| eval: false # eval: false
+tnkde_cv_scores <- bw_tnkde_cv_likelihood_calc(
+  bws_net = seq(200,2000, 100),
+  bws_time = seq(10,100,10),
+  lines = th_osm_sf,
+  events = ra_sf,
+  time_field = "days_since_start_of_year",
+  w = rep(1, nrow(ra_sf)),
+  kernel_name = "quartic",
+  method = "simple",
+  diggle_correction = FALSE,
+  study_area = NULL,
+  max_depth = 10,
+  digits = 2,
+  tol = 0.1,
+  agg = 5,
+  sparse=TRUE,
+  grid_shape=c(5,5),
+  sub_sample=1,
+  verbose = TRUE,
+  check = TRUE)
 ```
-
-Interestingly,
-
-### 3.1.2 Distance-Based: Nearest Neighbour Index
-
-`clarkevans.test()` of spatstat will be used to perform the Clark-Evans test of aggregation.\
-H0: Distribution of road accidents are randomly distributed 
-H1: Distribution of road accidents are *not* randomly distributed
+CV results are exported for ease of rendering.
 
 ```{r}
-# Perform Clark-Evans on study area 
-clarkevans.test(ra_th_bound_ppp,
-                correction="none",
-                clipregion="th_bound_owin",
-                alternative=c("clustered"),
-                nsim=99 # 100 simulation runs
-                )
+# # Export output object and read it in to minimize rendering time
+# write_rds(tnkde_cv_scores, 'data/output/tnkde_cv_scores.rds') # Uncomment when running the CV again
+
+# Read in output object
+tnkde_cv_scores <- read_rds('data/output/tnkde_cv_scores.rds')
 ```
 
-Conclusion: 
-
-Now lets do the same for each province
-
-::: panel-tabset
-# Bangkok
 
 ```{r}
-# Perform Clark-Evans on Bangkok
-clarkevans.test(ra_bk_bound,
-                correction="none",
-                clipregion="bk_owin",
-                alternative=c("clustered"),
-                nsim=99 # 100 simulation runs
-                )
+knitr::kable(tnkde_cv_scores)
 ```
 
-# Nonthaburi
+With this in mind, 
+
+### 3.2.2 Performing TNKDE
+
 
 ```{r}
-# Perform Clark-Evans on Nonthaburi
-clarkevans.test(ra_ntb_bound,
-                correction="none",
-                clipregion="ntb_owin",
-                alternative=c("clustered"),
-                nsim=99 # 100 simulation runs
-                )
+#| eval: false # eval: false
+tnkde_densities <- tnkde(lines = th_osm_sf,
+                   events = ra_sf,
+                   time_field = "days_since_start_of_year",
+                   w = rep(1, nrow(ra_sf)), 
+                   samples_loc = sample_points,
+                   samples_time = sample_time, 
+                   kernel_name = "quartic",
+                   bw_net = 700, bw_time = 100,
+                   adaptive = TRUE,
+                   trim_bw_net = 900,
+                   trim_bw_time = 80,
+                   method = "simple",
+                   div = "bw", max_depth = 8,
+                   digits = 2, tol = 0.1,
+                   agg = 5, 
+                   grid_shape = c(5,5), 
+                   verbose  = TRUE)
+
 ```
 
-# Pathum Thani
+
+
+## 3.3 Network Constrained G- and K-Function Analysis
+
+
+### 3.3.1 Overall Analysis
 
 ```{r}
-# Perform Clark-Evans on Pathum Thani
-clarkevans.test(ra_pt_bound,
-                correction="none",
-                clipregion="pt_owin",
-                alternative=c("clustered"),
-                nsim=99 # 100 simulation runs
-                )
+#| eval: false # eval: false
+kfun_accidents_th <- kfunctions(th_osm_sf, 
+                             ra_sf,
+                             start = 0, 
+                             end = 200, 
+                             step = 50, 
+                             width = 50, 
+                             nsim = 49, 
+                             # resolution = 100,
+                             verbose = TRUE,
+                             agg = 200,
+                             conf_int = 0.05)
 ```
 
-# Samut Prakan
+Results are saved for ease of rendering
 
 ```{r}
-# Perform Clark-Evans on Samut Prakan
-clarkevans.test(ra_sp_bound,
-                correction="none",
-                clipregion="sp_owin",
-                alternative=c("clustered"),
-                nsim=99 # 100 simulation runs
-                )
+# # Export output object and read it in to minimize rendering time
+# write_rds(kfun_accidents_th, 'data/output/th_kfun.rds') # Uncomment when running the Kfunction again
+
+# Read in output object
+kfun_accidents_th <- read_rds('data/output/th_kfun.rds')
 ```
 
-# Samut Sakhon
+
 
 ```{r}
-# Perform Clark-Evans on Samut Sakhon
-clarkevans.test(ra_ss_bound,
-                correction="none",
-                clipregion="ss_owin",
-                alternative=c("clustered"),
-                nsim=99 # 100 simulation runs
-                )
+kfun_accidents_th$plotk
 ```
-
-# Nakhon Pathom
 
 ```{r}
-# Perform Clark-Evans on Nakhon Pathom
-clarkevans.test(ra_np_bound,
-                correction="none",
-                clipregion="np_owin",
-                alternative=c("clustered"),
-                nsim=99 # 100 simulation runs
-                )
+kfun_accidents_th$plotg
 ```
-:::
 
-Conclusion: 
+From adsdaadsasd
 
-## 3.2 Second-Order Spatial Point Pattern Analysis
+### 3.3.2 Behavioral Factors
 
-### 3.2.1
-
-
-
-# 4 Network Spatial Point Pattern Analysis
-
-# 5 Temporal Network Spatial Point Patterns Analysis
-
-# 6. Conclusion
+# 4 Conclusion
