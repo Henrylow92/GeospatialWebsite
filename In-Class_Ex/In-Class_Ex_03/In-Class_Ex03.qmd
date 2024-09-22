@@ -12,4 +12,177 @@ format: html
 editor: visual
 ---
 
-Not Applicable
+# Data Sources
+
+*(saved under 'data' folder)*\
+Study Area - Punggol Planning Area\
+Punggol_St - line feature geospatial dataset containing road network\
+Punggol_CC - point feature geospatial dataset containing location of childcare centres\
+
+
+## Setting Up
+
+### Loading the R packages
+
+```{r}
+pacman::p_load(sf, spNetwork, tmap, tidyverse)
+```
+
+### Importing spatial data
+
+```{r}
+# Load network dataset
+network <- st_read(dsn="data", layer="Punggol_St") # Check that geometry is Linestring and not multilinestring
+```
+
+```{r}
+# Load childcare dataset
+childcare <- st_read(dsn="data", layer="Punggol_CC") %>%
+  st_zm(drop = TRUE, what = "ZM") # Remove Z dimension
+```
+
+::: panel-tabset
+# Childcare
+
+```{r}
+# See childcare features
+childcare
+```
+
+```{r}
+# See childcare crs information
+st_crs(childcare)
+```
+
+# Network
+
+```{r}
+# See network features
+network
+```
+
+```{r}
+# See network crs information
+st_crs(network)
+```
+:::
+
+
+## Visualize Geospatial Data
+
+```{r}
+# Visualize both geospatial data
+plot(st_geometry(network)) # Use st_geometry to plot only the network without corresponding attributes
+plot(childcare,add=T,col='red',pch = 19)
+```
+
+```{r}
+# Interactive Visualization with tmap 
+tmap_mode('view')
+tm_shape(childcare) +
+  tm_dots() +
+  tm_shape(network) +
+  tm_lines()
+```
+
+```{r}
+# Set tmap_mode back to plot
+tmap_mode('plot')
+```
+
+
+## Network KDE (NKDE) ANalysis
+
+### Prepare Lixel Objects
+
+```{r}
+# Cut spatiallines objects into lixels with specified minimal distance using lixelize_lines from spNetwork
+lixels <- lixelize_lines(network, 700, mindist = 375)
+# Use nearest neighbour to gauge the appropriate distance - bottom ~25%-10%
+```
+
+### Generate line centre points
+
+```{r}
+# create line centre points with lines_center from spNetwork
+samples <- lines_center(lixels) 
+
+tmap_mode('view')
+tm_shape(lixels) + 
+  tm_lines() + 
+  tm_shape(samples) + 
+  tm_dots(size =0.01)
+tmap_mode("plot")
+```
+
+### Perform NKDE
+
+```{r}
+# # Remove Z-dimension from childcare (No longer required)
+# childcare_rmz <- st_zm(childcare)
+
+# Perform NKDE
+densities <- nkde(network, 
+                  events = childcare,
+                  w = rep(1, nrow(childcare)),
+                  samples = samples,
+                  kernel_name = "quartic", # Try to avoid gaussian if intensity is negative
+                  bw = 300, 
+                  div= "bw", 
+                  method = "simple", 
+                  digits = 1, 
+                  tol = 1,
+                  grid_shape = c(1,1), 
+                  max_depth = 8,
+                  agg = 5, 
+                  sparse = TRUE,
+                  verbose = FALSE)
+# Densities - represents intensity
+```
+
+```{r}
+# Insert computed density values as density field
+samples$density <- densities
+lixels$density <- densities
+
+# Recaling to enhance mapping
+samples$density <- samples$density*1000
+lixels$density <- lixels$density*1000
+
+# Visualize interactive plot
+tmap_mode('view')
+tm_shape(lixels)+
+  tm_lines(col="density")+
+tm_shape(childcare)+
+  tm_dots()
+tmap_mode('plot')
+```
+
+
+## Network Constrainted G- and K- Function Analysis
+
+Ho: The observed spatial point events (i.e distribution of childcare centres) are uniformly distributed over a street network in Punggol Planning Area.
+
+```{r}
+# Perform complete spatial randomness test using kfunction from spNetwork
+kfun_childcare <- kfunctions(network, 
+                             childcare,
+                             start = 0, 
+                             end = 1000, 
+                             step = 50, 
+                             width = 50, 
+                             nsim = 50, # 51 simulations 
+                             resolution = 50,
+                             verbose = FALSE, 
+                             conf_int = 0.05)
+```
+
+```{r}
+# Visualize k-function output
+kfun_childcare$plotk
+```
+
+Conclusion\
+- There is non complete spatial randomness\
+- In certain distances (\~250-500), childcares are regularly spaced out\
+- At higher distances (\>600), childcares are randomly spaced out
