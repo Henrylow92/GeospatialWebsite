@@ -1041,7 +1041,7 @@ $ number_of_injuries          &lt;dbl&gt; 2, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0,
 $ weather_condition           &lt;chr&gt; "clear", "clear", "clear", "clear", "clear…
 $ road_description            &lt;chr&gt; "straight road", "straight road", "other",…
 $ slope_description           &lt;chr&gt; "no slope", "no slope", "other", "other", …
-$ geometry                    &lt;POINT [m]&gt; POINT (627012.2 1533381), POINT (655…</code></pre>
+$ geometry                    &lt;POINT [m]&gt; POINT (627012.3 1533381), POINT (655…</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check crs</span></span>
 <span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(ra_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -1321,7 +1321,7 @@ PROJCRS["WGS 84 / UTM zone 47N",
 <div class="sourceCode cell-code" id="cb72"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(nn_distances)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
-   0.002    1.248   13.014   73.439   46.711 7734.519 </code></pre>
+   0.002    1.262   13.048   73.438   46.636 7734.754 </code></pre>
 </div>
 </div>
 <p>Knowing that each accident occur very close to one another (median of ~13 meters),</p>
@@ -2064,11 +2064,11 @@ tm_shape prior to each of them).</code></pre>
 </div>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb107"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb107-1"><a href="#cb107-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize gif</span></span>
-<span id="cb107-2"><a href="#cb107-2" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">include_graphics</span>(<span class="st">"data/images/animated_map.gif"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb107-2"><a href="#cb107-2" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">include_graphics</span>(<span class="st">"images/animated_map.gif"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="data/images/animated_map.gif" class="img-fluid figure-img"></p>
+<p><img src="images/animated_map.gif" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>

@@ -876,7 +876,7 @@ tmap_animation(all_maps, filename = "data/images/animated_map.gif",
 
 ```{r}
 # Visualize gif
-knitr::include_graphics("data/images/animated_map.gif")
+knitr::include_graphics("images/animated_map.gif")
 ```
 
 A few observations can be made from the temporal network kernel density estimation gif:\
