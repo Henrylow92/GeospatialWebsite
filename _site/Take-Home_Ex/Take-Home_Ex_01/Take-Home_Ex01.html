@@ -1041,7 +1041,7 @@ $ number_of_injuries          &lt;dbl&gt; 2, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0,
 $ weather_condition           &lt;chr&gt; "clear", "clear", "clear", "clear", "clear…
 $ road_description            &lt;chr&gt; "straight road", "straight road", "other",…
 $ slope_description           &lt;chr&gt; "no slope", "no slope", "other", "other", …
-$ geometry                    &lt;POINT [m]&gt; POINT (627012.3 1533381), POINT (655…</code></pre>
+$ geometry                    &lt;POINT [m]&gt; POINT (627012.2 1533381), POINT (655…</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check crs</span></span>
 <span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(ra_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -1321,7 +1321,7 @@ PROJCRS["WGS 84 / UTM zone 47N",
 <div class="sourceCode cell-code" id="cb72"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(nn_distances)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
-   0.002    1.262   13.048   73.438   46.636 7734.754 </code></pre>
+   0.001    1.244   13.015   73.437   46.600 7734.549 </code></pre>
 </div>
 </div>
 <p>Knowing that each accident occur very close to one another (median of ~13 meters),</p>
@@ -2471,7 +2471,7 @@ H1: The observed spatial point events are not randomly distributed over the BMR 
 </div>
 </div>
 <p>For accidents during clear weather, given that both G- and K- observed values are below the envelope. Again, we will then reject the null hypothesis and conclude that accidents during clear weather follow a regular pattern across all distances.</p>
-<p>However, for accidents during other weather conditions, although K-observed values are consistently below the envelope, the G-values are have a mix of behaviors. It exhibits regular patterns under 200 meters, random pattern from 200-350 meters and clustered pattern abve 350 meters.</p>
+<p>However, for accidents during other weather conditions, K-observed values are consistently below the envelope whereas the G-values are have a mix of behaviors. It exhibits regular patterns under 200 meters, random pattern from 200-350 meters and clustered pattern abve 350 meters.</p>
 </section>
 </section>
 </section>
@@ -2479,6 +2479,7 @@ H1: The observed spatial point events are not randomly distributed over the BMR 
 <h1>4 Conclusion</h1>
 <p>In conclusion, it appears that a common cause of accidents are a mix of variables. Given good weather conditions and straight roads, drivers are more inclined to speed. With good underlying network infrastructure, this then translates to accidents happening across the network in a regular fashion.</p>
 <p>However, other factors also may contribute to accidents. Under less ideal weather conditions, drivers may encounter difficulties (other presumed cause) on more difficult roads (non-straight roads), especially around ~300 meters. This gives rise to a more random distribution as such factors may occur anywhere on the network.</p>
+<p>Temporal effects also play a role, with increases in accidents in April and November likely due to the major Thai holidays (Songkran in April and Loy Krathong in November). The larger than usual volume of people travelling across the network (inter-province) on the holidays is then likely to result in a higher amount of accidents.</p>
 
 
 </section>

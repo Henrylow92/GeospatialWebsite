@@ -1221,10 +1221,12 @@ kfun_wth_oth$plotg+
 
 For accidents during clear weather, given that both G- and K- observed values are below the envelope. Again, we will then reject the null hypothesis and conclude that accidents during clear weather follow a regular pattern across all distances.
 
-However, for accidents during other weather conditions, although K-observed values are consistently below the envelope, the G-values are have a mix of behaviors. It exhibits regular patterns under 200 meters, random pattern from 200-350 meters and clustered pattern abve 350 meters.
+However, for accidents during other weather conditions, K-observed values are consistently below the envelope whereas the G-values are have a mix of behaviors. It exhibits regular patterns under 200 meters, random pattern from 200-350 meters and clustered pattern abve 350 meters.
 
 # 4 Conclusion
 
 In conclusion, it appears that a common cause of accidents are a mix of variables. Given good weather conditions and straight roads, drivers are more inclined to speed. With good underlying network infrastructure, this then translates to accidents happening across the network in a regular fashion.
 
 However, other factors also may contribute to accidents. Under less ideal weather conditions, drivers may encounter difficulties (other presumed cause) on more difficult roads (non-straight roads), especially around ~300 meters. This gives rise to a more random distribution as such factors may occur anywhere on the network. 
+
+Temporal effects also play a role, with increases in accidents in April and November likely due to the major Thai holidays (Songkran in April and Loy Krathong in November). The larger than usual volume of people travelling across the network (inter-province) on the holidays is then likely to result in a higher amount of accidents.
