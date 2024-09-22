@@ -470,3 +470,13 @@ G, F and L functions will be explored as they can each give useful insights:\
                   addPolylines(color = ~pal_highway(highway), weight = 2, opacity = 0.7) 
               )
               ```
+              
+              
+              library(spgwr)
+              
+              # Example: GWR with weather condition as a predictor and spatial coordinates
+              gwr_model <- gwr(severe_injury ~ weather_condition + vehicle_type, 
+                               data = accidents_sf, coords = cbind(accidents_sf$X, accidents_sf$Y), 
+                               bandwidth = 50)
+              
+              summary(gwr_model)

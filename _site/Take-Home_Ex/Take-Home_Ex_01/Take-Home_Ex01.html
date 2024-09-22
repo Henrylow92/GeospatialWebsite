@@ -289,10 +289,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#bandwidth-selction-for-performing-tnkde" id="toc-bandwidth-selction-for-performing-tnkde" class="nav-link" data-scroll-target="#bandwidth-selction-for-performing-tnkde">3.2.1 Bandwidth selction for performing TNKDE</a></li>
   <li><a href="#performing-tnkde" id="toc-performing-tnkde" class="nav-link" data-scroll-target="#performing-tnkde">3.2.2 Performing TNKDE</a></li>
   </ul></li>
-  <li><a href="#network-constrained-g--and-k-function-analysis" id="toc-network-constrained-g--and-k-function-analysis" class="nav-link" data-scroll-target="#network-constrained-g--and-k-function-analysis">3.3 Network Constrained G- and K-Function Analysis</a>
+  <li><a href="#network-constrained-g--and-k-function-analysis" id="toc-network-constrained-g--and-k-function-analysis" class="nav-link" data-scroll-target="#network-constrained-g--and-k-function-analysis">3.3 Network Constrained G- and K-Function Analysis</a></li>
+  <li><a href="#behavioral-factors" id="toc-behavioral-factors" class="nav-link" data-scroll-target="#behavioral-factors">3.4 Behavioral Factors</a></li>
+  <li><a href="#environmental-factors" id="toc-environmental-factors" class="nav-link" data-scroll-target="#environmental-factors">3.5 Environmental Factors</a>
   <ul class="collapse">
-  <li><a href="#overall-analysis" id="toc-overall-analysis" class="nav-link" data-scroll-target="#overall-analysis">3.3.1 Overall Analysis</a></li>
-  <li><a href="#behavioral-factors" id="toc-behavioral-factors" class="nav-link" data-scroll-target="#behavioral-factors">3.3.2 Behavioral Factors</a></li>
+  <li><a href="#road-type" id="toc-road-type" class="nav-link" data-scroll-target="#road-type">3.5.1 Road Type</a></li>
+  <li><a href="#weather-condition" id="toc-weather-condition" class="nav-link" data-scroll-target="#weather-condition">3.5.2 Weather Condition</a></li>
   </ul></li>
   </ul></li>
   <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">4 Conclusion</a></li>
@@ -367,12 +369,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="loading-r-packages">1.1 Loading R Packages</h2>
 <p>I will be using the following R packages:<br>
 -<code>sf</code> package to perform geospatial wrangling tasks&nbsp;<br>
+- <code>spatstat</code> package to calculate nearest neighbour&nbsp;<br>
 - <code>spNetwork</code> package to perform network kernel density estimation (NKDE) and temporal network kernel density estimation&nbsp;<br>
 - <code>tidyverse</code> package for reading csv files, dataframe processing tasks&nbsp;<br>
 - <code>tmap</code> package for plotting tasks&nbsp;<br>
+- <code>classInt</code> and <code>viridis</code> to generate gif animation for temporal network kernel density estimation.<br>
 </p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(tidyverse, spatstat, sf, spNetwork, tmap)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(tidyverse, spatstat, sf, spNetwork, tmap, classInt, viridis)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="loading-datasets" class="level2">
@@ -1192,45 +1196,8 @@ PROJCRS["WGS 84 / UTM zone 47N",
 <pre><code>Warning in st_cast.sf(., "LINESTRING"): repeating attributes for all
 sub-geometries for which they may not be constant</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load other province data</span></span>
-<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a>bk_osm_sf <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/processed/th_osm_bk.rds'</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb63-3"><a href="#cb63-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_cast</span>(<span class="st">"LINESTRING"</span>) <span class="co"># Cast as linestring as </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in st_cast.sf(., "LINESTRING"): repeating attributes for all
-sub-geometries for which they may not be constant</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb65"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a>ntb_osm_sf <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/processed/th_osm_ntb.rds'</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb65-2"><a href="#cb65-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_cast</span>(<span class="st">"LINESTRING"</span>) <span class="co"># Cast as linestring as </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in st_cast.sf(., "LINESTRING"): repeating attributes for all
-sub-geometries for which they may not be constant</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a>pt_osm_sf <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/processed/th_osm_pt.rds'</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_cast</span>(<span class="st">"LINESTRING"</span>) <span class="co"># Cast as linestring as </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in st_cast.sf(., "LINESTRING"): repeating attributes for all
-sub-geometries for which they may not be constant</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb69"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a>sp_osm_sf <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/processed/th_osm_sp.rds'</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb69-2"><a href="#cb69-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_cast</span>(<span class="st">"LINESTRING"</span>) <span class="co"># Cast as linestring as </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in st_cast.sf(., "LINESTRING"): repeating attributes for all
-sub-geometries for which they may not be constant</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb71"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a>ss_osm_sf <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/processed/th_osm_ss.rds'</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_cast</span>(<span class="st">"LINESTRING"</span>) <span class="co"># Cast as linestring as </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in st_cast.sf(., "LINESTRING"): repeating attributes for all
-sub-geometries for which they may not be constant</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb73"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a>np_osm_sf <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/processed/th_osm_np.rds'</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb73-2"><a href="#cb73-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_cast</span>(<span class="st">"LINESTRING"</span>) <span class="co"># Cast as linestring as </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in st_cast.sf(., "LINESTRING"): repeating attributes for all
-sub-geometries for which they may not be constant</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb75"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check data</span></span>
-<span id="cb75-2"><a href="#cb75-2" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(th_osm_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check data</span></span>
+<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(th_osm_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Rows: 36,472
 Columns: 15
@@ -1250,8 +1217,8 @@ $ osm_id     &lt;dbl&gt; 1125681229, 472283206, 116847248, 378672881, 1312138113
 $ osm_type   &lt;chr&gt; "ways_line", "ways_line", "ways_line", "ways_line", "ways_l…
 $ geometry   &lt;LINESTRING [m]&gt; LINESTRING (693686.1 151979..., LINESTRING (6929…</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb77"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check crs</span></span>
-<span id="cb77-2"><a href="#cb77-2" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(th_osm_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb65"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check crs</span></span>
+<span id="cb65-2"><a href="#cb65-2" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(th_osm_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Coordinate Reference System:
   User input: EPSG:32647 
@@ -1314,14 +1281,19 @@ PROJCRS["WGS 84 / UTM zone 47N",
 <iframe title="Geospatial TakeHome Ex01" src="https://app.powerbi.com/view?r=eyJrIjoiZmMxMTNjMzEtYzhmMy00NTgwLTlkMjctODE1ZTA5YjNmN2E3IiwidCI6ImRmNGU4MzA3LWRjNjQtNDcyYS1iNGI1LWE2ZGQ2YmExMTU2NiIsImMiOjEwfQ%3D%3D" frameborder="0" allowfullscreen="true" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
 </iframe>
 </div>
-<p>adskl;adskl;asdkl;adskl;</p>
+<p>From the Power Bi visualization, several observations can be made.<br>
+- Most of the accidents are presumably caused by speeding (~78%). This is consistent even across province, different temporal factors (i.e.&nbsp;day of week, season, time of day) and environmental factors (i.e.&nbsp;road description, weather condition).<br>
+- Similarly, most accidents occur on straight roads (~85%). That is also observable through the map visualization as accidents occur on long stretches of road. This is also consistent across location, temporal and behavioral factors.<br>
+- Interestingly, accidents involving rainy conditions have a spike during darker parts of the day (~19:00-00:00)<br>
+- Accidents is fairly distributed across season and different days of the week.<br>
+- While accidents tend to occur more during the early parts of the day (~7:00-11:00), the spikes are more visible when looking at the accidents across time, with large increases in certain dates (i.e.&nbsp;50 accidents on 29th Dec 2019)</p>
 </section>
 <section id="other-explorations" class="level2">
 <h2 class="anchored" data-anchor-id="other-explorations">2.3 Other Explorations</h2>
 <p>Lets try to find out the nearest neighbour distance of each accident. Knowing the distribution of these distances will be useful for determining the parameter values of subsequent analysis.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb79"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Simple EDA</span></span>
-<span id="cb79-2"><a href="#cb79-2" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(th_osm_sf<span class="sc">$</span>highway)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Simple EDA</span></span>
+<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(th_osm_sf<span class="sc">$</span>highway)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
       motorway  motorway_link           path        primary   primary_link 
@@ -1331,14 +1303,14 @@ PROJCRS["WGS 84 / UTM zone 47N",
          trunk     trunk_link   unclassified 
           1919            881           7281 </code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb81"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a>ra_ppp <span class="ot">&lt;-</span> <span class="fu">as.ppp</span>(ra_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb69"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a>ra_ppp <span class="ot">&lt;-</span> <span class="fu">as.ppp</span>(ra_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning in as.ppp.sf(ra_sf): only first attribute column is used for marks</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb83"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a>nn_distances <span class="ot">&lt;-</span> <span class="fu">nndist</span>(ra_ppp)</span>
-<span id="cb83-2"><a href="#cb83-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb83-3"><a href="#cb83-3" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(nn_distances, <span class="at">breaks =</span> <span class="dv">100</span>, <span class="at">main =</span> <span class="st">"Nearest Neighbour Distance Distribution"</span>,</span>
-<span id="cb83-4"><a href="#cb83-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"Distance (meters)"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb71"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a>nn_distances <span class="ot">&lt;-</span> <span class="fu">nndist</span>(ra_ppp)</span>
+<span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb71-3"><a href="#cb71-3" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(nn_distances, <span class="at">breaks =</span> <span class="dv">100</span>, <span class="at">main =</span> <span class="st">"Nearest Neighbour Distance Distribution"</span>,</span>
+<span id="cb71-4"><a href="#cb71-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"Distance (meters)"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -1346,44 +1318,44 @@ PROJCRS["WGS 84 / UTM zone 47N",
 </figure>
 </div>
 </div>
-<div class="sourceCode cell-code" id="cb84"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb84-1"><a href="#cb84-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(nn_distances)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb72"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(nn_distances)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
-   0.000    1.251   13.037   73.440   46.678 7734.712 </code></pre>
+   0.002    1.248   13.014   73.439   46.711 7734.519 </code></pre>
 </div>
 </div>
 <p>Knowing that each accident occur very close to one another (median of ~13 meters),</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb86"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb86-1"><a href="#cb86-1" aria-hidden="true" tabindex="-1"></a>ra_sf<span class="sc">$</span>Time <span class="ot">&lt;-</span> <span class="fu">as.POSIXct</span>(ra_sf<span class="sc">$</span>incident_datetime, <span class="at">fomat =</span> <span class="st">"%Y/%m/%d"</span>)</span>
-<span id="cb86-2"><a href="#cb86-2" aria-hidden="true" tabindex="-1"></a>start <span class="ot">&lt;-</span> <span class="fu">as.POSIXct</span>(<span class="st">"2019/01/01"</span>, <span class="at">format =</span> <span class="st">"%Y/%m/%d"</span>)</span>
-<span id="cb86-3"><a href="#cb86-3" aria-hidden="true" tabindex="-1"></a>ra_sf<span class="sc">$</span>Time <span class="ot">&lt;-</span> <span class="fu">difftime</span>(ra_sf<span class="sc">$</span>Time, start, <span class="at">units =</span> <span class="st">"days"</span>)</span>
-<span id="cb86-4"><a href="#cb86-4" aria-hidden="true" tabindex="-1"></a>ra_sf<span class="sc">$</span>Time <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(ra_sf<span class="sc">$</span>Time)</span>
-<span id="cb86-5"><a href="#cb86-5" aria-hidden="true" tabindex="-1"></a>ra_sf<span class="sc">$</span>Time_2019 <span class="ot">&lt;-</span> <span class="fu">as.POSIXct</span>(<span class="fu">paste</span>(<span class="st">"2019"</span>, <span class="fu">format</span>(ra_sf<span class="sc">$</span>incident_datetime, <span class="st">"%m/%d"</span>)), <span class="at">format =</span> <span class="st">"%Y %m/%d "</span>)</span>
-<span id="cb86-6"><a href="#cb86-6" aria-hidden="true" tabindex="-1"></a>ra_sf<span class="sc">$</span>Time_2019 <span class="ot">&lt;-</span> <span class="fu">difftime</span>(ra_sf<span class="sc">$</span>Time_2019, start, <span class="at">units =</span> <span class="st">"days"</span>)</span>
-<span id="cb86-7"><a href="#cb86-7" aria-hidden="true" tabindex="-1"></a>ra_sf<span class="sc">$</span>Time_2019 <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(ra_sf<span class="sc">$</span>Time_2019)</span>
-<span id="cb86-8"><a href="#cb86-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb86-9"><a href="#cb86-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb86-10"><a href="#cb86-10" aria-hidden="true" tabindex="-1"></a>years <span class="ot">&lt;-</span> <span class="fu">as.character</span>(<span class="dv">2019</span><span class="sc">:</span><span class="dv">2022</span>)</span>
-<span id="cb86-11"><a href="#cb86-11" aria-hidden="true" tabindex="-1"></a>months <span class="ot">&lt;-</span> <span class="fu">as.character</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">12</span>)</span>
-<span id="cb86-12"><a href="#cb86-12" aria-hidden="true" tabindex="-1"></a>months <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">nchar</span>(months) <span class="sc">==</span> <span class="dv">1</span>, <span class="fu">paste0</span>(<span class="st">"0"</span>, months), months)</span>
-<span id="cb86-13"><a href="#cb86-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a list of month start dates for each year</span></span>
-<span id="cb86-14"><a href="#cb86-14" aria-hidden="true" tabindex="-1"></a>months_starts_labs <span class="ot">&lt;-</span> <span class="fu">outer</span>(years, months, paste, <span class="at">sep =</span> <span class="st">"/"</span>)</span>
-<span id="cb86-15"><a href="#cb86-15" aria-hidden="true" tabindex="-1"></a>months_starts_labs <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="fu">t</span>(months_starts_labs))  <span class="co"># Flatten the matrix</span></span>
-<span id="cb86-16"><a href="#cb86-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb86-17"><a href="#cb86-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert month start labels to POSIXct and then to numeric days</span></span>
-<span id="cb86-18"><a href="#cb86-18" aria-hidden="true" tabindex="-1"></a>months_starts_num <span class="ot">&lt;-</span> <span class="fu">as.POSIXct</span>(<span class="fu">paste0</span>(months_starts_labs, <span class="st">"/01"</span>), <span class="at">format =</span> <span class="st">"%Y/%m/%d"</span>)</span>
-<span id="cb86-19"><a href="#cb86-19" aria-hidden="true" tabindex="-1"></a>months_starts_num <span class="ot">&lt;-</span> <span class="fu">difftime</span>(months_starts_num, start, <span class="at">units =</span> <span class="st">"days"</span>)</span>
-<span id="cb86-20"><a href="#cb86-20" aria-hidden="true" tabindex="-1"></a>months_starts_num <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(months_starts_num)</span>
-<span id="cb86-21"><a href="#cb86-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb86-22"><a href="#cb86-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Create shorter month labels without the year</span></span>
-<span id="cb86-23"><a href="#cb86-23" aria-hidden="true" tabindex="-1"></a>months_starts_labs_short <span class="ot">&lt;-</span> <span class="fu">gsub</span>(<span class="st">"^</span><span class="sc">\\</span><span class="st">d{4}/"</span>, <span class="st">""</span>, months_starts_labs)</span>
-<span id="cb86-24"><a href="#cb86-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb86-25"><a href="#cb86-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot the histogram using ggplot2</span></span>
-<span id="cb86-26"><a href="#cb86-26" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(ra_sf) <span class="sc">+</span> </span>
-<span id="cb86-27"><a href="#cb86-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="fu">aes</span>(<span class="at">x =</span> Time), <span class="at">bins =</span> <span class="dv">30</span>, <span class="at">color =</span> <span class="st">"white"</span>) <span class="sc">+</span> </span>
-<span id="cb86-28"><a href="#cb86-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> months_starts_num, <span class="at">labels =</span> months_starts_labs_short) <span class="sc">+</span></span>
-<span id="cb86-29"><a href="#cb86-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Months"</span>, <span class="at">y =</span> <span class="st">"Accidents"</span>) <span class="sc">+</span></span>
-<span id="cb86-30"><a href="#cb86-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">45</span>, <span class="at">hjust =</span> <span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb74"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a>ra_sf<span class="sc">$</span>Time <span class="ot">&lt;-</span> <span class="fu">as.POSIXct</span>(ra_sf<span class="sc">$</span>incident_datetime, <span class="at">fomat =</span> <span class="st">"%Y/%m/%d"</span>)</span>
+<span id="cb74-2"><a href="#cb74-2" aria-hidden="true" tabindex="-1"></a>start <span class="ot">&lt;-</span> <span class="fu">as.POSIXct</span>(<span class="st">"2019/01/01"</span>, <span class="at">format =</span> <span class="st">"%Y/%m/%d"</span>)</span>
+<span id="cb74-3"><a href="#cb74-3" aria-hidden="true" tabindex="-1"></a>ra_sf<span class="sc">$</span>Time <span class="ot">&lt;-</span> <span class="fu">difftime</span>(ra_sf<span class="sc">$</span>Time, start, <span class="at">units =</span> <span class="st">"days"</span>)</span>
+<span id="cb74-4"><a href="#cb74-4" aria-hidden="true" tabindex="-1"></a>ra_sf<span class="sc">$</span>Time <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(ra_sf<span class="sc">$</span>Time)</span>
+<span id="cb74-5"><a href="#cb74-5" aria-hidden="true" tabindex="-1"></a>ra_sf<span class="sc">$</span>Time_2019 <span class="ot">&lt;-</span> <span class="fu">as.POSIXct</span>(<span class="fu">paste</span>(<span class="st">"2019"</span>, <span class="fu">format</span>(ra_sf<span class="sc">$</span>incident_datetime, <span class="st">"%m/%d"</span>)), <span class="at">format =</span> <span class="st">"%Y %m/%d "</span>)</span>
+<span id="cb74-6"><a href="#cb74-6" aria-hidden="true" tabindex="-1"></a>ra_sf<span class="sc">$</span>Time_2019 <span class="ot">&lt;-</span> <span class="fu">difftime</span>(ra_sf<span class="sc">$</span>Time_2019, start, <span class="at">units =</span> <span class="st">"days"</span>)</span>
+<span id="cb74-7"><a href="#cb74-7" aria-hidden="true" tabindex="-1"></a>ra_sf<span class="sc">$</span>Time_2019 <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(ra_sf<span class="sc">$</span>Time_2019)</span>
+<span id="cb74-8"><a href="#cb74-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb74-9"><a href="#cb74-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb74-10"><a href="#cb74-10" aria-hidden="true" tabindex="-1"></a>years <span class="ot">&lt;-</span> <span class="fu">as.character</span>(<span class="dv">2019</span><span class="sc">:</span><span class="dv">2022</span>)</span>
+<span id="cb74-11"><a href="#cb74-11" aria-hidden="true" tabindex="-1"></a>months <span class="ot">&lt;-</span> <span class="fu">as.character</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">12</span>)</span>
+<span id="cb74-12"><a href="#cb74-12" aria-hidden="true" tabindex="-1"></a>months <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">nchar</span>(months) <span class="sc">==</span> <span class="dv">1</span>, <span class="fu">paste0</span>(<span class="st">"0"</span>, months), months)</span>
+<span id="cb74-13"><a href="#cb74-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a list of month start dates for each year</span></span>
+<span id="cb74-14"><a href="#cb74-14" aria-hidden="true" tabindex="-1"></a>months_starts_labs <span class="ot">&lt;-</span> <span class="fu">outer</span>(years, months, paste, <span class="at">sep =</span> <span class="st">"/"</span>)</span>
+<span id="cb74-15"><a href="#cb74-15" aria-hidden="true" tabindex="-1"></a>months_starts_labs <span class="ot">&lt;-</span> <span class="fu">as.vector</span>(<span class="fu">t</span>(months_starts_labs))  <span class="co"># Flatten the matrix</span></span>
+<span id="cb74-16"><a href="#cb74-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb74-17"><a href="#cb74-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert month start labels to POSIXct and then to numeric days</span></span>
+<span id="cb74-18"><a href="#cb74-18" aria-hidden="true" tabindex="-1"></a>months_starts_num <span class="ot">&lt;-</span> <span class="fu">as.POSIXct</span>(<span class="fu">paste0</span>(months_starts_labs, <span class="st">"/01"</span>), <span class="at">format =</span> <span class="st">"%Y/%m/%d"</span>)</span>
+<span id="cb74-19"><a href="#cb74-19" aria-hidden="true" tabindex="-1"></a>months_starts_num <span class="ot">&lt;-</span> <span class="fu">difftime</span>(months_starts_num, start, <span class="at">units =</span> <span class="st">"days"</span>)</span>
+<span id="cb74-20"><a href="#cb74-20" aria-hidden="true" tabindex="-1"></a>months_starts_num <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(months_starts_num)</span>
+<span id="cb74-21"><a href="#cb74-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb74-22"><a href="#cb74-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Create shorter month labels without the year</span></span>
+<span id="cb74-23"><a href="#cb74-23" aria-hidden="true" tabindex="-1"></a>months_starts_labs_short <span class="ot">&lt;-</span> <span class="fu">gsub</span>(<span class="st">"^</span><span class="sc">\\</span><span class="st">d{4}/"</span>, <span class="st">""</span>, months_starts_labs)</span>
+<span id="cb74-24"><a href="#cb74-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb74-25"><a href="#cb74-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot the histogram using ggplot2</span></span>
+<span id="cb74-26"><a href="#cb74-26" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(ra_sf) <span class="sc">+</span> </span>
+<span id="cb74-27"><a href="#cb74-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="fu">aes</span>(<span class="at">x =</span> Time), <span class="at">bins =</span> <span class="dv">30</span>, <span class="at">color =</span> <span class="st">"white"</span>) <span class="sc">+</span> </span>
+<span id="cb74-28"><a href="#cb74-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> months_starts_num, <span class="at">labels =</span> months_starts_labs_short) <span class="sc">+</span></span>
+<span id="cb74-29"><a href="#cb74-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Months"</span>, <span class="at">y =</span> <span class="st">"Accidents"</span>) <span class="sc">+</span></span>
+<span id="cb74-30"><a href="#cb74-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">45</span>, <span class="at">hjust =</span> <span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -1393,27 +1365,27 @@ PROJCRS["WGS 84 / UTM zone 47N",
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb87"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb87-1"><a href="#cb87-1" aria-hidden="true" tabindex="-1"></a>w <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">1</span>,<span class="fu">nrow</span>(ra_sf))</span>
-<span id="cb87-2"><a href="#cb87-2" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="fu">max</span>(ra_sf<span class="sc">$</span>Time), <span class="fl">0.5</span>)</span>
-<span id="cb87-3"><a href="#cb87-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb87-4"><a href="#cb87-4" aria-hidden="true" tabindex="-1"></a>time_kernel_values <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb87-5"><a href="#cb87-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw_10 =</span> <span class="fu">tkde</span>(ra_sf<span class="sc">$</span>Time, <span class="at">w =</span> w, <span class="at">samples =</span> samples, <span class="at">bw =</span> <span class="dv">10</span>, <span class="at">kernel_name =</span> <span class="st">"quartic"</span>),</span>
-<span id="cb87-6"><a href="#cb87-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw_20 =</span> <span class="fu">tkde</span>(ra_sf<span class="sc">$</span>Time, <span class="at">w =</span> w, <span class="at">samples =</span> samples, <span class="at">bw =</span> <span class="dv">20</span>, <span class="at">kernel_name =</span> <span class="st">"quartic"</span>),</span>
-<span id="cb87-7"><a href="#cb87-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw_30 =</span> <span class="fu">tkde</span>(ra_sf<span class="sc">$</span>Time, <span class="at">w =</span> w, <span class="at">samples =</span> samples, <span class="at">bw =</span> <span class="dv">30</span>, <span class="at">kernel_name =</span> <span class="st">"quartic"</span>),</span>
-<span id="cb87-8"><a href="#cb87-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw_40 =</span> <span class="fu">tkde</span>(ra_sf<span class="sc">$</span>Time, <span class="at">w =</span> w, <span class="at">samples =</span> samples, <span class="at">bw =</span> <span class="dv">40</span>, <span class="at">kernel_name =</span> <span class="st">"quartic"</span>),</span>
-<span id="cb87-9"><a href="#cb87-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw_50 =</span> <span class="fu">tkde</span>(ra_sf<span class="sc">$</span>Time, <span class="at">w =</span> w, <span class="at">samples =</span> samples, <span class="at">bw =</span> <span class="dv">50</span>, <span class="at">kernel_name =</span> <span class="st">"quartic"</span>),</span>
-<span id="cb87-10"><a href="#cb87-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw_60 =</span> <span class="fu">tkde</span>(ra_sf<span class="sc">$</span>Time, <span class="at">w =</span> w, <span class="at">samples =</span> samples, <span class="at">bw =</span> <span class="dv">60</span>, <span class="at">kernel_name =</span> <span class="st">"quartic"</span>),</span>
-<span id="cb87-11"><a href="#cb87-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">time =</span> samples</span>
-<span id="cb87-12"><a href="#cb87-12" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb87-13"><a href="#cb87-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb87-14"><a href="#cb87-14" aria-hidden="true" tabindex="-1"></a>df_time <span class="ot">&lt;-</span> reshape2<span class="sc">::</span><span class="fu">melt</span>(time_kernel_values,<span class="at">id.vars =</span> <span class="st">"time"</span>)</span>
-<span id="cb87-15"><a href="#cb87-15" aria-hidden="true" tabindex="-1"></a>df_time<span class="sc">$</span>variable <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(df_time<span class="sc">$</span>variable)</span>
-<span id="cb87-16"><a href="#cb87-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb87-17"><a href="#cb87-17" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> df_time) <span class="sc">+</span> </span>
-<span id="cb87-18"><a href="#cb87-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x =</span> time, <span class="at">y =</span> value)) <span class="sc">+</span></span>
-<span id="cb87-19"><a href="#cb87-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> months_starts_num, <span class="at">labels =</span> months_starts_labs) <span class="sc">+</span></span>
-<span id="cb87-20"><a href="#cb87-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="fu">vars</span>(variable), <span class="at">ncol=</span><span class="dv">2</span>, <span class="at">scales =</span> <span class="st">"free"</span>) <span class="sc">+</span> </span>
-<span id="cb87-21"><a href="#cb87-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">5</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb75"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a>w <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">1</span>,<span class="fu">nrow</span>(ra_sf))</span>
+<span id="cb75-2"><a href="#cb75-2" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="fu">max</span>(ra_sf<span class="sc">$</span>Time), <span class="fl">0.5</span>)</span>
+<span id="cb75-3"><a href="#cb75-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb75-4"><a href="#cb75-4" aria-hidden="true" tabindex="-1"></a>time_kernel_values <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb75-5"><a href="#cb75-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw_10 =</span> <span class="fu">tkde</span>(ra_sf<span class="sc">$</span>Time, <span class="at">w =</span> w, <span class="at">samples =</span> samples, <span class="at">bw =</span> <span class="dv">10</span>, <span class="at">kernel_name =</span> <span class="st">"quartic"</span>),</span>
+<span id="cb75-6"><a href="#cb75-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw_20 =</span> <span class="fu">tkde</span>(ra_sf<span class="sc">$</span>Time, <span class="at">w =</span> w, <span class="at">samples =</span> samples, <span class="at">bw =</span> <span class="dv">20</span>, <span class="at">kernel_name =</span> <span class="st">"quartic"</span>),</span>
+<span id="cb75-7"><a href="#cb75-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw_30 =</span> <span class="fu">tkde</span>(ra_sf<span class="sc">$</span>Time, <span class="at">w =</span> w, <span class="at">samples =</span> samples, <span class="at">bw =</span> <span class="dv">30</span>, <span class="at">kernel_name =</span> <span class="st">"quartic"</span>),</span>
+<span id="cb75-8"><a href="#cb75-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw_40 =</span> <span class="fu">tkde</span>(ra_sf<span class="sc">$</span>Time, <span class="at">w =</span> w, <span class="at">samples =</span> samples, <span class="at">bw =</span> <span class="dv">40</span>, <span class="at">kernel_name =</span> <span class="st">"quartic"</span>),</span>
+<span id="cb75-9"><a href="#cb75-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw_50 =</span> <span class="fu">tkde</span>(ra_sf<span class="sc">$</span>Time, <span class="at">w =</span> w, <span class="at">samples =</span> samples, <span class="at">bw =</span> <span class="dv">50</span>, <span class="at">kernel_name =</span> <span class="st">"quartic"</span>),</span>
+<span id="cb75-10"><a href="#cb75-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw_60 =</span> <span class="fu">tkde</span>(ra_sf<span class="sc">$</span>Time, <span class="at">w =</span> w, <span class="at">samples =</span> samples, <span class="at">bw =</span> <span class="dv">60</span>, <span class="at">kernel_name =</span> <span class="st">"quartic"</span>),</span>
+<span id="cb75-11"><a href="#cb75-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">time =</span> samples</span>
+<span id="cb75-12"><a href="#cb75-12" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb75-13"><a href="#cb75-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb75-14"><a href="#cb75-14" aria-hidden="true" tabindex="-1"></a>df_time <span class="ot">&lt;-</span> reshape2<span class="sc">::</span><span class="fu">melt</span>(time_kernel_values,<span class="at">id.vars =</span> <span class="st">"time"</span>)</span>
+<span id="cb75-15"><a href="#cb75-15" aria-hidden="true" tabindex="-1"></a>df_time<span class="sc">$</span>variable <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(df_time<span class="sc">$</span>variable)</span>
+<span id="cb75-16"><a href="#cb75-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb75-17"><a href="#cb75-17" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> df_time) <span class="sc">+</span> </span>
+<span id="cb75-18"><a href="#cb75-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x =</span> time, <span class="at">y =</span> value)) <span class="sc">+</span></span>
+<span id="cb75-19"><a href="#cb75-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> months_starts_num, <span class="at">labels =</span> months_starts_labs) <span class="sc">+</span></span>
+<span id="cb75-20"><a href="#cb75-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="fu">vars</span>(variable), <span class="at">ncol=</span><span class="dv">2</span>, <span class="at">scales =</span> <span class="st">"free"</span>) <span class="sc">+</span> </span>
+<span id="cb75-21"><a href="#cb75-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">5</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -1422,22 +1394,22 @@ PROJCRS["WGS 84 / UTM zone 47N",
 </div>
 </div>
 </div>
-<p>While interesting patterns can be observed across different temporal bandwidths, there are still. Let try to see the remove the year and view the temporal attribute as month of year instead.</p>
+<p>While interesting patterns can be observed across different temporal bandwidths, variance is still very high. Let try to see the remove the year and view the temporal attribute as month of year instead.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb88"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb88-1"><a href="#cb88-1" aria-hidden="true" tabindex="-1"></a>ra_sf<span class="sc">$</span>start_of_year <span class="ot">&lt;-</span> <span class="fu">as.POSIXct</span>(<span class="fu">paste0</span>(<span class="fu">format</span>(ra_sf<span class="sc">$</span>incident_datetime, <span class="st">"%Y"</span>), <span class="st">"-01-01"</span>), <span class="at">format =</span> <span class="st">"%Y-%m-%d"</span>)</span>
-<span id="cb88-2"><a href="#cb88-2" aria-hidden="true" tabindex="-1"></a>ra_sf<span class="sc">$</span>days_since_start_of_year <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">difftime</span>(ra_sf<span class="sc">$</span>incident_datetime, ra_sf<span class="sc">$</span>start_of_year, <span class="at">units =</span> <span class="st">"days"</span>))</span>
-<span id="cb88-3"><a href="#cb88-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb88-4"><a href="#cb88-4" aria-hidden="true" tabindex="-1"></a>months <span class="ot">&lt;-</span> <span class="fu">as.character</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">12</span>)</span>
-<span id="cb88-5"><a href="#cb88-5" aria-hidden="true" tabindex="-1"></a>months <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">nchar</span>(months)<span class="sc">==</span><span class="dv">1</span>, <span class="fu">paste0</span>(<span class="st">"0"</span>, months), months)</span>
-<span id="cb88-6"><a href="#cb88-6" aria-hidden="true" tabindex="-1"></a>months_starts_labs <span class="ot">&lt;-</span> <span class="fu">paste</span>(<span class="st">"2019/"</span>,months,<span class="st">"/01"</span>, <span class="at">sep =</span> <span class="st">""</span>)</span>
-<span id="cb88-7"><a href="#cb88-7" aria-hidden="true" tabindex="-1"></a>months_starts_num <span class="ot">&lt;-</span> <span class="fu">as.POSIXct</span>(months_starts_labs, <span class="at">format =</span> <span class="st">"%Y/%m/%d"</span>)</span>
-<span id="cb88-8"><a href="#cb88-8" aria-hidden="true" tabindex="-1"></a>months_starts_num <span class="ot">&lt;-</span> <span class="fu">difftime</span>(months_starts_num, start, <span class="at">units =</span> <span class="st">"days"</span>)</span>
-<span id="cb88-9"><a href="#cb88-9" aria-hidden="true" tabindex="-1"></a>months_starts_num <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(months_starts_num)</span>
-<span id="cb88-10"><a href="#cb88-10" aria-hidden="true" tabindex="-1"></a>months_starts_labs <span class="ot">&lt;-</span> <span class="fu">gsub</span>(<span class="st">"2019/"</span>, <span class="st">""</span>, months_starts_labs, <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb88-11"><a href="#cb88-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb88-12"><a href="#cb88-12" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(ra_sf) <span class="sc">+</span> </span>
-<span id="cb88-13"><a href="#cb88-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="fu">aes</span>(<span class="at">x =</span> Time_2019), <span class="at">bins =</span> <span class="dv">30</span>, <span class="at">color =</span> <span class="st">"white"</span>) <span class="sc">+</span> </span>
-<span id="cb88-14"><a href="#cb88-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> months_starts_num, <span class="at">labels =</span> months_starts_labs)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb76"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb76-1"><a href="#cb76-1" aria-hidden="true" tabindex="-1"></a>ra_sf<span class="sc">$</span>start_of_year <span class="ot">&lt;-</span> <span class="fu">as.POSIXct</span>(<span class="fu">paste0</span>(<span class="fu">format</span>(ra_sf<span class="sc">$</span>incident_datetime, <span class="st">"%Y"</span>), <span class="st">"-01-01"</span>), <span class="at">format =</span> <span class="st">"%Y-%m-%d"</span>)</span>
+<span id="cb76-2"><a href="#cb76-2" aria-hidden="true" tabindex="-1"></a>ra_sf<span class="sc">$</span>days_since_start_of_year <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">difftime</span>(ra_sf<span class="sc">$</span>incident_datetime, ra_sf<span class="sc">$</span>start_of_year, <span class="at">units =</span> <span class="st">"days"</span>))</span>
+<span id="cb76-3"><a href="#cb76-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb76-4"><a href="#cb76-4" aria-hidden="true" tabindex="-1"></a>months <span class="ot">&lt;-</span> <span class="fu">as.character</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">12</span>)</span>
+<span id="cb76-5"><a href="#cb76-5" aria-hidden="true" tabindex="-1"></a>months <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">nchar</span>(months)<span class="sc">==</span><span class="dv">1</span>, <span class="fu">paste0</span>(<span class="st">"0"</span>, months), months)</span>
+<span id="cb76-6"><a href="#cb76-6" aria-hidden="true" tabindex="-1"></a>months_starts_labs <span class="ot">&lt;-</span> <span class="fu">paste</span>(<span class="st">"2019/"</span>,months,<span class="st">"/01"</span>, <span class="at">sep =</span> <span class="st">""</span>)</span>
+<span id="cb76-7"><a href="#cb76-7" aria-hidden="true" tabindex="-1"></a>months_starts_num <span class="ot">&lt;-</span> <span class="fu">as.POSIXct</span>(months_starts_labs, <span class="at">format =</span> <span class="st">"%Y/%m/%d"</span>)</span>
+<span id="cb76-8"><a href="#cb76-8" aria-hidden="true" tabindex="-1"></a>months_starts_num <span class="ot">&lt;-</span> <span class="fu">difftime</span>(months_starts_num, start, <span class="at">units =</span> <span class="st">"days"</span>)</span>
+<span id="cb76-9"><a href="#cb76-9" aria-hidden="true" tabindex="-1"></a>months_starts_num <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(months_starts_num)</span>
+<span id="cb76-10"><a href="#cb76-10" aria-hidden="true" tabindex="-1"></a>months_starts_labs <span class="ot">&lt;-</span> <span class="fu">gsub</span>(<span class="st">"2019/"</span>, <span class="st">""</span>, months_starts_labs, <span class="at">fixed =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb76-11"><a href="#cb76-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb76-12"><a href="#cb76-12" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(ra_sf) <span class="sc">+</span> </span>
+<span id="cb76-13"><a href="#cb76-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="fu">aes</span>(<span class="at">x =</span> Time_2019), <span class="at">bins =</span> <span class="dv">30</span>, <span class="at">color =</span> <span class="st">"white"</span>) <span class="sc">+</span> </span>
+<span id="cb76-14"><a href="#cb76-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> months_starts_num, <span class="at">labels =</span> months_starts_labs)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: Removed 8 rows containing non-finite outside the scale range
 (`stat_bin()`).</code></pre>
@@ -1452,27 +1424,27 @@ PROJCRS["WGS 84 / UTM zone 47N",
 </div>
 <p>Now that the we are only looking at months of year, it is clear that there are some months (~April-May and ~October-November) that have more accidents.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb90"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb90-1"><a href="#cb90-1" aria-hidden="true" tabindex="-1"></a>w <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">1</span>,<span class="fu">nrow</span>(ra_sf))</span>
-<span id="cb90-2"><a href="#cb90-2" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="fu">max</span>(ra_sf<span class="sc">$</span>days_since_start_of_year), <span class="fl">0.5</span>)</span>
-<span id="cb90-3"><a href="#cb90-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb90-4"><a href="#cb90-4" aria-hidden="true" tabindex="-1"></a>time_kernel_values <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb90-5"><a href="#cb90-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw_10 =</span> <span class="fu">tkde</span>(ra_sf<span class="sc">$</span>days_since_start_of_year, <span class="at">w =</span> w, <span class="at">samples =</span> samples, <span class="at">bw =</span> <span class="dv">10</span>, <span class="at">kernel_name =</span> <span class="st">"quartic"</span>),</span>
-<span id="cb90-6"><a href="#cb90-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw_20 =</span> <span class="fu">tkde</span>(ra_sf<span class="sc">$</span>days_since_start_of_year, <span class="at">w =</span> w, <span class="at">samples =</span> samples, <span class="at">bw =</span> <span class="dv">20</span>, <span class="at">kernel_name =</span> <span class="st">"quartic"</span>),</span>
-<span id="cb90-7"><a href="#cb90-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw_30 =</span> <span class="fu">tkde</span>(ra_sf<span class="sc">$</span>days_since_start_of_year, <span class="at">w =</span> w, <span class="at">samples =</span> samples, <span class="at">bw =</span> <span class="dv">30</span>, <span class="at">kernel_name =</span> <span class="st">"quartic"</span>),</span>
-<span id="cb90-8"><a href="#cb90-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw_40 =</span> <span class="fu">tkde</span>(ra_sf<span class="sc">$</span>days_since_start_of_year, <span class="at">w =</span> w, <span class="at">samples =</span> samples, <span class="at">bw =</span> <span class="dv">40</span>, <span class="at">kernel_name =</span> <span class="st">"quartic"</span>),</span>
-<span id="cb90-9"><a href="#cb90-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw_50 =</span> <span class="fu">tkde</span>(ra_sf<span class="sc">$</span>days_since_start_of_year, <span class="at">w =</span> w, <span class="at">samples =</span> samples, <span class="at">bw =</span> <span class="dv">50</span>, <span class="at">kernel_name =</span> <span class="st">"quartic"</span>),</span>
-<span id="cb90-10"><a href="#cb90-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw_60 =</span> <span class="fu">tkde</span>(ra_sf<span class="sc">$</span>days_since_start_of_year, <span class="at">w =</span> w, <span class="at">samples =</span> samples, <span class="at">bw =</span> <span class="dv">60</span>, <span class="at">kernel_name =</span> <span class="st">"quartic"</span>),</span>
-<span id="cb90-11"><a href="#cb90-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">time =</span> samples</span>
-<span id="cb90-12"><a href="#cb90-12" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb90-13"><a href="#cb90-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb90-14"><a href="#cb90-14" aria-hidden="true" tabindex="-1"></a>df_time <span class="ot">&lt;-</span> reshape2<span class="sc">::</span><span class="fu">melt</span>(time_kernel_values,<span class="at">id.vars =</span> <span class="st">"time"</span>)</span>
-<span id="cb90-15"><a href="#cb90-15" aria-hidden="true" tabindex="-1"></a>df_time<span class="sc">$</span>variable <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(df_time<span class="sc">$</span>variable)</span>
-<span id="cb90-16"><a href="#cb90-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb90-17"><a href="#cb90-17" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> df_time) <span class="sc">+</span> </span>
-<span id="cb90-18"><a href="#cb90-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x =</span> time, <span class="at">y =</span> value)) <span class="sc">+</span></span>
-<span id="cb90-19"><a href="#cb90-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> months_starts_num, <span class="at">labels =</span> months_starts_labs) <span class="sc">+</span></span>
-<span id="cb90-20"><a href="#cb90-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="fu">vars</span>(variable), <span class="at">ncol=</span><span class="dv">2</span>, <span class="at">scales =</span> <span class="st">"free"</span>) <span class="sc">+</span> </span>
-<span id="cb90-21"><a href="#cb90-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">5</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb78"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true" tabindex="-1"></a>w <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">1</span>,<span class="fu">nrow</span>(ra_sf))</span>
+<span id="cb78-2"><a href="#cb78-2" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="fu">max</span>(ra_sf<span class="sc">$</span>days_since_start_of_year), <span class="fl">0.5</span>)</span>
+<span id="cb78-3"><a href="#cb78-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb78-4"><a href="#cb78-4" aria-hidden="true" tabindex="-1"></a>time_kernel_values <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb78-5"><a href="#cb78-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw_10 =</span> <span class="fu">tkde</span>(ra_sf<span class="sc">$</span>days_since_start_of_year, <span class="at">w =</span> w, <span class="at">samples =</span> samples, <span class="at">bw =</span> <span class="dv">10</span>, <span class="at">kernel_name =</span> <span class="st">"quartic"</span>),</span>
+<span id="cb78-6"><a href="#cb78-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw_20 =</span> <span class="fu">tkde</span>(ra_sf<span class="sc">$</span>days_since_start_of_year, <span class="at">w =</span> w, <span class="at">samples =</span> samples, <span class="at">bw =</span> <span class="dv">20</span>, <span class="at">kernel_name =</span> <span class="st">"quartic"</span>),</span>
+<span id="cb78-7"><a href="#cb78-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw_30 =</span> <span class="fu">tkde</span>(ra_sf<span class="sc">$</span>days_since_start_of_year, <span class="at">w =</span> w, <span class="at">samples =</span> samples, <span class="at">bw =</span> <span class="dv">30</span>, <span class="at">kernel_name =</span> <span class="st">"quartic"</span>),</span>
+<span id="cb78-8"><a href="#cb78-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw_40 =</span> <span class="fu">tkde</span>(ra_sf<span class="sc">$</span>days_since_start_of_year, <span class="at">w =</span> w, <span class="at">samples =</span> samples, <span class="at">bw =</span> <span class="dv">40</span>, <span class="at">kernel_name =</span> <span class="st">"quartic"</span>),</span>
+<span id="cb78-9"><a href="#cb78-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw_50 =</span> <span class="fu">tkde</span>(ra_sf<span class="sc">$</span>days_since_start_of_year, <span class="at">w =</span> w, <span class="at">samples =</span> samples, <span class="at">bw =</span> <span class="dv">50</span>, <span class="at">kernel_name =</span> <span class="st">"quartic"</span>),</span>
+<span id="cb78-10"><a href="#cb78-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw_60 =</span> <span class="fu">tkde</span>(ra_sf<span class="sc">$</span>days_since_start_of_year, <span class="at">w =</span> w, <span class="at">samples =</span> samples, <span class="at">bw =</span> <span class="dv">60</span>, <span class="at">kernel_name =</span> <span class="st">"quartic"</span>),</span>
+<span id="cb78-11"><a href="#cb78-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">time =</span> samples</span>
+<span id="cb78-12"><a href="#cb78-12" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb78-13"><a href="#cb78-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb78-14"><a href="#cb78-14" aria-hidden="true" tabindex="-1"></a>df_time <span class="ot">&lt;-</span> reshape2<span class="sc">::</span><span class="fu">melt</span>(time_kernel_values,<span class="at">id.vars =</span> <span class="st">"time"</span>)</span>
+<span id="cb78-15"><a href="#cb78-15" aria-hidden="true" tabindex="-1"></a>df_time<span class="sc">$</span>variable <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(df_time<span class="sc">$</span>variable)</span>
+<span id="cb78-16"><a href="#cb78-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb78-17"><a href="#cb78-17" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data =</span> df_time) <span class="sc">+</span> </span>
+<span id="cb78-18"><a href="#cb78-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">x =</span> time, <span class="at">y =</span> value)) <span class="sc">+</span></span>
+<span id="cb78-19"><a href="#cb78-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> months_starts_num, <span class="at">labels =</span> months_starts_labs) <span class="sc">+</span></span>
+<span id="cb78-20"><a href="#cb78-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="fu">vars</span>(variable), <span class="at">ncol=</span><span class="dv">2</span>, <span class="at">scales =</span> <span class="st">"free"</span>) <span class="sc">+</span> </span>
+<span id="cb78-21"><a href="#cb78-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">5</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -1481,17 +1453,62 @@ PROJCRS["WGS 84 / UTM zone 47N",
 </div>
 </div>
 </div>
-<p>From this, we can clearly see that there might be a seasonal bimodal trend captured with a temporal bandwidth of 30-40 days.</p>
-<p>adsjkladsljkadsjklasdjkl</p>
+<p>From this, we can clearly see that there might be a seasonal bimodal trend captured with a temporal bandwidth of 30-40 days. The newly created temporal variable <code>days_since_start_of_year</code> will be used instead for subsequent temporal analysis.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb79"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Cartographic Quality of Bangkok Metropolitan Region</span></span>
+<span id="cb79-2"><a href="#cb79-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_style</span>(<span class="st">"classic"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>tmap style set to "classic"</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>other available styles are: "white", "gray", "natural", "cobalt", "col_blind", "albatross", "beaver", "bw", "watercolor" </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb82"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb82-1"><a href="#cb82-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(th_bound_sf)<span class="sc">+</span></span>
+<span id="cb82-2"><a href="#cb82-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>(<span class="at">col =</span> <span class="st">"ADM1_EN"</span>, <span class="at">palette =</span> <span class="st">"Set3"</span>, <span class="at">title =</span> <span class="st">"Provinces"</span>, <span class="at">border.col =</span> <span class="st">"black"</span>, <span class="at">border.alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb82-3"><a href="#cb82-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_layout</span>(<span class="at">main.title =</span> <span class="st">"Accidents across Bangkok Metropolitan Region"</span>,</span>
+<span id="cb82-4"><a href="#cb82-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">main.title.position =</span> <span class="st">"center"</span>,</span>
+<span id="cb82-5"><a href="#cb82-5" aria-hidden="true" tabindex="-1"></a>            <span class="at">main.title.size =</span> <span class="fl">1.2</span>,</span>
+<span id="cb82-6"><a href="#cb82-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">legend.height =</span> <span class="fl">0.45</span>, </span>
+<span id="cb82-7"><a href="#cb82-7" aria-hidden="true" tabindex="-1"></a>            <span class="at">legend.width =</span> <span class="fl">0.35</span>,</span>
+<span id="cb82-8"><a href="#cb82-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">frame =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb82-9"><a href="#cb82-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_borders</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb82-10"><a href="#cb82-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_compass</span>(<span class="at">type=</span><span class="st">"8star"</span>, <span class="at">size =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb82-11"><a href="#cb82-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_scale_bar</span>(<span class="at">width =</span> <span class="fl">0.15</span>) <span class="sc">+</span></span>
+<span id="cb82-12"><a href="#cb82-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_grid</span>(<span class="at">lwd =</span> <span class="fl">0.1</span>, <span class="at">alpha =</span> <span class="fl">0.2</span>) <span class="sc">+</span></span>
+<span id="cb82-13"><a href="#cb82-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_credits</span>(<span class="st">"Source: Subnational Administrative Boundaries from HDX </span><span class="sc">\n</span><span class="st"> and Accident data from Kaggle"</span>, </span>
+<span id="cb82-14"><a href="#cb82-14" aria-hidden="true" tabindex="-1"></a>             <span class="at">position =</span> <span class="fu">c</span>(<span class="st">"left"</span>, <span class="st">"bottom"</span>)) <span class="sc">+</span></span>
+<span id="cb82-15"><a href="#cb82-15" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(ra_sf) <span class="sc">+</span></span>
+<span id="cb82-16"><a href="#cb82-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: One tm layer group has duplicated layer types, which are omitted. To
+draw multiple layers of the same type, use multiple layer groups (i.e. specify
+tm_shape prior to each of them).</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-34-1.png" class="img-fluid figure-img" width="1152"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb84"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb84-1"><a href="#cb84-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Change back to default</span></span>
+<span id="cb84-2"><a href="#cb84-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_style</span>(<span class="st">"white"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>tmap style set to "white"</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>other available styles are: "gray", "natural", "cobalt", "col_blind", "albatross", "beaver", "bw", "classic", "watercolor" </code></pre>
+</div>
+</div>
 <p>It is important to note that given the context of the issue, it is not encouraged to perform any typical spatial point pattern analysis.</p>
 <p>First-order spatial point pattern analysis such as kernel density estimation and nearest neighbours (i.e.&nbsp;Clark-Evans test) may give an indication of whether the events are clustered, regular or randomly occur, possibly highlighting potential accident hotspots. On the other hand second-order spatial point pattern analysis may illustrate spatial dependencies indicating underlying hazard. Nevertheless, techniques under both analysis are likely to be misleading as it will be heavily biased.</p>
 <p>From the exploratory data analysis, it is clear that accidents are network constrained. This will induce misleading results as the above analysis techniques assume that events can occur throughout the study area. Therefore, density based analysis such as KDE will naturally cluster around roads, whereas second-order spatial point analysis such as the F-function will calculate the distribution of distances from random locations in the study area to the nearest point in the pattern (including locations impossible for road accident to occur).</p>
-<p>Therefore, network spatial point pattern analysis will be the key analysis for this task.</p>
+<p>Therefore, network spatial point pattern analysis will be the fundamental analysis for this assi</p>
 </section>
 </section>
 <section id="network-spatial-point-pattern-analysis" class="level1">
 <h1>3 Network Spatial Point Pattern Analysis</h1>
-<p>In network spatial point pattern analysis,</p>
+<p>In network spatial point pattern analysis, the goal is understand how events are distributed across the network. This comes with determining whether the events occur randomly, or in a clustered/regular pattern. NKDE will allow us to identify intensity of events across the network, highlighting potential hotspots, whereas network K-function will be used in the complete spatial randomness test. By filtering different factors (temporal, environmental, behavioral) while running those analysis, we can then see if and how those factors affect accidents.</p>
 <section id="network-kernel-density-estimation" class="level2">
 <h2 class="anchored" data-anchor-id="network-kernel-density-estimation">3.1 Network Kernel Density Estimation</h2>
 </section>
@@ -1499,33 +1516,33 @@ PROJCRS["WGS 84 / UTM zone 47N",
 <h2 class="anchored" data-anchor-id="preparing-objects-required-for-performing-nkde">3.1.1 Preparing objects required for performing NKDE</h2>
 <p>Before generating lixels with <code>lixelize_lines()</code> of spNetwork, we need to know what is the appropriate length of a lixel.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb91"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb91-1"><a href="#cb91-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check </span></span>
-<span id="cb91-2"><a href="#cb91-2" aria-hidden="true" tabindex="-1"></a>th_road_lengths <span class="ot">&lt;-</span> <span class="fu">st_length</span>(th_osm_sf)</span>
-<span id="cb91-3"><a href="#cb91-3" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(th_road_lengths)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb87"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb87-1"><a href="#cb87-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check </span></span>
+<span id="cb87-2"><a href="#cb87-2" aria-hidden="true" tabindex="-1"></a>th_road_lengths <span class="ot">&lt;-</span> <span class="fu">st_length</span>(th_osm_sf)</span>
+<span id="cb87-3"><a href="#cb87-3" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(th_road_lengths)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
     0.133    30.298   113.356   397.255   406.497 30918.357 </code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb93"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb93-1"><a href="#cb93-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot histogram of road lengths</span></span>
-<span id="cb93-2"><a href="#cb93-2" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(th_road_lengths, <span class="at">breaks =</span> <span class="dv">100</span>, <span class="at">main =</span> <span class="st">"Distribution of Road Segment Lengths"</span>,</span>
-<span id="cb93-3"><a href="#cb93-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"Road Segment Length (meters)"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb89"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb89-1"><a href="#cb89-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot histogram of road lengths</span></span>
+<span id="cb89-2"><a href="#cb89-2" aria-hidden="true" tabindex="-1"></a><span class="fu">hist</span>(th_road_lengths, <span class="at">breaks =</span> <span class="dv">100</span>, <span class="at">main =</span> <span class="st">"Distribution of Road Segment Lengths"</span>,</span>
+<span id="cb89-3"><a href="#cb89-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="st">"Road Segment Length (meters)"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-35-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-36-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 </div>
 <p>Based on the above, 200 meters will be selected as the lixel length, as it is more than most road segments (median 113 meters) and it is not too computationally intensive. The minimum lixel length in this case will be the default 1/10 of lixel length.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb94"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb94-1"><a href="#cb94-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create lixels</span></span>
-<span id="cb94-2"><a href="#cb94-2" aria-hidden="true" tabindex="-1"></a>th_lixels <span class="ot">&lt;-</span> <span class="fu">lixelize_lines</span>(th_osm_sf, <span class="dv">200</span>)</span>
-<span id="cb94-3"><a href="#cb94-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb94-4"><a href="#cb94-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Create samples</span></span>
-<span id="cb94-5"><a href="#cb94-5" aria-hidden="true" tabindex="-1"></a>th_samples <span class="ot">&lt;-</span> <span class="fu">lines_center</span>(th_lixels) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb90"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb90-1"><a href="#cb90-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create lixels</span></span>
+<span id="cb90-2"><a href="#cb90-2" aria-hidden="true" tabindex="-1"></a>th_lixels <span class="ot">&lt;-</span> <span class="fu">lixelize_lines</span>(th_osm_sf, <span class="dv">200</span>)</span>
+<span id="cb90-3"><a href="#cb90-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb90-4"><a href="#cb90-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Create samples</span></span>
+<span id="cb90-5"><a href="#cb90-5" aria-hidden="true" tabindex="-1"></a>th_samples <span class="ot">&lt;-</span> <span class="fu">lines_center</span>(th_lixels) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="bandwidth-selction-for-performing-nkde" class="level2">
@@ -1534,170 +1551,175 @@ PROJCRS["WGS 84 / UTM zone 47N",
 - Adaptive: False due to the computation load and also because the entire study area share a relatively similar network (urban throughout) with lesser accident variation across the network.<br>
 - kernel: quartic as it provides a good balance between local and global estimation<br>
 - method: simple as most accidents happen along the road rather than at intersections</p>
-<p>With those in mind, bandwidth selection will be determined through <code>bw_cv_likelihood_calc</code> of spNetwork, using likelihood cross validation (aims to find a bandwidth that gives the most similar results when an event is removed). The bandwidth ranges from 25 to 425 based on the nearest neighbour analysis. 25 meters cover most distances between 2 accidents (median of 13 meters), and after 425 meters it is too wide.</p>
+<p>With those in mind, bandwidth selection will be determined through <code>bw_cv_likelihood_calc</code> of spNetwork, using likelihood cross validation (aims to find a bandwidth that gives the most similar results when an event is removed). The bandwidth ranges from 50 to 425 based on the nearest neighbour analysis. 50 meters cover most distances between 2 accidents (median of 13 meters), and 1000 meters is a good coverage given the study area (~7700 square km).</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb95"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb95-1"><a href="#cb95-1" aria-hidden="true" tabindex="-1"></a>th_bws_selection_cv <span class="ot">&lt;-</span> <span class="fu">bw_cv_likelihood_calc</span>(</span>
-<span id="cb95-2"><a href="#cb95-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">lines =</span> th_osm_sf, </span>
-<span id="cb95-3"><a href="#cb95-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">events =</span> ra_sf,</span>
-<span id="cb95-4"><a href="#cb95-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">w =</span> <span class="fu">rep</span>(<span class="dv">1</span>, <span class="fu">nrow</span>(ra_sf)),</span>
-<span id="cb95-5"><a href="#cb95-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">kernel_name =</span> <span class="st">"quartic"</span>,</span>
-<span id="cb95-6"><a href="#cb95-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">bws =</span> <span class="fu">seq</span>(<span class="dv">25</span>,<span class="dv">425</span>,<span class="dv">50</span>),</span>
-<span id="cb95-7"><a href="#cb95-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">"simple"</span>, </span>
-<span id="cb95-8"><a href="#cb95-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">digits =</span> <span class="dv">1</span>, </span>
-<span id="cb95-9"><a href="#cb95-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">tol =</span> <span class="fl">0.1</span>,</span>
-<span id="cb95-10"><a href="#cb95-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">grid_shape =</span> <span class="fu">c</span>(<span class="dv">5</span>,<span class="dv">5</span>), </span>
-<span id="cb95-11"><a href="#cb95-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">max_depth =</span> <span class="dv">8</span>,</span>
-<span id="cb95-12"><a href="#cb95-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">agg =</span> <span class="dv">5</span>, </span>
-<span id="cb95-13"><a href="#cb95-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">sparse =</span> <span class="cn">TRUE</span>, <span class="co"># Slower but require less memory</span></span>
-<span id="cb95-14"><a href="#cb95-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">verbose =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb91"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb91-1"><a href="#cb91-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Perform cross validation for bandwidth selection</span></span>
+<span id="cb91-2"><a href="#cb91-2" aria-hidden="true" tabindex="-1"></a>th_bws_selection_cv <span class="ot">&lt;-</span> <span class="fu">bw_cv_likelihood_calc</span>(</span>
+<span id="cb91-3"><a href="#cb91-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">lines =</span> th_osm_sf, </span>
+<span id="cb91-4"><a href="#cb91-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">events =</span> ra_sf,</span>
+<span id="cb91-5"><a href="#cb91-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">w =</span> <span class="fu">rep</span>(<span class="dv">1</span>, <span class="fu">nrow</span>(ra_sf)),</span>
+<span id="cb91-6"><a href="#cb91-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">kernel_name =</span> <span class="st">"quartic"</span>,</span>
+<span id="cb91-7"><a href="#cb91-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">bws =</span> <span class="fu">seq</span>(<span class="dv">50</span>,<span class="dv">1000</span>,<span class="dv">50</span>),</span>
+<span id="cb91-8"><a href="#cb91-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">"simple"</span>, </span>
+<span id="cb91-9"><a href="#cb91-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">digits =</span> <span class="dv">1</span>, </span>
+<span id="cb91-10"><a href="#cb91-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">tol =</span> <span class="fl">0.1</span>,</span>
+<span id="cb91-11"><a href="#cb91-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">grid_shape =</span> <span class="fu">c</span>(<span class="dv">5</span>,<span class="dv">5</span>), </span>
+<span id="cb91-12"><a href="#cb91-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">max_depth =</span> <span class="dv">8</span>,</span>
+<span id="cb91-13"><a href="#cb91-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">agg =</span> <span class="dv">5</span>, </span>
+<span id="cb91-14"><a href="#cb91-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">sparse =</span> <span class="cn">TRUE</span>, <span class="co"># Slower but require less memory</span></span>
+<span id="cb91-15"><a href="#cb91-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">verbose =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>CV results are exported for ease of rendering.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb96"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb96-1"><a href="#cb96-1" aria-hidden="true" tabindex="-1"></a><span class="co"># # Export output object and read it in to minimize rendering time</span></span>
-<span id="cb96-2"><a href="#cb96-2" aria-hidden="true" tabindex="-1"></a><span class="co"># write_rds(th_bws_selection_cv, 'data/output/th_bws_selection_cv.rds') # Uncomment when running the CV again</span></span>
-<span id="cb96-3"><a href="#cb96-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb96-4"><a href="#cb96-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Read in output object</span></span>
-<span id="cb96-5"><a href="#cb96-5" aria-hidden="true" tabindex="-1"></a>th_bws_selection_cv <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/output/th_bws_selection_cv.rds'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb92"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a><span class="co"># # Export output object and read it in to minimize rendering time</span></span>
+<span id="cb92-2"><a href="#cb92-2" aria-hidden="true" tabindex="-1"></a><span class="co"># write_rds(th_bws_selection_cv, 'data/output/th_bws_selection_cv.rds') # Uncomment when running the CV again</span></span>
+<span id="cb92-3"><a href="#cb92-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb92-4"><a href="#cb92-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Read in output object</span></span>
+<span id="cb92-5"><a href="#cb92-5" aria-hidden="true" tabindex="-1"></a>th_bws_selection_cv <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/output/th_bws_selection_cv.rds'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb97"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb97-1"><a href="#cb97-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize CV Scores</span></span>
-<span id="cb97-2"><a href="#cb97-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(th_bws_selection_cv<span class="sc">$</span>bw, th_bws_selection_cv<span class="sc">$</span>cv_scores, </span>
-<span id="cb97-3"><a href="#cb97-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">type =</span> <span class="st">"o"</span>, <span class="at">col =</span> <span class="st">"blue"</span>, <span class="at">xlab =</span> <span class="st">"Bandwidth (bw)"</span>, <span class="at">ylab =</span> <span class="st">"CV Scores"</span>,</span>
-<span id="cb97-4"><a href="#cb97-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"CV Scores vs Bandwidth"</span>, <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">lty =</span> <span class="dv">1</span>)</span>
-<span id="cb97-5"><a href="#cb97-5" aria-hidden="true" tabindex="-1"></a><span class="fu">text</span>(th_bws_selection_cv<span class="sc">$</span>bw, th_bws_selection_cv<span class="sc">$</span>cv_scores, </span>
-<span id="cb97-6"><a href="#cb97-6" aria-hidden="true" tabindex="-1"></a>     <span class="at">labels =</span> <span class="fu">round</span>(th_bws_selection_cv<span class="sc">$</span>cv_scores, <span class="dv">0</span>), <span class="at">pos =</span> <span class="dv">3</span>, <span class="at">cex =</span> <span class="fl">0.8</span>, <span class="at">col =</span> <span class="st">"black"</span>)</span>
-<span id="cb97-7"><a href="#cb97-7" aria-hidden="true" tabindex="-1"></a><span class="fu">grid</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb93"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb93-1"><a href="#cb93-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize CV Scores</span></span>
+<span id="cb93-2"><a href="#cb93-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(th_bws_selection_cv<span class="sc">$</span>bw, th_bws_selection_cv<span class="sc">$</span>cv_scores, </span>
+<span id="cb93-3"><a href="#cb93-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">type =</span> <span class="st">"o"</span>, <span class="at">col =</span> <span class="st">"blue"</span>, <span class="at">xlab =</span> <span class="st">"Bandwidth (bw)"</span>, <span class="at">ylab =</span> <span class="st">"CV Scores"</span>,</span>
+<span id="cb93-4"><a href="#cb93-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"CV Scores vs Bandwidth"</span>, <span class="at">ylim =</span> <span class="fu">c</span>(<span class="fu">min</span>(th_bws_selection_cv<span class="sc">$</span>cv_scores) <span class="sc">-</span> <span class="dv">50</span>, <span class="fu">max</span>(th_bws_selection_cv<span class="sc">$</span>cv_scores) <span class="sc">+</span> <span class="dv">50</span>),</span>
+<span id="cb93-5"><a href="#cb93-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">lty =</span> <span class="dv">1</span>)</span>
+<span id="cb93-6"><a href="#cb93-6" aria-hidden="true" tabindex="-1"></a><span class="fu">text</span>(th_bws_selection_cv<span class="sc">$</span>bw, th_bws_selection_cv<span class="sc">$</span>cv_scores, </span>
+<span id="cb93-7"><a href="#cb93-7" aria-hidden="true" tabindex="-1"></a>     <span class="at">labels =</span> <span class="fu">round</span>(th_bws_selection_cv<span class="sc">$</span>cv_scores, <span class="dv">0</span>), <span class="at">pos =</span> <span class="dv">3</span>, <span class="at">cex =</span> <span class="fl">0.8</span>, <span class="at">col =</span> <span class="st">"black"</span>)</span>
+<span id="cb93-8"><a href="#cb93-8" aria-hidden="true" tabindex="-1"></a><span class="fu">grid</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-39-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-40-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 </div>
-<p>With this in mind, 225 meters is selected as the bandwidth. Although the cross validation scores favor larger bandwidth, 225 is selected as a trade off between cv performance and potential overfitting.</p>
+<p>With this in mind, 500 meters is selected as the bandwidth. Although the cross validation scores favor larger bandwidth, 500 is selected as a trade off between cv performance and potential overfitting.</p>
 </section>
 <section id="performing-nkde" class="level2">
 <h2 class="anchored" data-anchor-id="performing-nkde">3.1.3 Performing NKDE</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb98"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb98-1"><a href="#cb98-1" aria-hidden="true" tabindex="-1"></a>future<span class="sc">::</span><span class="fu">plan</span>(future<span class="sc">::</span><span class="fu">multisession</span>(<span class="at">workers=</span><span class="dv">8</span>))</span>
-<span id="cb98-2"><a href="#cb98-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Set global option for parallel-safe random number generation</span></span>
-<span id="cb98-3"><a href="#cb98-3" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">future.seed =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb98-4"><a href="#cb98-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb98-5"><a href="#cb98-5" aria-hidden="true" tabindex="-1"></a>th_densities <span class="ot">&lt;-</span> <span class="fu">nkde.mc</span>(th_osm_sf, </span>
-<span id="cb98-6"><a href="#cb98-6" aria-hidden="true" tabindex="-1"></a>                  <span class="at">events =</span> ra_sf,</span>
-<span id="cb98-7"><a href="#cb98-7" aria-hidden="true" tabindex="-1"></a>                  <span class="at">w =</span> <span class="fu">rep</span>(<span class="dv">1</span>, <span class="fu">nrow</span>(ra_sf)),</span>
-<span id="cb98-8"><a href="#cb98-8" aria-hidden="true" tabindex="-1"></a>                  <span class="at">samples =</span> th_samples,</span>
-<span id="cb98-9"><a href="#cb98-9" aria-hidden="true" tabindex="-1"></a>                  <span class="at">kernel_name =</span> <span class="st">"quartic"</span>,</span>
-<span id="cb98-10"><a href="#cb98-10" aria-hidden="true" tabindex="-1"></a>                  <span class="at">bw =</span> <span class="dv">225</span>, </span>
-<span id="cb98-11"><a href="#cb98-11" aria-hidden="true" tabindex="-1"></a>                  <span class="at">div=</span> <span class="st">"bw"</span>, </span>
-<span id="cb98-12"><a href="#cb98-12" aria-hidden="true" tabindex="-1"></a>                  <span class="at">method =</span> <span class="st">"simple"</span>, </span>
-<span id="cb98-13"><a href="#cb98-13" aria-hidden="true" tabindex="-1"></a>                  <span class="at">digits =</span> <span class="dv">1</span>, </span>
-<span id="cb98-14"><a href="#cb98-14" aria-hidden="true" tabindex="-1"></a>                  <span class="at">tol =</span> <span class="fl">0.1</span>,</span>
-<span id="cb98-15"><a href="#cb98-15" aria-hidden="true" tabindex="-1"></a>                  <span class="at">grid_shape =</span> <span class="fu">c</span>(<span class="dv">5</span>,<span class="dv">5</span>), </span>
-<span id="cb98-16"><a href="#cb98-16" aria-hidden="true" tabindex="-1"></a>                  <span class="at">max_depth =</span> <span class="dv">8</span>,</span>
-<span id="cb98-17"><a href="#cb98-17" aria-hidden="true" tabindex="-1"></a>                  <span class="at">agg =</span> <span class="dv">5</span>, </span>
-<span id="cb98-18"><a href="#cb98-18" aria-hidden="true" tabindex="-1"></a>                  <span class="at">sparse =</span> <span class="cn">TRUE</span>, <span class="co"># Slower but require less memory</span></span>
-<span id="cb98-19"><a href="#cb98-19" aria-hidden="true" tabindex="-1"></a>                  <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb94"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb94-1"><a href="#cb94-1" aria-hidden="true" tabindex="-1"></a>future<span class="sc">::</span><span class="fu">plan</span>(future<span class="sc">::</span><span class="fu">multisession</span>(<span class="at">workers=</span><span class="dv">8</span>))</span>
+<span id="cb94-2"><a href="#cb94-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Set global option for parallel-safe random number generation</span></span>
+<span id="cb94-3"><a href="#cb94-3" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">future.seed =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb94-4"><a href="#cb94-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb94-5"><a href="#cb94-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Perform multi-core NKDE</span></span>
+<span id="cb94-6"><a href="#cb94-6" aria-hidden="true" tabindex="-1"></a>th_densities <span class="ot">&lt;-</span> <span class="fu">nkde.mc</span>(th_osm_sf,</span>
+<span id="cb94-7"><a href="#cb94-7" aria-hidden="true" tabindex="-1"></a>                  <span class="at">events =</span> ra_sf,</span>
+<span id="cb94-8"><a href="#cb94-8" aria-hidden="true" tabindex="-1"></a>                  <span class="at">w =</span> <span class="fu">rep</span>(<span class="dv">1</span>, <span class="fu">nrow</span>(ra_sf)),</span>
+<span id="cb94-9"><a href="#cb94-9" aria-hidden="true" tabindex="-1"></a>                  <span class="at">samples =</span> th_samples,</span>
+<span id="cb94-10"><a href="#cb94-10" aria-hidden="true" tabindex="-1"></a>                  <span class="at">kernel_name =</span> <span class="st">"quartic"</span>,</span>
+<span id="cb94-11"><a href="#cb94-11" aria-hidden="true" tabindex="-1"></a>                  <span class="at">bw =</span> <span class="dv">500</span>,</span>
+<span id="cb94-12"><a href="#cb94-12" aria-hidden="true" tabindex="-1"></a>                  <span class="at">div=</span> <span class="st">"bw"</span>,</span>
+<span id="cb94-13"><a href="#cb94-13" aria-hidden="true" tabindex="-1"></a>                  <span class="at">method =</span> <span class="st">"simple"</span>,</span>
+<span id="cb94-14"><a href="#cb94-14" aria-hidden="true" tabindex="-1"></a>                  <span class="at">digits =</span> <span class="dv">1</span>,</span>
+<span id="cb94-15"><a href="#cb94-15" aria-hidden="true" tabindex="-1"></a>                  <span class="at">tol =</span> <span class="fl">0.1</span>,</span>
+<span id="cb94-16"><a href="#cb94-16" aria-hidden="true" tabindex="-1"></a>                  <span class="at">grid_shape =</span> <span class="fu">c</span>(<span class="dv">5</span>,<span class="dv">5</span>),</span>
+<span id="cb94-17"><a href="#cb94-17" aria-hidden="true" tabindex="-1"></a>                  <span class="at">max_depth =</span> <span class="dv">8</span>,</span>
+<span id="cb94-18"><a href="#cb94-18" aria-hidden="true" tabindex="-1"></a>                  <span class="at">agg =</span> <span class="dv">5</span>,</span>
+<span id="cb94-19"><a href="#cb94-19" aria-hidden="true" tabindex="-1"></a>                  <span class="at">sparse =</span> <span class="cn">TRUE</span>, <span class="co"># Slower but require less memory</span></span>
+<span id="cb94-20"><a href="#cb94-20" aria-hidden="true" tabindex="-1"></a>                  <span class="at">verbose =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Results are exported for ease of rendering.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb99"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb99-1"><a href="#cb99-1" aria-hidden="true" tabindex="-1"></a><span class="co"># # Export output object and read it in to minimize rendering time</span></span>
-<span id="cb99-2"><a href="#cb99-2" aria-hidden="true" tabindex="-1"></a><span class="co"># write_rds(th_densities, 'data/output/th_nkde_densities.rds') # Uncomment when running the NKDE again</span></span>
-<span id="cb99-3"><a href="#cb99-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb99-4"><a href="#cb99-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Read in output object</span></span>
-<span id="cb99-5"><a href="#cb99-5" aria-hidden="true" tabindex="-1"></a>th_densities <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/output/th_nkde_densities.rds'</span>)</span>
-<span id="cb99-6"><a href="#cb99-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb99-7"><a href="#cb99-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Check density values</span></span>
-<span id="cb99-8"><a href="#cb99-8" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(th_densities)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb95"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb95-1"><a href="#cb95-1" aria-hidden="true" tabindex="-1"></a><span class="co"># # # Export output object and read it in to minimize rendering time</span></span>
+<span id="cb95-2"><a href="#cb95-2" aria-hidden="true" tabindex="-1"></a><span class="co"># write_rds(th_densities, 'data/output/th_nkde_densities.rds') # Uncomment when running the NKDE again</span></span>
+<span id="cb95-3"><a href="#cb95-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb95-4"><a href="#cb95-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Read in output object</span></span>
+<span id="cb95-5"><a href="#cb95-5" aria-hidden="true" tabindex="-1"></a>th_densities <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/output/th_nkde_densities.rds'</span>)</span>
+<span id="cb95-6"><a href="#cb95-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb95-7"><a href="#cb95-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Check density values</span></span>
+<span id="cb95-8"><a href="#cb95-8" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(th_densities)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
-0.000e+00 0.000e+00 0.000e+00 4.521e-06 0.000e+00 1.161e-03 </code></pre>
+0.000e+00 0.000e+00 0.000e+00 2.268e-06 9.410e-08 3.836e-04 </code></pre>
 </div>
 </div>
-<p>Given the small values of the densities, slight scaling adjustments will be made to improve the readability after appending the results to the respective lixels and samples.</p>
+<p>Given the small values of the densities, scaling adjustments will be made to improve the readability after appending the results to the respective lixels and samples.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb101"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb101-1"><a href="#cb101-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Append results to the sample and lixel</span></span>
-<span id="cb101-2"><a href="#cb101-2" aria-hidden="true" tabindex="-1"></a>th_samples<span class="sc">$</span>density <span class="ot">&lt;-</span> th_densities</span>
-<span id="cb101-3"><a href="#cb101-3" aria-hidden="true" tabindex="-1"></a>th_lixels<span class="sc">$</span>density <span class="ot">&lt;-</span> th_densities</span>
-<span id="cb101-4"><a href="#cb101-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb101-5"><a href="#cb101-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Rescale by 1e6</span></span>
-<span id="cb101-6"><a href="#cb101-6" aria-hidden="true" tabindex="-1"></a>th_samples<span class="sc">$</span>density <span class="ot">&lt;-</span> th_samples<span class="sc">$</span>density<span class="sc">*</span><span class="dv">1000000</span></span>
-<span id="cb101-7"><a href="#cb101-7" aria-hidden="true" tabindex="-1"></a>th_lixels<span class="sc">$</span>density <span class="ot">&lt;-</span> th_lixels<span class="sc">$</span>density<span class="sc">*</span><span class="dv">1000000</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb97"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb97-1"><a href="#cb97-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Append results to the sample and lixel</span></span>
+<span id="cb97-2"><a href="#cb97-2" aria-hidden="true" tabindex="-1"></a>th_samples<span class="sc">$</span>density <span class="ot">&lt;-</span> th_densities</span>
+<span id="cb97-3"><a href="#cb97-3" aria-hidden="true" tabindex="-1"></a>th_lixels<span class="sc">$</span>density <span class="ot">&lt;-</span> th_densities</span>
+<span id="cb97-4"><a href="#cb97-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb97-5"><a href="#cb97-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Rescale by 1e6</span></span>
+<span id="cb97-6"><a href="#cb97-6" aria-hidden="true" tabindex="-1"></a>th_samples<span class="sc">$</span>density <span class="ot">&lt;-</span> th_samples<span class="sc">$</span>density<span class="sc">*</span><span class="dv">1000000</span></span>
+<span id="cb97-7"><a href="#cb97-7" aria-hidden="true" tabindex="-1"></a>th_lixels<span class="sc">$</span>density <span class="ot">&lt;-</span> th_lixels<span class="sc">$</span>density<span class="sc">*</span><span class="dv">1000000</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Due to the distribution of density having very small values, log transformation will be made onto the density to improve the contrast</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb102"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb102-1"><a href="#cb102-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Log transform the density values (small offset to avoid log(0))</span></span>
-<span id="cb102-2"><a href="#cb102-2" aria-hidden="true" tabindex="-1"></a>th_lixels<span class="sc">$</span>log_density <span class="ot">&lt;-</span> <span class="fu">log</span>(th_lixels<span class="sc">$</span>density <span class="sc">+</span> <span class="fl">0.000001</span>)</span>
-<span id="cb102-3"><a href="#cb102-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb102-4"><a href="#cb102-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Create overall TH boundary</span></span>
-<span id="cb102-5"><a href="#cb102-5" aria-hidden="true" tabindex="-1"></a>th_bound_all <span class="ot">&lt;-</span> th_bound_sf <span class="sc">%&gt;%</span></span>
-<span id="cb102-6"><a href="#cb102-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_union</span>()</span>
-<span id="cb102-7"><a href="#cb102-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb102-8"><a href="#cb102-8" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_mode</span>(<span class="st">'plot'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb98"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb98-1"><a href="#cb98-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Log transform the density values (small offset to avoid log(0))</span></span>
+<span id="cb98-2"><a href="#cb98-2" aria-hidden="true" tabindex="-1"></a>th_lixels<span class="sc">$</span>log_density <span class="ot">&lt;-</span> <span class="fu">log</span>(th_lixels<span class="sc">$</span>density <span class="sc">+</span> <span class="fl">0.000001</span>)</span>
+<span id="cb98-3"><a href="#cb98-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb98-4"><a href="#cb98-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Create overall TH boundary</span></span>
+<span id="cb98-5"><a href="#cb98-5" aria-hidden="true" tabindex="-1"></a>th_bound_all <span class="ot">&lt;-</span> th_bound_sf <span class="sc">%&gt;%</span></span>
+<span id="cb98-6"><a href="#cb98-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_union</span>()</span>
+<span id="cb98-7"><a href="#cb98-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb98-8"><a href="#cb98-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize results</span></span>
+<span id="cb98-9"><a href="#cb98-9" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_mode</span>(<span class="st">'plot'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>tmap mode set to plotting</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb104"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb104-1"><a href="#cb104-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(th_lixels)<span class="sc">+</span></span>
-<span id="cb104-2"><a href="#cb104-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_lines</span>(<span class="at">col=</span><span class="st">"log_density"</span>, <span class="at">palette =</span> <span class="st">'YlOrRd'</span>, <span class="at">style =</span> <span class="st">"cont"</span>) <span class="sc">+</span></span>
-<span id="cb104-3"><a href="#cb104-3" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(th_bound_all) <span class="sc">+</span></span>
-<span id="cb104-4"><a href="#cb104-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_borders</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb100"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb100-1"><a href="#cb100-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(th_lixels)<span class="sc">+</span></span>
+<span id="cb100-2"><a href="#cb100-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_lines</span>(<span class="at">col=</span><span class="st">"log_density"</span>, <span class="at">palette =</span> <span class="st">'YlOrRd'</span>, <span class="at">style =</span> <span class="st">"cont"</span>, <span class="at">title.col =</span> <span class="st">"Log Density"</span>) <span class="sc">+</span></span>
+<span id="cb100-3"><a href="#cb100-3" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(th_bound_all) <span class="sc">+</span></span>
+<span id="cb100-4"><a href="#cb100-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_borders</span>() <span class="sc">+</span> </span>
+<span id="cb100-5"><a href="#cb100-5" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_layout</span>(</span>
+<span id="cb100-6"><a href="#cb100-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Network Kernel Density Estimation"</span>, </span>
+<span id="cb100-7"><a href="#cb100-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">title.size =</span> <span class="fl">1.5</span>,                            </span>
+<span id="cb100-8"><a href="#cb100-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.title.size =</span> <span class="fl">1.2</span>,                      </span>
+<span id="cb100-9"><a href="#cb100-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.text.size =</span> <span class="fl">0.8</span>,                       </span>
+<span id="cb100-10"><a href="#cb100-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">title.position =</span> <span class="fu">c</span>(<span class="st">"center"</span>, <span class="st">"top"</span>),         </span>
+<span id="cb100-11"><a href="#cb100-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">frame =</span> <span class="cn">TRUE</span>                                  </span>
+<span id="cb100-12"><a href="#cb100-12" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-43-1.png" class="img-fluid figure-img" width="1152"></p>
+<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-44-1.png" class="img-fluid figure-img" width="1152"></p>
 </figure>
 </div>
 </div>
 </div>
-<p>While the plot is largely, it can be seen that there are some patches of roads with higher density, signifying potential hotspots for accidents.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb105"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb105-1"><a href="#cb105-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">st_geometry</span>(th_bound_all))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-44-1.png" class="img-fluid figure-img" width="672"></p>
-</figure>
-</div>
-</div>
-</div>
+<p>While the plot is largely filled with areas with low density, it can be seen that there are some patches of roads with higher density, signifying potential hotspots for accidents.</p>
 </section>
 <section id="temporal-network-spatial-point-patterns-analysis" class="level2">
 <h2 class="anchored" data-anchor-id="temporal-network-spatial-point-patterns-analysis">3.2 Temporal Network Spatial Point Patterns Analysis</h2>
+<p>Although network kernel density estimation is useful, it will be interesting to see how temporal effects play into the analysis.</p>
 <section id="bandwidth-selction-for-performing-tnkde" class="level3">
 <h3 class="anchored" data-anchor-id="bandwidth-selction-for-performing-tnkde">3.2.1 Bandwidth selction for performing TNKDE</h3>
+<p>Similar to NKDE, cross validation is also used to determine an appropriate bandwidth prior to performing TNKDE</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb106"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb106-1"><a href="#cb106-1" aria-hidden="true" tabindex="-1"></a>tnkde_cv_scores <span class="ot">&lt;-</span> <span class="fu">bw_tnkde_cv_likelihood_calc</span>(</span>
-<span id="cb106-2"><a href="#cb106-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">bws_net =</span> <span class="fu">seq</span>(<span class="dv">200</span>,<span class="dv">2000</span>, <span class="dv">100</span>),</span>
-<span id="cb106-3"><a href="#cb106-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">bws_time =</span> <span class="fu">seq</span>(<span class="dv">10</span>,<span class="dv">100</span>,<span class="dv">10</span>),</span>
-<span id="cb106-4"><a href="#cb106-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">lines =</span> th_osm_sf,</span>
-<span id="cb106-5"><a href="#cb106-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">events =</span> ra_sf,</span>
-<span id="cb106-6"><a href="#cb106-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">time_field =</span> <span class="st">"days_since_start_of_year"</span>,</span>
-<span id="cb106-7"><a href="#cb106-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">w =</span> <span class="fu">rep</span>(<span class="dv">1</span>, <span class="fu">nrow</span>(ra_sf)),</span>
-<span id="cb106-8"><a href="#cb106-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">kernel_name =</span> <span class="st">"quartic"</span>,</span>
-<span id="cb106-9"><a href="#cb106-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">"simple"</span>,</span>
-<span id="cb106-10"><a href="#cb106-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">diggle_correction =</span> <span class="cn">FALSE</span>,</span>
-<span id="cb106-11"><a href="#cb106-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">study_area =</span> <span class="cn">NULL</span>,</span>
-<span id="cb106-12"><a href="#cb106-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">max_depth =</span> <span class="dv">10</span>,</span>
-<span id="cb106-13"><a href="#cb106-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">digits =</span> <span class="dv">2</span>,</span>
-<span id="cb106-14"><a href="#cb106-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">tol =</span> <span class="fl">0.1</span>,</span>
-<span id="cb106-15"><a href="#cb106-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">agg =</span> <span class="dv">5</span>,</span>
-<span id="cb106-16"><a href="#cb106-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">sparse=</span><span class="cn">TRUE</span>,</span>
-<span id="cb106-17"><a href="#cb106-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">grid_shape=</span><span class="fu">c</span>(<span class="dv">5</span>,<span class="dv">5</span>),</span>
-<span id="cb106-18"><a href="#cb106-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">sub_sample=</span><span class="dv">1</span>,</span>
-<span id="cb106-19"><a href="#cb106-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">verbose =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb106-20"><a href="#cb106-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">check =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb101"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb101-1"><a href="#cb101-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Perform cross validation for bandwidth selection</span></span>
+<span id="cb101-2"><a href="#cb101-2" aria-hidden="true" tabindex="-1"></a>tnkde_cv_scores <span class="ot">&lt;-</span> <span class="fu">bw_tnkde_cv_likelihood_calc</span>(</span>
+<span id="cb101-3"><a href="#cb101-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">bws_net =</span> <span class="fu">seq</span>(<span class="dv">200</span>,<span class="dv">2000</span>,<span class="dv">100</span>),</span>
+<span id="cb101-4"><a href="#cb101-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">bws_time =</span> <span class="fu">seq</span>(<span class="dv">10</span>,<span class="dv">100</span>,<span class="dv">10</span>),</span>
+<span id="cb101-5"><a href="#cb101-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">lines =</span> th_osm_sf,</span>
+<span id="cb101-6"><a href="#cb101-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">events =</span> ra_sf,</span>
+<span id="cb101-7"><a href="#cb101-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">time_field =</span> <span class="st">"days_since_start_of_year"</span>,</span>
+<span id="cb101-8"><a href="#cb101-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">w =</span> <span class="fu">rep</span>(<span class="dv">1</span>, <span class="fu">nrow</span>(ra_sf)),</span>
+<span id="cb101-9"><a href="#cb101-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">kernel_name =</span> <span class="st">"quartic"</span>,</span>
+<span id="cb101-10"><a href="#cb101-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">"simple"</span>,</span>
+<span id="cb101-11"><a href="#cb101-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">diggle_correction =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb101-12"><a href="#cb101-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">study_area =</span> <span class="cn">NULL</span>,</span>
+<span id="cb101-13"><a href="#cb101-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">max_depth =</span> <span class="dv">10</span>,</span>
+<span id="cb101-14"><a href="#cb101-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">digits =</span> <span class="dv">2</span>,</span>
+<span id="cb101-15"><a href="#cb101-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">tol =</span> <span class="fl">0.1</span>,</span>
+<span id="cb101-16"><a href="#cb101-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">agg =</span> <span class="dv">5</span>,</span>
+<span id="cb101-17"><a href="#cb101-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">sparse=</span><span class="cn">TRUE</span>,</span>
+<span id="cb101-18"><a href="#cb101-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">grid_shape=</span><span class="fu">c</span>(<span class="dv">5</span>,<span class="dv">5</span>),</span>
+<span id="cb101-19"><a href="#cb101-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">sub_sample=</span><span class="dv">1</span>,</span>
+<span id="cb101-20"><a href="#cb101-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">verbose =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb101-21"><a href="#cb101-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">check =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>CV results are exported for ease of rendering.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb107"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb107-1"><a href="#cb107-1" aria-hidden="true" tabindex="-1"></a><span class="co"># # Export output object and read it in to minimize rendering time</span></span>
-<span id="cb107-2"><a href="#cb107-2" aria-hidden="true" tabindex="-1"></a><span class="co"># write_rds(tnkde_cv_scores, 'data/output/tnkde_cv_scores.rds') # Uncomment when running the CV again</span></span>
-<span id="cb107-3"><a href="#cb107-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb107-4"><a href="#cb107-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Read in output object</span></span>
-<span id="cb107-5"><a href="#cb107-5" aria-hidden="true" tabindex="-1"></a>tnkde_cv_scores <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/output/tnkde_cv_scores.rds'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb102"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb102-1"><a href="#cb102-1" aria-hidden="true" tabindex="-1"></a><span class="co"># # Export output object and read it in to minimize rendering time</span></span>
+<span id="cb102-2"><a href="#cb102-2" aria-hidden="true" tabindex="-1"></a><span class="co"># write_rds(tnkde_cv_scores, 'data/output/tnkde_cv_scores.rds') # Uncomment when running the CV again</span></span>
+<span id="cb102-3"><a href="#cb102-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb102-4"><a href="#cb102-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Read in output object</span></span>
+<span id="cb102-5"><a href="#cb102-5" aria-hidden="true" tabindex="-1"></a>tnkde_cv_scores <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/output/tnkde_cv_scores.rds'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb108"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb108-1"><a href="#cb108-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(tnkde_cv_scores)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb103"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb103-1"><a href="#cb103-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(tnkde_cv_scores)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
 <colgroup>
@@ -1980,85 +2002,483 @@ PROJCRS["WGS 84 / UTM zone 47N",
 </table>
 </div>
 </div>
-<p>With this in mind,</p>
+<p>With this in mind, the bandwidth selected is 100 days and 1000 meters. While a larger bandwidth is favored by the cross validation, the concern is on the overfitting risks.</p>
 </section>
 <section id="performing-tnkde" class="level3">
 <h3 class="anchored" data-anchor-id="performing-tnkde">3.2.2 Performing TNKDE</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb109"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb109-1"><a href="#cb109-1" aria-hidden="true" tabindex="-1"></a>tnkde_densities <span class="ot">&lt;-</span> <span class="fu">tnkde</span>(<span class="at">lines =</span> th_osm_sf,</span>
-<span id="cb109-2"><a href="#cb109-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">events =</span> ra_sf,</span>
-<span id="cb109-3"><a href="#cb109-3" aria-hidden="true" tabindex="-1"></a>                   <span class="at">time_field =</span> <span class="st">"days_since_start_of_year"</span>,</span>
-<span id="cb109-4"><a href="#cb109-4" aria-hidden="true" tabindex="-1"></a>                   <span class="at">w =</span> <span class="fu">rep</span>(<span class="dv">1</span>, <span class="fu">nrow</span>(ra_sf)), </span>
-<span id="cb109-5"><a href="#cb109-5" aria-hidden="true" tabindex="-1"></a>                   <span class="at">samples_loc =</span> sample_points,</span>
-<span id="cb109-6"><a href="#cb109-6" aria-hidden="true" tabindex="-1"></a>                   <span class="at">samples_time =</span> sample_time, </span>
-<span id="cb109-7"><a href="#cb109-7" aria-hidden="true" tabindex="-1"></a>                   <span class="at">kernel_name =</span> <span class="st">"quartic"</span>,</span>
-<span id="cb109-8"><a href="#cb109-8" aria-hidden="true" tabindex="-1"></a>                   <span class="at">bw_net =</span> <span class="dv">700</span>, <span class="at">bw_time =</span> <span class="dv">100</span>,</span>
-<span id="cb109-9"><a href="#cb109-9" aria-hidden="true" tabindex="-1"></a>                   <span class="at">adaptive =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb109-10"><a href="#cb109-10" aria-hidden="true" tabindex="-1"></a>                   <span class="at">trim_bw_net =</span> <span class="dv">900</span>,</span>
-<span id="cb109-11"><a href="#cb109-11" aria-hidden="true" tabindex="-1"></a>                   <span class="at">trim_bw_time =</span> <span class="dv">80</span>,</span>
-<span id="cb109-12"><a href="#cb109-12" aria-hidden="true" tabindex="-1"></a>                   <span class="at">method =</span> <span class="st">"simple"</span>,</span>
-<span id="cb109-13"><a href="#cb109-13" aria-hidden="true" tabindex="-1"></a>                   <span class="at">div =</span> <span class="st">"bw"</span>, <span class="at">max_depth =</span> <span class="dv">8</span>,</span>
-<span id="cb109-14"><a href="#cb109-14" aria-hidden="true" tabindex="-1"></a>                   <span class="at">digits =</span> <span class="dv">2</span>, <span class="at">tol =</span> <span class="fl">0.1</span>,</span>
-<span id="cb109-15"><a href="#cb109-15" aria-hidden="true" tabindex="-1"></a>                   <span class="at">agg =</span> <span class="dv">5</span>, </span>
-<span id="cb109-16"><a href="#cb109-16" aria-hidden="true" tabindex="-1"></a>                   <span class="at">grid_shape =</span> <span class="fu">c</span>(<span class="dv">5</span>,<span class="dv">5</span>), </span>
-<span id="cb109-17"><a href="#cb109-17" aria-hidden="true" tabindex="-1"></a>                   <span class="at">verbose  =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb104"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb104-1"><a href="#cb104-1" aria-hidden="true" tabindex="-1"></a><span class="co"># choosing sample in times (every 10 days)</span></span>
+<span id="cb104-2"><a href="#cb104-2" aria-hidden="true" tabindex="-1"></a>sample_time <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="fu">max</span>(ra_sf<span class="sc">$</span>days_since_start_of_year), <span class="dv">10</span>)</span>
+<span id="cb104-3"><a href="#cb104-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb104-4"><a href="#cb104-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb104-5"><a href="#cb104-5" aria-hidden="true" tabindex="-1"></a>tnkde_densities <span class="ot">&lt;-</span> <span class="fu">tnkde</span>(<span class="at">lines =</span> th_osm_sf,</span>
+<span id="cb104-6"><a href="#cb104-6" aria-hidden="true" tabindex="-1"></a>                   <span class="at">events =</span> ra_sf,</span>
+<span id="cb104-7"><a href="#cb104-7" aria-hidden="true" tabindex="-1"></a>                   <span class="at">time_field =</span> <span class="st">"days_since_start_of_year"</span>,</span>
+<span id="cb104-8"><a href="#cb104-8" aria-hidden="true" tabindex="-1"></a>                   <span class="at">w =</span> <span class="fu">rep</span>(<span class="dv">1</span>, <span class="fu">nrow</span>(ra_sf)), </span>
+<span id="cb104-9"><a href="#cb104-9" aria-hidden="true" tabindex="-1"></a>                   <span class="at">samples_loc =</span> th_samples,</span>
+<span id="cb104-10"><a href="#cb104-10" aria-hidden="true" tabindex="-1"></a>                   <span class="at">samples_time =</span> sample_time, </span>
+<span id="cb104-11"><a href="#cb104-11" aria-hidden="true" tabindex="-1"></a>                   <span class="at">kernel_name =</span> <span class="st">"quartic"</span>,</span>
+<span id="cb104-12"><a href="#cb104-12" aria-hidden="true" tabindex="-1"></a>                   <span class="at">bw_net =</span> <span class="dv">1000</span>, <span class="at">bw_time =</span> <span class="dv">100</span>,</span>
+<span id="cb104-13"><a href="#cb104-13" aria-hidden="true" tabindex="-1"></a>                   <span class="at">method =</span> <span class="st">"simple"</span>,</span>
+<span id="cb104-14"><a href="#cb104-14" aria-hidden="true" tabindex="-1"></a>                   <span class="at">div =</span> <span class="st">"bw"</span>, <span class="at">max_depth =</span> <span class="dv">8</span>,</span>
+<span id="cb104-15"><a href="#cb104-15" aria-hidden="true" tabindex="-1"></a>                   <span class="at">digits =</span> <span class="dv">2</span>, <span class="at">tol =</span> <span class="fl">0.1</span>,</span>
+<span id="cb104-16"><a href="#cb104-16" aria-hidden="true" tabindex="-1"></a>                   <span class="at">agg =</span> <span class="dv">5</span>, </span>
+<span id="cb104-17"><a href="#cb104-17" aria-hidden="true" tabindex="-1"></a>                   <span class="at">grid_shape =</span> <span class="fu">c</span>(<span class="dv">5</span>,<span class="dv">5</span>), </span>
+<span id="cb104-18"><a href="#cb104-18" aria-hidden="true" tabindex="-1"></a>                   <span class="at">verbose  =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>Results are saved for ease of rendering</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb105"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb105-1"><a href="#cb105-1" aria-hidden="true" tabindex="-1"></a><span class="co"># # Export output object and read it in to minimize rendering time</span></span>
+<span id="cb105-2"><a href="#cb105-2" aria-hidden="true" tabindex="-1"></a><span class="co"># write_rds(tnkde_densities, 'data/output/tnkde_densities.rds') # Uncomment when running the TNKDE again</span></span>
+<span id="cb105-3"><a href="#cb105-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb105-4"><a href="#cb105-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Read in output object</span></span>
+<span id="cb105-5"><a href="#cb105-5" aria-hidden="true" tabindex="-1"></a>tnkde_densities <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/output/tnkde_densities.rds'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>For ease of visualization, a gif will be created to illustrate how the intensity changes throughout the year.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb106"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb106-1"><a href="#cb106-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Creating a color palette for all the densities</span></span>
+<span id="cb106-2"><a href="#cb106-2" aria-hidden="true" tabindex="-1"></a>all_densities <span class="ot">&lt;-</span> <span class="fu">c</span>(tnkde_densities)</span>
+<span id="cb106-3"><a href="#cb106-3" aria-hidden="true" tabindex="-1"></a>color_breaks <span class="ot">&lt;-</span> <span class="fu">classIntervals</span>(all_densities, <span class="at">n =</span> <span class="dv">10</span>, <span class="at">style =</span> <span class="st">"kmeans"</span>)</span>
+<span id="cb106-4"><a href="#cb106-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb106-5"><a href="#cb106-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Generating a map at each sample time</span></span>
+<span id="cb106-6"><a href="#cb106-6" aria-hidden="true" tabindex="-1"></a>all_maps <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="dv">1</span><span class="sc">:</span><span class="fu">ncol</span>(tnkde_densities), <span class="cf">function</span>(i){</span>
+<span id="cb106-7"><a href="#cb106-7" aria-hidden="true" tabindex="-1"></a>  time <span class="ot">&lt;-</span> sample_time[[i]]</span>
+<span id="cb106-8"><a href="#cb106-8" aria-hidden="true" tabindex="-1"></a>  date <span class="ot">&lt;-</span> <span class="fu">as.Date</span>(start) <span class="sc">+</span> time</span>
+<span id="cb106-9"><a href="#cb106-9" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb106-10"><a href="#cb106-10" aria-hidden="true" tabindex="-1"></a>  formatted_date <span class="ot">&lt;-</span> <span class="fu">format</span>(date, <span class="st">"%m-%d"</span>)  <span class="co"># Display only month and day</span></span>
+<span id="cb106-11"><a href="#cb106-11" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb106-12"><a href="#cb106-12" aria-hidden="true" tabindex="-1"></a>  th_samples<span class="sc">$</span>density <span class="ot">&lt;-</span> tnkde_densities[,i]</span>
+<span id="cb106-13"><a href="#cb106-13" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb106-14"><a href="#cb106-14" aria-hidden="true" tabindex="-1"></a>  map1 <span class="ot">&lt;-</span> <span class="fu">tm_shape</span>(th_samples) <span class="sc">+</span> </span>
+<span id="cb106-15"><a href="#cb106-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"density"</span>, <span class="at">size =</span> <span class="fl">0.01</span>,</span>
+<span id="cb106-16"><a href="#cb106-16" aria-hidden="true" tabindex="-1"></a>            <span class="at">breaks =</span> color_breaks<span class="sc">$</span>brks, <span class="at">palette =</span> <span class="fu">viridis</span>(<span class="dv">10</span>)) <span class="sc">+</span> </span>
+<span id="cb106-17"><a href="#cb106-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_layout</span>(<span class="at">legend.show =</span> <span class="cn">FALSE</span>, </span>
+<span id="cb106-18"><a href="#cb106-18" aria-hidden="true" tabindex="-1"></a>              <span class="at">main.title =</span> <span class="fu">as.character</span>(formatted_date),  <span class="co"># Use formatted month-day date</span></span>
+<span id="cb106-19"><a href="#cb106-19" aria-hidden="true" tabindex="-1"></a>              <span class="at">main.title.size =</span> <span class="fl">0.5</span>)</span>
+<span id="cb106-20"><a href="#cb106-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(map1)</span>
+<span id="cb106-21"><a href="#cb106-21" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb106-22"><a href="#cb106-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb106-23"><a href="#cb106-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb106-24"><a href="#cb106-24" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_animation</span>(all_maps, <span class="at">filename =</span> <span class="st">"data/images/animated_map.gif"</span>, </span>
+<span id="cb106-25"><a href="#cb106-25" aria-hidden="true" tabindex="-1"></a>               <span class="at">width =</span> <span class="dv">1000</span>, <span class="at">height =</span> <span class="dv">1000</span>, <span class="at">dpi =</span> <span class="dv">300</span>, <span class="at">delay =</span> <span class="dv">50</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb107"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb107-1"><a href="#cb107-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize gif</span></span>
+<span id="cb107-2"><a href="#cb107-2" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">include_graphics</span>(<span class="st">"data/images/animated_map.gif"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="data/images/animated_map.gif" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>A few observations can be made from the temporal network kernel density estimation gif:<br>
+- Throughout the year, there are certain portions of the network that are consistently denser. These are notably straight roads (Rama II Road, Kanchanaphisek Road, etc), which may induce more drivers to speed resulting in accidents.<br>
+- There are large variations in Pathum Thani’s road network over the year, suggesting potential behavioral tendencies for drivers within that region that led to accidents.<br>
+- Individual hotspots that appear over the study area at different parts of the year highlights potential seasonal issues.</p>
 </section>
 </section>
 <section id="network-constrained-g--and-k-function-analysis" class="level2">
 <h2 class="anchored" data-anchor-id="network-constrained-g--and-k-function-analysis">3.3 Network Constrained G- and K-Function Analysis</h2>
-<section id="overall-analysis" class="level3">
-<h3 class="anchored" data-anchor-id="overall-analysis">3.3.1 Overall Analysis</h3>
+<p>Parameters selected are made largely with the goal of reducing computational load.<br>
+Ho: The observed spatial point events are randomly distributed over the BMR network.<br>
+H1: The observed spatial point events are not randomly distributed over the BMR network.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb110"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb110-1"><a href="#cb110-1" aria-hidden="true" tabindex="-1"></a>kfun_accidents_th <span class="ot">&lt;-</span> <span class="fu">kfunctions</span>(th_osm_sf, </span>
-<span id="cb110-2"><a href="#cb110-2" aria-hidden="true" tabindex="-1"></a>                             ra_sf,</span>
-<span id="cb110-3"><a href="#cb110-3" aria-hidden="true" tabindex="-1"></a>                             <span class="at">start =</span> <span class="dv">0</span>, </span>
-<span id="cb110-4"><a href="#cb110-4" aria-hidden="true" tabindex="-1"></a>                             <span class="at">end =</span> <span class="dv">200</span>, </span>
-<span id="cb110-5"><a href="#cb110-5" aria-hidden="true" tabindex="-1"></a>                             <span class="at">step =</span> <span class="dv">50</span>, </span>
-<span id="cb110-6"><a href="#cb110-6" aria-hidden="true" tabindex="-1"></a>                             <span class="at">width =</span> <span class="dv">50</span>, </span>
-<span id="cb110-7"><a href="#cb110-7" aria-hidden="true" tabindex="-1"></a>                             <span class="at">nsim =</span> <span class="dv">49</span>, </span>
-<span id="cb110-8"><a href="#cb110-8" aria-hidden="true" tabindex="-1"></a>                             <span class="co"># resolution = 100,</span></span>
-<span id="cb110-9"><a href="#cb110-9" aria-hidden="true" tabindex="-1"></a>                             <span class="at">verbose =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb110-10"><a href="#cb110-10" aria-hidden="true" tabindex="-1"></a>                             <span class="at">agg =</span> <span class="dv">200</span>,</span>
-<span id="cb110-11"><a href="#cb110-11" aria-hidden="true" tabindex="-1"></a>                             <span class="at">conf_int =</span> <span class="fl">0.05</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb108"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb108-1"><a href="#cb108-1" aria-hidden="true" tabindex="-1"></a>kfun_accidents_th <span class="ot">&lt;-</span> <span class="fu">kfunctions</span>(th_osm_sf, </span>
+<span id="cb108-2"><a href="#cb108-2" aria-hidden="true" tabindex="-1"></a>                             ra_sf,</span>
+<span id="cb108-3"><a href="#cb108-3" aria-hidden="true" tabindex="-1"></a>                             <span class="at">start =</span> <span class="dv">0</span>, </span>
+<span id="cb108-4"><a href="#cb108-4" aria-hidden="true" tabindex="-1"></a>                             <span class="at">end =</span> <span class="dv">500</span>, </span>
+<span id="cb108-5"><a href="#cb108-5" aria-hidden="true" tabindex="-1"></a>                             <span class="at">step =</span> <span class="dv">50</span>, </span>
+<span id="cb108-6"><a href="#cb108-6" aria-hidden="true" tabindex="-1"></a>                             <span class="at">width =</span> <span class="dv">50</span>, </span>
+<span id="cb108-7"><a href="#cb108-7" aria-hidden="true" tabindex="-1"></a>                             <span class="at">nsim =</span> <span class="dv">49</span>, </span>
+<span id="cb108-8"><a href="#cb108-8" aria-hidden="true" tabindex="-1"></a>                             <span class="co"># resolution = 100,</span></span>
+<span id="cb108-9"><a href="#cb108-9" aria-hidden="true" tabindex="-1"></a>                             <span class="at">verbose =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb108-10"><a href="#cb108-10" aria-hidden="true" tabindex="-1"></a>                             <span class="at">agg =</span> <span class="dv">200</span>,</span>
+<span id="cb108-11"><a href="#cb108-11" aria-hidden="true" tabindex="-1"></a>                             <span class="at">conf_int =</span> <span class="fl">0.05</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Results are saved for ease of rendering</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb111"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb111-1"><a href="#cb111-1" aria-hidden="true" tabindex="-1"></a><span class="co"># # Export output object and read it in to minimize rendering time</span></span>
-<span id="cb111-2"><a href="#cb111-2" aria-hidden="true" tabindex="-1"></a><span class="co"># write_rds(kfun_accidents_th, 'data/output/th_kfun.rds') # Uncomment when running the Kfunction again</span></span>
-<span id="cb111-3"><a href="#cb111-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb111-4"><a href="#cb111-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Read in output object</span></span>
-<span id="cb111-5"><a href="#cb111-5" aria-hidden="true" tabindex="-1"></a>kfun_accidents_th <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/output/th_kfun.rds'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb109"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb109-1"><a href="#cb109-1" aria-hidden="true" tabindex="-1"></a><span class="co"># # Export output object and read it in to minimize rendering time</span></span>
+<span id="cb109-2"><a href="#cb109-2" aria-hidden="true" tabindex="-1"></a><span class="co"># write_rds(kfun_accidents_th, 'data/output/th_kfun.rds') # Uncomment when running the Kfunction again</span></span>
+<span id="cb109-3"><a href="#cb109-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb109-4"><a href="#cb109-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Read in output object</span></span>
+<span id="cb109-5"><a href="#cb109-5" aria-hidden="true" tabindex="-1"></a>kfun_accidents_th <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/output/th_kfun.rds'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb112"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb112-1"><a href="#cb112-1" aria-hidden="true" tabindex="-1"></a>kfun_accidents_th<span class="sc">$</span>plotk</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb110"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb110-1"><a href="#cb110-1" aria-hidden="true" tabindex="-1"></a>kfun_accidents_th<span class="sc">$</span>plotk <span class="sc">+</span></span>
+<span id="cb110-2"><a href="#cb110-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"K-Function Plot of all accidents in BMR: 50 simulations"</span>) <span class="sc">+</span></span>
+<span id="cb110-3"><a href="#cb110-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">16</span>, <span class="at">face =</span> <span class="st">"bold"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-51-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-54-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb113"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb113-1"><a href="#cb113-1" aria-hidden="true" tabindex="-1"></a>kfun_accidents_th<span class="sc">$</span>plotg</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb111"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb111-1"><a href="#cb111-1" aria-hidden="true" tabindex="-1"></a>kfun_accidents_th<span class="sc">$</span>plotg <span class="sc">+</span></span>
+<span id="cb111-2"><a href="#cb111-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"G-Function Plot of all accidents in BMR: 50 simulations"</span>) <span class="sc">+</span></span>
+<span id="cb111-3"><a href="#cb111-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">16</span>, <span class="at">face =</span> <span class="st">"bold"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-52-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-55-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 </div>
-<p>From adsdaadsasd</p>
+<p>From both plots, the observed values are consistently below the confidence envelope. Therefore we can reject the null hypothesis and conclude that accidents follow a regular pattern across all distances.</p>
 </section>
-<section id="behavioral-factors" class="level3">
-<h3 class="anchored" data-anchor-id="behavioral-factors">3.3.2 Behavioral Factors</h3>
+<section id="behavioral-factors" class="level2">
+<h2 class="anchored" data-anchor-id="behavioral-factors">3.4 Behavioral Factors</h2>
+<p>Lets see how behavioral factors can affect the occurrence of accidents. Complete spatial randomness test will be done separately for accidents that are presumably caused by speeding, and accidents caused by other reasons.</p>
+<p>Ho: The observed spatial point events are randomly distributed over the BMR network.<br>
+H1: The observed spatial point events are not randomly distributed over the BMR network.</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-4-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-4-1" role="tab" aria-controls="tabset-4-1" aria-selected="true">Speeding</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-4-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-4-2" role="tab" aria-controls="tabset-4-2" aria-selected="false">Non Speeding</a></li></ul>
+<div class="tab-content">
+<div id="tabset-4-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-4-1-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb112"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb112-1"><a href="#cb112-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare filtered accidents for Speeding</span></span>
+<span id="cb112-2"><a href="#cb112-2" aria-hidden="true" tabindex="-1"></a>ra_sf_bh_spd <span class="ot">&lt;-</span> ra_sf <span class="sc">%&gt;%</span></span>
+<span id="cb112-3"><a href="#cb112-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(presumed_cause <span class="sc">==</span> <span class="st">'speeding'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb113"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb113-1"><a href="#cb113-1" aria-hidden="true" tabindex="-1"></a>kfun_bh_spd <span class="ot">&lt;-</span> <span class="fu">kfunctions</span>(th_osm_sf, </span>
+<span id="cb113-2"><a href="#cb113-2" aria-hidden="true" tabindex="-1"></a>                          ra_sf_bh_spd,</span>
+<span id="cb113-3"><a href="#cb113-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">start =</span> <span class="dv">0</span>, </span>
+<span id="cb113-4"><a href="#cb113-4" aria-hidden="true" tabindex="-1"></a>                          <span class="at">end =</span> <span class="dv">500</span>, </span>
+<span id="cb113-5"><a href="#cb113-5" aria-hidden="true" tabindex="-1"></a>                          <span class="at">step =</span> <span class="dv">50</span>, </span>
+<span id="cb113-6"><a href="#cb113-6" aria-hidden="true" tabindex="-1"></a>                          <span class="at">width =</span> <span class="dv">50</span>, </span>
+<span id="cb113-7"><a href="#cb113-7" aria-hidden="true" tabindex="-1"></a>                          <span class="at">nsim =</span> <span class="dv">49</span>, </span>
+<span id="cb113-8"><a href="#cb113-8" aria-hidden="true" tabindex="-1"></a>                             <span class="co"># resolution = 100,</span></span>
+<span id="cb113-9"><a href="#cb113-9" aria-hidden="true" tabindex="-1"></a>                          <span class="at">verbose =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb113-10"><a href="#cb113-10" aria-hidden="true" tabindex="-1"></a>                          <span class="at">agg =</span> <span class="dv">200</span>,</span>
+<span id="cb113-11"><a href="#cb113-11" aria-hidden="true" tabindex="-1"></a>                          <span class="at">conf_int =</span> <span class="fl">0.05</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Results are saved for ease of rendering</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb114"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb114-1"><a href="#cb114-1" aria-hidden="true" tabindex="-1"></a><span class="co"># # Export output object and read it in to minimize rendering time</span></span>
+<span id="cb114-2"><a href="#cb114-2" aria-hidden="true" tabindex="-1"></a><span class="co"># write_rds(kfun_bh_spd, 'data/output/kfun_bh_spd.rds') # Uncomment when running the Kfunction again</span></span>
+<span id="cb114-3"><a href="#cb114-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb114-4"><a href="#cb114-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Read in output object</span></span>
+<span id="cb114-5"><a href="#cb114-5" aria-hidden="true" tabindex="-1"></a>kfun_bh_spd <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/output/kfun_bh_spd.rds'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb115"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb115-1"><a href="#cb115-1" aria-hidden="true" tabindex="-1"></a>kfun_bh_spd<span class="sc">$</span>plotk <span class="sc">+</span></span>
+<span id="cb115-2"><a href="#cb115-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"K-Function Plot of speeding related accidents in BMR: 50 simulations"</span>) <span class="sc">+</span></span>
+<span id="cb115-3"><a href="#cb115-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">14</span>, <span class="at">face =</span> <span class="st">"bold"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-59-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb116"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb116-1"><a href="#cb116-1" aria-hidden="true" tabindex="-1"></a>kfun_bh_spd<span class="sc">$</span>plotg <span class="sc">+</span></span>
+<span id="cb116-2"><a href="#cb116-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"G-Function Plot of speeding related accidents in BMR: 50 simulations"</span>) <span class="sc">+</span></span>
+<span id="cb116-3"><a href="#cb116-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">14</span>, <span class="at">face =</span> <span class="st">"bold"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-60-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<div id="tabset-4-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-4-2-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb117"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb117-1"><a href="#cb117-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare filtered accidents for Speeding</span></span>
+<span id="cb117-2"><a href="#cb117-2" aria-hidden="true" tabindex="-1"></a>ra_sf_bh_oth <span class="ot">&lt;-</span> ra_sf <span class="sc">%&gt;%</span></span>
+<span id="cb117-3"><a href="#cb117-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(presumed_cause <span class="sc">!=</span> <span class="st">'speeding'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb118"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb118-1"><a href="#cb118-1" aria-hidden="true" tabindex="-1"></a>kfun_bh_oth <span class="ot">&lt;-</span> <span class="fu">kfunctions</span>(th_osm_sf, </span>
+<span id="cb118-2"><a href="#cb118-2" aria-hidden="true" tabindex="-1"></a>                          ra_sf_bh_oth,</span>
+<span id="cb118-3"><a href="#cb118-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">start =</span> <span class="dv">0</span>, </span>
+<span id="cb118-4"><a href="#cb118-4" aria-hidden="true" tabindex="-1"></a>                          <span class="at">end =</span> <span class="dv">500</span>, </span>
+<span id="cb118-5"><a href="#cb118-5" aria-hidden="true" tabindex="-1"></a>                          <span class="at">step =</span> <span class="dv">50</span>, </span>
+<span id="cb118-6"><a href="#cb118-6" aria-hidden="true" tabindex="-1"></a>                          <span class="at">width =</span> <span class="dv">50</span>, </span>
+<span id="cb118-7"><a href="#cb118-7" aria-hidden="true" tabindex="-1"></a>                          <span class="at">nsim =</span> <span class="dv">49</span>, </span>
+<span id="cb118-8"><a href="#cb118-8" aria-hidden="true" tabindex="-1"></a>                             <span class="co"># resolution = 100,</span></span>
+<span id="cb118-9"><a href="#cb118-9" aria-hidden="true" tabindex="-1"></a>                          <span class="at">verbose =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb118-10"><a href="#cb118-10" aria-hidden="true" tabindex="-1"></a>                          <span class="at">agg =</span> <span class="dv">200</span>,</span>
+<span id="cb118-11"><a href="#cb118-11" aria-hidden="true" tabindex="-1"></a>                          <span class="at">conf_int =</span> <span class="fl">0.05</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb119"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb119-1"><a href="#cb119-1" aria-hidden="true" tabindex="-1"></a><span class="co"># # Export output object and read it in to minimize rendering time</span></span>
+<span id="cb119-2"><a href="#cb119-2" aria-hidden="true" tabindex="-1"></a><span class="co"># write_rds(kfun_bh_oth, 'data/output/kfun_bh_oth.rds') # Uncomment when running the Kfunction again</span></span>
+<span id="cb119-3"><a href="#cb119-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb119-4"><a href="#cb119-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Read in output object</span></span>
+<span id="cb119-5"><a href="#cb119-5" aria-hidden="true" tabindex="-1"></a>kfun_bh_oth <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/output/kfun_bh_oth.rds'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb120"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb120-1"><a href="#cb120-1" aria-hidden="true" tabindex="-1"></a>kfun_bh_oth<span class="sc">$</span>plotk<span class="sc">+</span></span>
+<span id="cb120-2"><a href="#cb120-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"K-Function Plot of non-speeding related accidents in BMR: 50 simulations"</span>) <span class="sc">+</span></span>
+<span id="cb120-3"><a href="#cb120-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">"bold"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-64-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb121"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb121-1"><a href="#cb121-1" aria-hidden="true" tabindex="-1"></a>kfun_bh_oth<span class="sc">$</span>plotg <span class="sc">+</span></span>
+<span id="cb121-2"><a href="#cb121-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"G-Function Plot of non-speeding related accidents in BMR: 50 simulations"</span>) <span class="sc">+</span></span>
+<span id="cb121-3"><a href="#cb121-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">"bold"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-65-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<p>For accidents involving speeding, given that both G- and K- observed values are below the envelope. Again, we will then reject the null hypothesis and conclude that accidents related to speeding follow a regular pattern across all distances.</p>
+<p>However, for accidents involving non-speeding related reasons, although K-observed values are consistently below the envelope, the G-values are within the envelope at a particular distance (~300 meters). This suggests a globally regular pattern (K-function alternative hypothesis), with localized randomness at a particular distance.</p>
+</section>
+<section id="environmental-factors" class="level2">
+<h2 class="anchored" data-anchor-id="environmental-factors">3.5 Environmental Factors</h2>
+<section id="road-type" class="level3">
+<h3 class="anchored" data-anchor-id="road-type">3.5.1 Road Type</h3>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-5-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-1" role="tab" aria-controls="tabset-5-1" aria-selected="true">Straight Roads</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-5-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-2" role="tab" aria-controls="tabset-5-2" aria-selected="false">Other Road Types</a></li></ul>
+<div class="tab-content">
+<div id="tabset-5-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-5-1-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb122"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb122-1"><a href="#cb122-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare filtered accidents for straight roads</span></span>
+<span id="cb122-2"><a href="#cb122-2" aria-hidden="true" tabindex="-1"></a>ra_sf_en_str <span class="ot">&lt;-</span> ra_sf <span class="sc">%&gt;%</span></span>
+<span id="cb122-3"><a href="#cb122-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(road_description <span class="sc">==</span> <span class="st">'straight road'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb123"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb123-1"><a href="#cb123-1" aria-hidden="true" tabindex="-1"></a>kfun_en_str <span class="ot">&lt;-</span> <span class="fu">kfunctions</span>(th_osm_sf, </span>
+<span id="cb123-2"><a href="#cb123-2" aria-hidden="true" tabindex="-1"></a>                          ra_sf_en_str,</span>
+<span id="cb123-3"><a href="#cb123-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">start =</span> <span class="dv">0</span>, </span>
+<span id="cb123-4"><a href="#cb123-4" aria-hidden="true" tabindex="-1"></a>                          <span class="at">end =</span> <span class="dv">500</span>, </span>
+<span id="cb123-5"><a href="#cb123-5" aria-hidden="true" tabindex="-1"></a>                          <span class="at">step =</span> <span class="dv">50</span>, </span>
+<span id="cb123-6"><a href="#cb123-6" aria-hidden="true" tabindex="-1"></a>                          <span class="at">width =</span> <span class="dv">50</span>, </span>
+<span id="cb123-7"><a href="#cb123-7" aria-hidden="true" tabindex="-1"></a>                          <span class="at">nsim =</span> <span class="dv">49</span>, </span>
+<span id="cb123-8"><a href="#cb123-8" aria-hidden="true" tabindex="-1"></a>                             <span class="co"># resolution = 100,</span></span>
+<span id="cb123-9"><a href="#cb123-9" aria-hidden="true" tabindex="-1"></a>                          <span class="at">verbose =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb123-10"><a href="#cb123-10" aria-hidden="true" tabindex="-1"></a>                          <span class="at">agg =</span> <span class="dv">200</span>,</span>
+<span id="cb123-11"><a href="#cb123-11" aria-hidden="true" tabindex="-1"></a>                          <span class="at">conf_int =</span> <span class="fl">0.05</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb124"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb124-1"><a href="#cb124-1" aria-hidden="true" tabindex="-1"></a><span class="co"># # Export output object and read it in to minimize rendering time</span></span>
+<span id="cb124-2"><a href="#cb124-2" aria-hidden="true" tabindex="-1"></a><span class="co"># write_rds(kfun_en_str, 'data/output/kfun_en_str.rds') # Uncomment when running the Kfunction again</span></span>
+<span id="cb124-3"><a href="#cb124-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb124-4"><a href="#cb124-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Read in output object</span></span>
+<span id="cb124-5"><a href="#cb124-5" aria-hidden="true" tabindex="-1"></a>kfun_en_str <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/output/kfun_en_str.rds'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb125"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb125-1"><a href="#cb125-1" aria-hidden="true" tabindex="-1"></a>kfun_en_str<span class="sc">$</span>plotk<span class="sc">+</span></span>
+<span id="cb125-2"><a href="#cb125-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"K-Function Plot of accidents on straight roads in BMR: 50 simulations"</span>) <span class="sc">+</span></span>
+<span id="cb125-3"><a href="#cb125-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">"bold"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-69-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb126"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb126-1"><a href="#cb126-1" aria-hidden="true" tabindex="-1"></a>kfun_en_str<span class="sc">$</span>plotg<span class="sc">+</span></span>
+<span id="cb126-2"><a href="#cb126-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"G-Function Plot of accidents on straight roads in BMR: 50 simulations"</span>) <span class="sc">+</span></span>
+<span id="cb126-3"><a href="#cb126-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">"bold"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-70-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<div id="tabset-5-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-5-2-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb127"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb127-1"><a href="#cb127-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare filtered accidents for other roads</span></span>
+<span id="cb127-2"><a href="#cb127-2" aria-hidden="true" tabindex="-1"></a>ra_sf_en_oth <span class="ot">&lt;-</span> ra_sf <span class="sc">%&gt;%</span></span>
+<span id="cb127-3"><a href="#cb127-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(road_description <span class="sc">!=</span> <span class="st">'straight road'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb128"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb128-1"><a href="#cb128-1" aria-hidden="true" tabindex="-1"></a>kfun_en_oth <span class="ot">&lt;-</span> <span class="fu">kfunctions</span>(th_osm_sf, </span>
+<span id="cb128-2"><a href="#cb128-2" aria-hidden="true" tabindex="-1"></a>                          ra_sf_en_oth,</span>
+<span id="cb128-3"><a href="#cb128-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">start =</span> <span class="dv">0</span>, </span>
+<span id="cb128-4"><a href="#cb128-4" aria-hidden="true" tabindex="-1"></a>                          <span class="at">end =</span> <span class="dv">500</span>, </span>
+<span id="cb128-5"><a href="#cb128-5" aria-hidden="true" tabindex="-1"></a>                          <span class="at">step =</span> <span class="dv">50</span>, </span>
+<span id="cb128-6"><a href="#cb128-6" aria-hidden="true" tabindex="-1"></a>                          <span class="at">width =</span> <span class="dv">50</span>, </span>
+<span id="cb128-7"><a href="#cb128-7" aria-hidden="true" tabindex="-1"></a>                          <span class="at">nsim =</span> <span class="dv">49</span>, </span>
+<span id="cb128-8"><a href="#cb128-8" aria-hidden="true" tabindex="-1"></a>                             <span class="co"># resolution = 100,</span></span>
+<span id="cb128-9"><a href="#cb128-9" aria-hidden="true" tabindex="-1"></a>                          <span class="at">verbose =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb128-10"><a href="#cb128-10" aria-hidden="true" tabindex="-1"></a>                          <span class="at">agg =</span> <span class="dv">200</span>,</span>
+<span id="cb128-11"><a href="#cb128-11" aria-hidden="true" tabindex="-1"></a>                          <span class="at">conf_int =</span> <span class="fl">0.05</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb129"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb129-1"><a href="#cb129-1" aria-hidden="true" tabindex="-1"></a><span class="co"># # Export output object and read it in to minimize rendering time</span></span>
+<span id="cb129-2"><a href="#cb129-2" aria-hidden="true" tabindex="-1"></a><span class="co"># write_rds(kfun_en_oth, 'data/output/kfun_en_oth.rds') # Uncomment when running the Kfunction again</span></span>
+<span id="cb129-3"><a href="#cb129-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb129-4"><a href="#cb129-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Read in output object</span></span>
+<span id="cb129-5"><a href="#cb129-5" aria-hidden="true" tabindex="-1"></a>kfun_en_oth <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/output/kfun_en_oth.rds'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb130"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb130-1"><a href="#cb130-1" aria-hidden="true" tabindex="-1"></a>kfun_en_oth<span class="sc">$</span>plotk<span class="sc">+</span></span>
+<span id="cb130-2"><a href="#cb130-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"K-Function Plot of accidents on other road types in BMR: 50 simulations"</span>) <span class="sc">+</span></span>
+<span id="cb130-3"><a href="#cb130-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">"bold"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-74-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb131"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb131-1"><a href="#cb131-1" aria-hidden="true" tabindex="-1"></a>kfun_en_oth<span class="sc">$</span>plotg<span class="sc">+</span></span>
+<span id="cb131-2"><a href="#cb131-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"G-Function Plot of accidents on other road types in BMR: 50 simulations"</span>) <span class="sc">+</span></span>
+<span id="cb131-3"><a href="#cb131-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">"bold"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-75-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<p>For accidents involving straight roads, given that both G- and K- observed values are below the envelope. Again, we will then reject the null hypothesis and conclude that accidents on straight roads follow a regular pattern across all distances.</p>
+<p>However, for accidents on other road types, although K-observed values are consistently below the envelope, the G-values are again within the envelope at a particular distance (~300-400 and 500 meters). This suggests a globally regular pattern (K-function alternative hypothesis), with localized randomness at a particular distance.</p>
+</section>
+<section id="weather-condition" class="level3">
+<h3 class="anchored" data-anchor-id="weather-condition">3.5.2 Weather Condition</h3>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-6-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-6-1" role="tab" aria-controls="tabset-6-1" aria-selected="true">Clear Weather</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-6-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-6-2" role="tab" aria-controls="tabset-6-2" aria-selected="false">Other Weather</a></li></ul>
+<div class="tab-content">
+<div id="tabset-6-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-6-1-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb132"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb132-1"><a href="#cb132-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare filtered accidents for clear weather</span></span>
+<span id="cb132-2"><a href="#cb132-2" aria-hidden="true" tabindex="-1"></a>ra_sf_wth_clr <span class="ot">&lt;-</span> ra_sf <span class="sc">%&gt;%</span></span>
+<span id="cb132-3"><a href="#cb132-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(weather_condition <span class="sc">==</span> <span class="st">'clear'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb133"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb133-1"><a href="#cb133-1" aria-hidden="true" tabindex="-1"></a>kfun_wth_clr <span class="ot">&lt;-</span> <span class="fu">kfunctions</span>(th_osm_sf, </span>
+<span id="cb133-2"><a href="#cb133-2" aria-hidden="true" tabindex="-1"></a>                          ra_sf_wth_clr,</span>
+<span id="cb133-3"><a href="#cb133-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">start =</span> <span class="dv">0</span>, </span>
+<span id="cb133-4"><a href="#cb133-4" aria-hidden="true" tabindex="-1"></a>                          <span class="at">end =</span> <span class="dv">500</span>, </span>
+<span id="cb133-5"><a href="#cb133-5" aria-hidden="true" tabindex="-1"></a>                          <span class="at">step =</span> <span class="dv">50</span>, </span>
+<span id="cb133-6"><a href="#cb133-6" aria-hidden="true" tabindex="-1"></a>                          <span class="at">width =</span> <span class="dv">50</span>, </span>
+<span id="cb133-7"><a href="#cb133-7" aria-hidden="true" tabindex="-1"></a>                          <span class="at">nsim =</span> <span class="dv">49</span>, </span>
+<span id="cb133-8"><a href="#cb133-8" aria-hidden="true" tabindex="-1"></a>                             <span class="co"># resolution = 100,</span></span>
+<span id="cb133-9"><a href="#cb133-9" aria-hidden="true" tabindex="-1"></a>                          <span class="at">verbose =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb133-10"><a href="#cb133-10" aria-hidden="true" tabindex="-1"></a>                          <span class="at">agg =</span> <span class="dv">200</span>,</span>
+<span id="cb133-11"><a href="#cb133-11" aria-hidden="true" tabindex="-1"></a>                          <span class="at">conf_int =</span> <span class="fl">0.05</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb134"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb134-1"><a href="#cb134-1" aria-hidden="true" tabindex="-1"></a><span class="co"># # Export output object and read it in to minimize rendering time</span></span>
+<span id="cb134-2"><a href="#cb134-2" aria-hidden="true" tabindex="-1"></a><span class="co"># write_rds(kfun_wth_clr, 'data/output/kfun_wth_clr.rds') # Uncomment when running the Kfunction again</span></span>
+<span id="cb134-3"><a href="#cb134-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb134-4"><a href="#cb134-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Read in output object</span></span>
+<span id="cb134-5"><a href="#cb134-5" aria-hidden="true" tabindex="-1"></a>kfun_wth_clr <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/output/kfun_wth_clr.rds'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb135"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb135-1"><a href="#cb135-1" aria-hidden="true" tabindex="-1"></a>kfun_wth_clr<span class="sc">$</span>plotk<span class="sc">+</span></span>
+<span id="cb135-2"><a href="#cb135-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"K-Function Plot of accidents during clear weather in BMR: 50 simulations"</span>) <span class="sc">+</span></span>
+<span id="cb135-3"><a href="#cb135-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">"bold"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-79-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb136"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb136-1"><a href="#cb136-1" aria-hidden="true" tabindex="-1"></a>kfun_wth_clr<span class="sc">$</span>plotg<span class="sc">+</span></span>
+<span id="cb136-2"><a href="#cb136-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"G-Function Plot of accidents during clear weather in BMR: 50 simulations"</span>) <span class="sc">+</span></span>
+<span id="cb136-3"><a href="#cb136-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">"bold"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-80-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<div id="tabset-6-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-6-2-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb137"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb137-1"><a href="#cb137-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare filtered accidents for clear weather</span></span>
+<span id="cb137-2"><a href="#cb137-2" aria-hidden="true" tabindex="-1"></a>ra_sf_wth_oth <span class="ot">&lt;-</span> ra_sf <span class="sc">%&gt;%</span></span>
+<span id="cb137-3"><a href="#cb137-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(weather_condition <span class="sc">!=</span> <span class="st">'clear'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb138"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb138-1"><a href="#cb138-1" aria-hidden="true" tabindex="-1"></a>kfun_wth_oth <span class="ot">&lt;-</span> <span class="fu">kfunctions</span>(th_osm_sf, </span>
+<span id="cb138-2"><a href="#cb138-2" aria-hidden="true" tabindex="-1"></a>                          ra_sf_wth_oth,</span>
+<span id="cb138-3"><a href="#cb138-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">start =</span> <span class="dv">0</span>, </span>
+<span id="cb138-4"><a href="#cb138-4" aria-hidden="true" tabindex="-1"></a>                          <span class="at">end =</span> <span class="dv">500</span>, </span>
+<span id="cb138-5"><a href="#cb138-5" aria-hidden="true" tabindex="-1"></a>                          <span class="at">step =</span> <span class="dv">50</span>, </span>
+<span id="cb138-6"><a href="#cb138-6" aria-hidden="true" tabindex="-1"></a>                          <span class="at">width =</span> <span class="dv">50</span>, </span>
+<span id="cb138-7"><a href="#cb138-7" aria-hidden="true" tabindex="-1"></a>                          <span class="at">nsim =</span> <span class="dv">49</span>, </span>
+<span id="cb138-8"><a href="#cb138-8" aria-hidden="true" tabindex="-1"></a>                             <span class="co"># resolution = 100,</span></span>
+<span id="cb138-9"><a href="#cb138-9" aria-hidden="true" tabindex="-1"></a>                          <span class="at">verbose =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb138-10"><a href="#cb138-10" aria-hidden="true" tabindex="-1"></a>                          <span class="at">agg =</span> <span class="dv">200</span>,</span>
+<span id="cb138-11"><a href="#cb138-11" aria-hidden="true" tabindex="-1"></a>                          <span class="at">conf_int =</span> <span class="fl">0.05</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb139"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb139-1"><a href="#cb139-1" aria-hidden="true" tabindex="-1"></a><span class="co"># # Export output object and read it in to minimize rendering time</span></span>
+<span id="cb139-2"><a href="#cb139-2" aria-hidden="true" tabindex="-1"></a><span class="co"># write_rds(kfun_wth_oth, 'data/output/kfun_wth_oth.rds') # Uncomment when running the Kfunction again</span></span>
+<span id="cb139-3"><a href="#cb139-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb139-4"><a href="#cb139-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Read in output object</span></span>
+<span id="cb139-5"><a href="#cb139-5" aria-hidden="true" tabindex="-1"></a>kfun_wth_oth <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">'data/output/kfun_wth_oth.rds'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb140"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb140-1"><a href="#cb140-1" aria-hidden="true" tabindex="-1"></a>kfun_wth_oth<span class="sc">$</span>plotk<span class="sc">+</span></span>
+<span id="cb140-2"><a href="#cb140-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"K-Function Plot of accidents during other weather in BMR: 50 simulations"</span>) <span class="sc">+</span></span>
+<span id="cb140-3"><a href="#cb140-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">"bold"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-84-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb141"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb141-1"><a href="#cb141-1" aria-hidden="true" tabindex="-1"></a>kfun_wth_oth<span class="sc">$</span>plotg<span class="sc">+</span></span>
+<span id="cb141-2"><a href="#cb141-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"G-Function Plot of accidents during other weather in BMR: 50 simulations"</span>) <span class="sc">+</span></span>
+<span id="cb141-3"><a href="#cb141-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">"bold"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-Home_Ex01_files/figure-html/unnamed-chunk-85-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<p>For accidents during clear weather, given that both G- and K- observed values are below the envelope. Again, we will then reject the null hypothesis and conclude that accidents during clear weather follow a regular pattern across all distances.</p>
+<p>However, for accidents during other weather conditions, although K-observed values are consistently below the envelope, the G-values are have a mix of behaviors. It exhibits regular patterns under 200 meters, random pattern from 200-350 meters and clustered pattern abve 350 meters.</p>
 </section>
 </section>
 </section>
 <section id="conclusion" class="level1">
 <h1>4 Conclusion</h1>
+<p>In conclusion, it appears that a common cause of accidents are a mix of variables. Given good weather conditions and straight roads, drivers are more inclined to speed. With good underlying network infrastructure, this then translates to accidents happening across the network in a regular fashion.</p>
+<p>However, other factors also may contribute to accidents. Under less ideal weather conditions, drivers may encounter difficulties (other presumed cause) on more difficult roads (non-straight roads), especially around ~300 meters. This gives rise to a more random distribution as such factors may occur anywhere on the network.</p>
 
 
 </section>

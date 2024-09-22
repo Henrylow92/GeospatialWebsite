@@ -40,12 +40,14 @@ The study area will be Bangkok Metropolitan Region, which is defined [here](http
 
 I will be using the following R packages:\
 -`sf` package to perform geospatial wrangling tasks \
+- `spatstat` package to calculate nearest neighbour \
 - `spNetwork` package to perform network kernel density estimation (NKDE) and temporal network kernel density estimation \
 - `tidyverse` package for reading csv files, dataframe processing tasks \
 - `tmap` package for plotting tasks \
+- `classInt` and `viridis` to generate gif animation for temporal network kernel density estimation.\
 
 ```{r}
-pacman::p_load(tidyverse, spatstat, sf, spNetwork, tmap)
+pacman::p_load(tidyverse, spatstat, sf, spNetwork, tmap, classInt, viridis)
 ```
 
 ## 1.2 Loading Datasets
@@ -152,12 +154,12 @@ ra_tbl_flt <- ra_tbl %>%
 # Check for duplicates
 any(duplicated(st_coordinates(ra_tbl_flt)))
 ```
+
 Since there are duplicates, as this may affect further analysis, `st_jitter` of sf will be used
 
 ```{r}
 ra_tbl_flt_jittered <- st_jitter(ra_tbl_flt, amount = 0.1)
 ```
-
 
 The processed data is then exported as RDS.
 
@@ -415,20 +417,6 @@ st_crs(th_bound_sf)
 th_osm_sf <- read_rds('data/processed/th_osm.rds') %>%
   st_cast("LINESTRING") # Cast as linestring as 
 
-# Load other province data
-bk_osm_sf <- read_rds('data/processed/th_osm_bk.rds') %>%
-  st_cast("LINESTRING") # Cast as linestring as 
-ntb_osm_sf <- read_rds('data/processed/th_osm_ntb.rds') %>%
-  st_cast("LINESTRING") # Cast as linestring as 
-pt_osm_sf <- read_rds('data/processed/th_osm_pt.rds') %>%
-  st_cast("LINESTRING") # Cast as linestring as 
-sp_osm_sf <- read_rds('data/processed/th_osm_sp.rds') %>%
-  st_cast("LINESTRING") # Cast as linestring as 
-ss_osm_sf <- read_rds('data/processed/th_osm_ss.rds') %>%
-  st_cast("LINESTRING") # Cast as linestring as 
-np_osm_sf <- read_rds('data/processed/th_osm_np.rds') %>%
-  st_cast("LINESTRING") # Cast as linestring as 
-
 # Check data
 glimpse(th_osm_sf)
 
@@ -445,7 +433,12 @@ st_crs(th_osm_sf)
 </iframe>
 :::
 
-adskl;adskl;asdkl;adskl;
+From the Power Bi visualization, several observations can be made.\
+- Most of the accidents are presumably caused by speeding (\~78%). This is consistent even across province, different temporal factors (i.e. day of week, season, time of day) and environmental factors (i.e. road description, weather condition).\
+- Similarly, most accidents occur on straight roads (\~85%). That is also observable through the map visualization as accidents occur on long stretches of road. This is also consistent across location, temporal and behavioral factors.\
+- Interestingly, accidents involving rainy conditions have a spike during darker parts of the day (\~19:00-00:00)\
+- Accidents is fairly distributed across season and different days of the week.\
+- While accidents tend to occur more during the early parts of the day (\~7:00-11:00), the spikes are more visible when looking at the accidents across time, with large increases in certain dates (i.e. 50 accidents on 29th Dec 2019)
 
 ## 2.3 Other Explorations
 
@@ -464,7 +457,8 @@ hist(nn_distances, breaks = 100, main = "Nearest Neighbour Distance Distribution
 
 summary(nn_distances)
 ```
-Knowing that each accident occur very close to one another (median of ~13 meters), 
+
+Knowing that each accident occur very close to one another (median of \~13 meters),
 
 ```{r}
 ra_sf$Time <- as.POSIXct(ra_sf$incident_datetime, fomat = "%Y/%m/%d")
@@ -499,7 +493,6 @@ ggplot(ra_sf) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-
 ```{r}
 w <- rep(1,nrow(ra_sf))
 samples <- seq(0, max(ra_sf$Time), 0.5)
@@ -524,7 +517,7 @@ ggplot(data = df_time) +
   theme(axis.text = element_text(size = 5))
 ```
 
-While interesting patterns can be observed across different temporal bandwidths, there are still. Let try to see the remove the year and view the temporal attribute as month of year instead.
+While interesting patterns can be observed across different temporal bandwidths, variance is still very high. Let try to see the remove the year and view the temporal attribute as month of year instead.
 
 ```{r}
 ra_sf$start_of_year <- as.POSIXct(paste0(format(ra_sf$incident_datetime, "%Y"), "-01-01"), format = "%Y-%m-%d")
@@ -543,7 +536,7 @@ ggplot(ra_sf) +
   scale_x_continuous(breaks = months_starts_num, labels = months_starts_labs)
 ```
 
-Now that the we are only looking at months of year, it is clear that there are some months (~April-May and ~October-November) that have more accidents.
+Now that the we are only looking at months of year, it is clear that there are some months (\~April-May and \~October-November) that have more accidents.
 
 ```{r}
 w <- rep(1,nrow(ra_sf))
@@ -569,15 +562,31 @@ ggplot(data = df_time) +
   theme(axis.text = element_text(size = 5))
 ```
 
-From this, we can clearly see that there might be a seasonal bimodal trend captured with a temporal bandwidth of 30-40 days.
+From this, we can clearly see that there might be a seasonal bimodal trend captured with a temporal bandwidth of 30-40 days. The newly created temporal variable `days_since_start_of_year` will be used instead for subsequent temporal analysis.
 
+```{r, fig.width=12, fig.height=8}
+# Cartographic Quality of Bangkok Metropolitan Region
+tmap_style("classic")
+tm_shape(th_bound_sf)+
+  tm_polygons(col = "ADM1_EN", palette = "Set3", title = "Provinces", border.col = "black", border.alpha = 0.5) +
+  tm_layout(main.title = "Accidents across Bangkok Metropolitan Region",
+            main.title.position = "center",
+            main.title.size = 1.2,
+            legend.height = 0.45, 
+            legend.width = 0.35,
+            frame = TRUE) +
+  tm_borders(alpha = 0.5) +
+  tm_compass(type="8star", size = 2) +
+  tm_scale_bar(width = 0.15) +
+  tm_grid(lwd = 0.1, alpha = 0.2) +
+  tm_credits("Source: Subnational Administrative Boundaries from HDX \n and Accident data from Kaggle", 
+             position = c("left", "bottom")) +
+tm_shape(ra_sf) +
+  tm_dots()
 
-
-
-
-
-adsjkladsljkadsjklasdjkl
-
+# Change back to default
+tmap_style("white")
+```
 
 It is important to note that given the context of the issue, it is not encouraged to perform any typical spatial point pattern analysis.
 
@@ -585,20 +594,13 @@ First-order spatial point pattern analysis such as kernel density estimation and
 
 From the exploratory data analysis, it is clear that accidents are network constrained. This will induce misleading results as the above analysis techniques assume that events can occur throughout the study area. Therefore, density based analysis such as KDE will naturally cluster around roads, whereas second-order spatial point analysis such as the F-function will calculate the distribution of distances from random locations in the study area to the nearest point in the pattern (including locations impossible for road accident to occur).
 
-Therefore, network spatial point pattern analysis will be the key analysis for this task.
-
-
-
-
-
+Therefore, network spatial point pattern analysis will be the fundamental analysis for this assi
 
 # 3 Network Spatial Point Pattern Analysis
 
-In network spatial point pattern analysis,
+In network spatial point pattern analysis, the goal is understand how events are distributed across the network. This comes with determining whether the events occur randomly, or in a clustered/regular pattern. NKDE will allow us to identify intensity of events across the network, highlighting potential hotspots, whereas network K-function will be used in the complete spatial randomness test. By filtering different factors (temporal, environmental, behavioral) while running those analysis, we can then see if and how those factors affect accidents.
 
 ## 3.1 Network Kernel Density Estimation
-
-
 
 ## 3.1.1 Preparing objects required for performing NKDE
 
@@ -633,16 +635,17 @@ Main points of consideration for running a network KDE are:\
 - kernel: quartic as it provides a good balance between local and global estimation\
 - method: simple as most accidents happen along the road rather than at intersections
 
-With those in mind, bandwidth selection will be determined through `bw_cv_likelihood_calc` of spNetwork, using likelihood cross validation (aims to find a bandwidth that gives the most similar results when an event is removed). The bandwidth ranges from 25 to 425 based on the nearest neighbour analysis. 25 meters cover most distances between 2 accidents (median of 13 meters), and after 425 meters it is too wide.
+With those in mind, bandwidth selection will be determined through `bw_cv_likelihood_calc` of spNetwork, using likelihood cross validation (aims to find a bandwidth that gives the most similar results when an event is removed). The bandwidth ranges from 50 to 425 based on the nearest neighbour analysis. 50 meters cover most distances between 2 accidents (median of 13 meters), and 1000 meters is a good coverage given the study area (\~7700 square km).
 
 ```{r}
 #| eval: false # eval: false
+# Perform cross validation for bandwidth selection
 th_bws_selection_cv <- bw_cv_likelihood_calc(
   lines = th_osm_sf, 
   events = ra_sf,
   w = rep(1, nrow(ra_sf)),
   kernel_name = "quartic",
-  bws = seq(25,425,50),
+  bws = seq(50,1000,50),
   method = "simple", 
   digits = 1, 
   tol = 0.1,
@@ -663,18 +666,18 @@ CV results are exported for ease of rendering.
 th_bws_selection_cv <- read_rds('data/output/th_bws_selection_cv.rds')
 ```
 
-
 ```{r}
 # Visualize CV Scores
 plot(th_bws_selection_cv$bw, th_bws_selection_cv$cv_scores, 
      type = "o", col = "blue", xlab = "Bandwidth (bw)", ylab = "CV Scores",
-     main = "CV Scores vs Bandwidth", pch = 19, lty = 1)
+     main = "CV Scores vs Bandwidth", ylim = c(min(th_bws_selection_cv$cv_scores) - 50, max(th_bws_selection_cv$cv_scores) + 50),
+     pch = 19, lty = 1)
 text(th_bws_selection_cv$bw, th_bws_selection_cv$cv_scores, 
      labels = round(th_bws_selection_cv$cv_scores, 0), pos = 3, cex = 0.8, col = "black")
 grid()
 ```
 
-With this in mind, 225 meters is selected as the bandwidth. Although the cross validation scores favor larger bandwidth, 225 is selected as a trade off between cv performance and potential overfitting. 
+With this in mind, 500 meters is selected as the bandwidth. Although the cross validation scores favor larger bandwidth, 500 is selected as a trade off between cv performance and potential overfitting.
 
 ## 3.1.3 Performing NKDE
 
@@ -684,27 +687,28 @@ future::plan(future::multisession(workers=8))
 # Set global option for parallel-safe random number generation
 options(future.seed = TRUE)
 
-th_densities <- nkde.mc(th_osm_sf, 
+# Perform multi-core NKDE
+th_densities <- nkde.mc(th_osm_sf,
                   events = ra_sf,
                   w = rep(1, nrow(ra_sf)),
                   samples = th_samples,
                   kernel_name = "quartic",
-                  bw = 225, 
-                  div= "bw", 
-                  method = "simple", 
-                  digits = 1, 
+                  bw = 500,
+                  div= "bw",
+                  method = "simple",
+                  digits = 1,
                   tol = 0.1,
-                  grid_shape = c(5,5), 
+                  grid_shape = c(5,5),
                   max_depth = 8,
-                  agg = 5, 
+                  agg = 5,
                   sparse = TRUE, # Slower but require less memory
-                  verbose = FALSE)
+                  verbose = TRUE)
 ```
 
 Results are exported for ease of rendering.
 
 ```{r}
-# # Export output object and read it in to minimize rendering time
+# # # Export output object and read it in to minimize rendering time
 # write_rds(th_densities, 'data/output/th_nkde_densities.rds') # Uncomment when running the NKDE again
 
 # Read in output object
@@ -713,7 +717,8 @@ th_densities <- read_rds('data/output/th_nkde_densities.rds')
 # Check density values
 summary(th_densities)
 ```
-Given the small values of the densities, slight scaling adjustments will be made to improve the readability after appending the results to the respective lixels and samples.
+
+Given the small values of the densities, scaling adjustments will be made to improve the readability after appending the results to the respective lixels and samples.
 
 ```{r}
 # Append results to the sample and lixel
@@ -725,7 +730,7 @@ th_samples$density <- th_samples$density*1000000
 th_lixels$density <- th_lixels$density*1000000
 ```
 
-Due to the distribution of density having very small values, log transformation will be made onto the density to improve the contrast 
+Due to the distribution of density having very small values, log transformation will be made onto the density to improve the contrast
 
 ```{r, fig.width=12, fig.height=8}
 # Log transform the density values (small offset to avoid log(0))
@@ -735,30 +740,37 @@ th_lixels$log_density <- log(th_lixels$density + 0.000001)
 th_bound_all <- th_bound_sf %>%
   st_union()
 
+# Visualize results
 tmap_mode('plot')
 tm_shape(th_lixels)+
-  tm_lines(col="log_density", palette = 'YlOrRd', style = "cont") +
+  tm_lines(col="log_density", palette = 'YlOrRd', style = "cont", title.col = "Log Density") +
 tm_shape(th_bound_all) +
-  tm_borders()
+  tm_borders() + 
+tm_layout(
+    title = "Network Kernel Density Estimation", 
+    title.size = 1.5,                            
+    legend.title.size = 1.2,                      
+    legend.text.size = 0.8,                       
+    title.position = c("center", "top"),         
+    frame = TRUE                                  
+  )
 ```
 
-
-While the plot is largely, it can be seen that there are some patches of roads with higher density, signifying potential hotspots for accidents.
-```{r}
-plot(st_geometry(th_bound_all))
-```
-
+While the plot is largely filled with areas with low density, it can be seen that there are some patches of roads with higher density, signifying potential hotspots for accidents.
 
 ## 3.2 Temporal Network Spatial Point Patterns Analysis
 
-
+Although network kernel density estimation is useful, it will be interesting to see how temporal effects play into the analysis.
 
 ### 3.2.1 Bandwidth selction for performing TNKDE
 
+Similar to NKDE, cross validation is also used to determine an appropriate bandwidth prior to performing TNKDE
+
 ```{r}
 #| eval: false # eval: false
+# Perform cross validation for bandwidth selection
 tnkde_cv_scores <- bw_tnkde_cv_likelihood_calc(
-  bws_net = seq(200,2000, 100),
+  bws_net = seq(200,2000,100),
   bws_time = seq(10,100,10),
   lines = th_osm_sf,
   events = ra_sf,
@@ -778,6 +790,7 @@ tnkde_cv_scores <- bw_tnkde_cv_likelihood_calc(
   verbose = TRUE,
   check = TRUE)
 ```
+
 CV results are exported for ease of rendering.
 
 ```{r}
@@ -788,29 +801,28 @@ CV results are exported for ease of rendering.
 tnkde_cv_scores <- read_rds('data/output/tnkde_cv_scores.rds')
 ```
 
-
 ```{r}
 knitr::kable(tnkde_cv_scores)
 ```
 
-With this in mind, 
+With this in mind, the bandwidth selected is 100 days and 1000 meters. While a larger bandwidth is favored by the cross validation, the concern is on the overfitting risks.
 
 ### 3.2.2 Performing TNKDE
 
-
 ```{r}
 #| eval: false # eval: false
+# choosing sample in times (every 10 days)
+sample_time <- seq(0, max(ra_sf$days_since_start_of_year), 10)
+
+
 tnkde_densities <- tnkde(lines = th_osm_sf,
                    events = ra_sf,
                    time_field = "days_since_start_of_year",
                    w = rep(1, nrow(ra_sf)), 
-                   samples_loc = sample_points,
+                   samples_loc = th_samples,
                    samples_time = sample_time, 
                    kernel_name = "quartic",
-                   bw_net = 700, bw_time = 100,
-                   adaptive = TRUE,
-                   trim_bw_net = 900,
-                   trim_bw_time = 80,
+                   bw_net = 1000, bw_time = 100,
                    method = "simple",
                    div = "bw", max_depth = 8,
                    digits = 2, tol = 0.1,
@@ -820,19 +832,70 @@ tnkde_densities <- tnkde(lines = th_osm_sf,
 
 ```
 
+Results are saved for ease of rendering
 
+```{r}
+# # Export output object and read it in to minimize rendering time
+# write_rds(tnkde_densities, 'data/output/tnkde_densities.rds') # Uncomment when running the TNKDE again
+
+# Read in output object
+tnkde_densities <- read_rds('data/output/tnkde_densities.rds')
+```
+
+For ease of visualization, a gif will be created to illustrate how the intensity changes throughout the year.
+
+```{r}
+#| eval: false # eval: false
+# Creating a color palette for all the densities
+all_densities <- c(tnkde_densities)
+color_breaks <- classIntervals(all_densities, n = 10, style = "kmeans")
+
+# Generating a map at each sample time
+all_maps <- lapply(1:ncol(tnkde_densities), function(i){
+  time <- sample_time[[i]]
+  date <- as.Date(start) + time
+  
+  formatted_date <- format(date, "%m-%d")  # Display only month and day
+  
+  th_samples$density <- tnkde_densities[,i]
+  
+  map1 <- tm_shape(th_samples) + 
+    tm_dots(col = "density", size = 0.01,
+            breaks = color_breaks$brks, palette = viridis(10)) + 
+    tm_layout(legend.show = FALSE, 
+              main.title = as.character(formatted_date),  # Use formatted month-day date
+              main.title.size = 0.5)
+  return(map1)
+})
+
+
+tmap_animation(all_maps, filename = "data/images/animated_map.gif", 
+               width = 1000, height = 1000, dpi = 300, delay = 50)
+
+```
+
+```{r}
+# Visualize gif
+knitr::include_graphics("data/images/animated_map.gif")
+```
+
+A few observations can be made from the temporal network kernel density estimation gif:\
+- Throughout the year, there are certain portions of the network that are consistently denser. These are notably straight roads (Rama II Road, Kanchanaphisek Road, etc), which may induce more drivers to speed resulting in accidents.\
+- There are large variations in Pathum Thani's road network over the year, suggesting potential behavioral tendencies for drivers within that region that led to accidents.\
+- Individual hotspots that appear over the study area at different parts of the year highlights potential seasonal issues.
 
 ## 3.3 Network Constrained G- and K-Function Analysis
 
-
-### 3.3.1 Overall Analysis
+Parameters selected are made largely with the goal of reducing computational load.\
+Ho: The observed spatial point events are randomly distributed over the BMR network.\
+H1: The observed spatial point events are not randomly distributed over the BMR network.
 
 ```{r}
 #| eval: false # eval: false
 kfun_accidents_th <- kfunctions(th_osm_sf, 
                              ra_sf,
                              start = 0, 
-                             end = 200, 
+                             end = 500, 
                              step = 50, 
                              width = 50, 
                              nsim = 49, 
@@ -852,18 +915,316 @@ Results are saved for ease of rendering
 kfun_accidents_th <- read_rds('data/output/th_kfun.rds')
 ```
 
-
-
 ```{r}
-kfun_accidents_th$plotk
+kfun_accidents_th$plotk +
+  ggtitle("K-Function Plot of all accidents in BMR: 50 simulations") +
+  theme(plot.title = element_text(hjust = 0.5, size = 16, face = "bold"))
 ```
 
 ```{r}
-kfun_accidents_th$plotg
+kfun_accidents_th$plotg +
+  ggtitle("G-Function Plot of all accidents in BMR: 50 simulations") +
+  theme(plot.title = element_text(hjust = 0.5, size = 16, face = "bold"))
 ```
 
-From adsdaadsasd
+From both plots, the observed values are consistently below the confidence envelope. Therefore we can reject the null hypothesis and conclude that accidents follow a regular pattern across all distances.
 
-### 3.3.2 Behavioral Factors
+## 3.4 Behavioral Factors
+
+Lets see how behavioral factors can affect the occurrence of accidents. Complete spatial randomness test will be done separately for accidents that are presumably caused by speeding, and accidents caused by other reasons.
+
+Ho: The observed spatial point events are randomly distributed over the BMR network.\
+H1: The observed spatial point events are not randomly distributed over the BMR network.
+
+::: panel-tabset
+# Speeding
+
+```{r}
+# Prepare filtered accidents for Speeding
+ra_sf_bh_spd <- ra_sf %>%
+  filter(presumed_cause == 'speeding')
+```
+
+```{r}
+#| eval: false # eval: false
+kfun_bh_spd <- kfunctions(th_osm_sf, 
+                          ra_sf_bh_spd,
+                          start = 0, 
+                          end = 500, 
+                          step = 50, 
+                          width = 50, 
+                          nsim = 49, 
+                             # resolution = 100,
+                          verbose = TRUE,
+                          agg = 200,
+                          conf_int = 0.05)
+```
+
+Results are saved for ease of rendering
+
+```{r}
+# # Export output object and read it in to minimize rendering time
+# write_rds(kfun_bh_spd, 'data/output/kfun_bh_spd.rds') # Uncomment when running the Kfunction again
+
+# Read in output object
+kfun_bh_spd <- read_rds('data/output/kfun_bh_spd.rds')
+```
+
+```{r}
+kfun_bh_spd$plotk +
+  ggtitle("K-Function Plot of speeding related accidents in BMR: 50 simulations") +
+  theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
+```
+
+```{r}
+kfun_bh_spd$plotg +
+  ggtitle("G-Function Plot of speeding related accidents in BMR: 50 simulations") +
+  theme(plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))
+```
+
+# Non Speeding
+
+```{r}
+# Prepare filtered accidents for Speeding
+ra_sf_bh_oth <- ra_sf %>%
+  filter(presumed_cause != 'speeding')
+
+```
+
+```{r}
+#| eval: false # eval: false
+kfun_bh_oth <- kfunctions(th_osm_sf, 
+                          ra_sf_bh_oth,
+                          start = 0, 
+                          end = 500, 
+                          step = 50, 
+                          width = 50, 
+                          nsim = 49, 
+                             # resolution = 100,
+                          verbose = TRUE,
+                          agg = 200,
+                          conf_int = 0.05)
+```
+
+```{r}
+# # Export output object and read it in to minimize rendering time
+# write_rds(kfun_bh_oth, 'data/output/kfun_bh_oth.rds') # Uncomment when running the Kfunction again
+
+# Read in output object
+kfun_bh_oth <- read_rds('data/output/kfun_bh_oth.rds')
+```
+
+```{r}
+kfun_bh_oth$plotk+
+  ggtitle("K-Function Plot of non-speeding related accidents in BMR: 50 simulations") +
+  theme(plot.title = element_text(hjust = 0.5, size = 12, face = "bold"))
+```
+
+```{r}
+kfun_bh_oth$plotg +
+  ggtitle("G-Function Plot of non-speeding related accidents in BMR: 50 simulations") +
+  theme(plot.title = element_text(hjust = 0.5, size = 12, face = "bold"))
+```
+:::
+
+For accidents involving speeding, given that both G- and K- observed values are below the envelope. Again, we will then reject the null hypothesis and conclude that accidents related to speeding follow a regular pattern across all distances.
+
+However, for accidents involving non-speeding related reasons, although K-observed values are consistently below the envelope, the G-values are within the envelope at a particular distance (~300 meters). This suggests a globally regular pattern (K-function alternative hypothesis), with localized randomness at a particular distance.
+
+## 3.5 Environmental Factors
+
+### 3.5.1 Road Type
+
+::: panel-tabset
+# Straight Roads
+
+```{r}
+# Prepare filtered accidents for straight roads
+ra_sf_en_str <- ra_sf %>%
+  filter(road_description == 'straight road')
+```
+
+```{r}
+#| eval: false # eval: false
+kfun_en_str <- kfunctions(th_osm_sf, 
+                          ra_sf_en_str,
+                          start = 0, 
+                          end = 500, 
+                          step = 50, 
+                          width = 50, 
+                          nsim = 49, 
+                             # resolution = 100,
+                          verbose = TRUE,
+                          agg = 200,
+                          conf_int = 0.05)
+```
+
+```{r}
+# # Export output object and read it in to minimize rendering time
+# write_rds(kfun_en_str, 'data/output/kfun_en_str.rds') # Uncomment when running the Kfunction again
+
+# Read in output object
+kfun_en_str <- read_rds('data/output/kfun_en_str.rds')
+```
+
+```{r}
+kfun_en_str$plotk+
+  ggtitle("K-Function Plot of accidents on straight roads in BMR: 50 simulations") +
+  theme(plot.title = element_text(hjust = 0.5, size = 12, face = "bold"))
+```
+
+```{r}
+kfun_en_str$plotg+
+  ggtitle("G-Function Plot of accidents on straight roads in BMR: 50 simulations") +
+  theme(plot.title = element_text(hjust = 0.5, size = 12, face = "bold"))
+```
+
+# Other Road Types
+
+```{r}
+# Prepare filtered accidents for other roads
+ra_sf_en_oth <- ra_sf %>%
+  filter(road_description != 'straight road')
+```
+
+```{r}
+#| eval: false # eval: false
+kfun_en_oth <- kfunctions(th_osm_sf, 
+                          ra_sf_en_oth,
+                          start = 0, 
+                          end = 500, 
+                          step = 50, 
+                          width = 50, 
+                          nsim = 49, 
+                             # resolution = 100,
+                          verbose = TRUE,
+                          agg = 200,
+                          conf_int = 0.05)
+```
+
+```{r}
+# # Export output object and read it in to minimize rendering time
+# write_rds(kfun_en_oth, 'data/output/kfun_en_oth.rds') # Uncomment when running the Kfunction again
+
+# Read in output object
+kfun_en_oth <- read_rds('data/output/kfun_en_oth.rds')
+```
+
+```{r}
+kfun_en_oth$plotk+
+  ggtitle("K-Function Plot of accidents on other road types in BMR: 50 simulations") +
+  theme(plot.title = element_text(hjust = 0.5, size = 12, face = "bold"))
+```
+
+```{r}
+kfun_en_oth$plotg+
+  ggtitle("G-Function Plot of accidents on other road types in BMR: 50 simulations") +
+  theme(plot.title = element_text(hjust = 0.5, size = 12, face = "bold"))
+```
+:::
+
+For accidents involving straight roads, given that both G- and K- observed values are below the envelope. Again, we will then reject the null hypothesis and conclude that accidents on straight roads follow a regular pattern across all distances.
+
+However, for accidents on other road types, although K-observed values are consistently below the envelope, the G-values are again within the envelope at a particular distance (\~300-400 and 500 meters). This suggests a globally regular pattern (K-function alternative hypothesis), with localized randomness at a particular distance.
+
+### 3.5.2 Weather Condition
+
+::: panel-tabset
+
+# Clear Weather
+
+```{r}
+# Prepare filtered accidents for clear weather
+ra_sf_wth_clr <- ra_sf %>%
+  filter(weather_condition == 'clear')
+```
+
+```{r}
+#| eval: false # eval: false
+kfun_wth_clr <- kfunctions(th_osm_sf, 
+                          ra_sf_wth_clr,
+                          start = 0, 
+                          end = 500, 
+                          step = 50, 
+                          width = 50, 
+                          nsim = 49, 
+                             # resolution = 100,
+                          verbose = TRUE,
+                          agg = 200,
+                          conf_int = 0.05)
+```
+
+```{r}
+# # Export output object and read it in to minimize rendering time
+# write_rds(kfun_wth_clr, 'data/output/kfun_wth_clr.rds') # Uncomment when running the Kfunction again
+
+# Read in output object
+kfun_wth_clr <- read_rds('data/output/kfun_wth_clr.rds')
+```
+
+```{r}
+kfun_wth_clr$plotk+
+  ggtitle("K-Function Plot of accidents during clear weather in BMR: 50 simulations") +
+  theme(plot.title = element_text(hjust = 0.5, size = 12, face = "bold"))
+```
+
+```{r}
+kfun_wth_clr$plotg+
+  ggtitle("G-Function Plot of accidents during clear weather in BMR: 50 simulations") +
+  theme(plot.title = element_text(hjust = 0.5, size = 12, face = "bold"))
+```
+
+# Other Weather
+
+```{r}
+# Prepare filtered accidents for clear weather
+ra_sf_wth_oth <- ra_sf %>%
+  filter(weather_condition != 'clear')
+```
+
+```{r}
+#| eval: false # eval: false
+kfun_wth_oth <- kfunctions(th_osm_sf, 
+                          ra_sf_wth_oth,
+                          start = 0, 
+                          end = 500, 
+                          step = 50, 
+                          width = 50, 
+                          nsim = 49, 
+                             # resolution = 100,
+                          verbose = TRUE,
+                          agg = 200,
+                          conf_int = 0.05)
+```
+
+```{r}
+# # Export output object and read it in to minimize rendering time
+# write_rds(kfun_wth_oth, 'data/output/kfun_wth_oth.rds') # Uncomment when running the Kfunction again
+
+# Read in output object
+kfun_wth_oth <- read_rds('data/output/kfun_wth_oth.rds')
+```
+
+```{r}
+kfun_wth_oth$plotk+
+  ggtitle("K-Function Plot of accidents during other weather in BMR: 50 simulations") +
+  theme(plot.title = element_text(hjust = 0.5, size = 12, face = "bold"))
+```
+
+```{r}
+kfun_wth_oth$plotg+
+  ggtitle("G-Function Plot of accidents during other weather in BMR: 50 simulations") +
+  theme(plot.title = element_text(hjust = 0.5, size = 12, face = "bold"))
+```
+
+:::
+
+For accidents during clear weather, given that both G- and K- observed values are below the envelope. Again, we will then reject the null hypothesis and conclude that accidents during clear weather follow a regular pattern across all distances.
+
+However, for accidents during other weather conditions, although K-observed values are consistently below the envelope, the G-values are have a mix of behaviors. It exhibits regular patterns under 200 meters, random pattern from 200-350 meters and clustered pattern abve 350 meters.
 
 # 4 Conclusion
+
+In conclusion, it appears that a common cause of accidents are a mix of variables. Given good weather conditions and straight roads, drivers are more inclined to speed. With good underlying network infrastructure, this then translates to accidents happening across the network in a regular fashion.
+
+However, other factors also may contribute to accidents. Under less ideal weather conditions, drivers may encounter difficulties (other presumed cause) on more difficult roads (non-straight roads), especially around ~300 meters. This gives rise to a more random distribution as such factors may occur anywhere on the network. 

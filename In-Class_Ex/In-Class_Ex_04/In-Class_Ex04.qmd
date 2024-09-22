@@ -21,8 +21,7 @@ Hunan_2012 - csv dataset containing Hunan's 2012 local development indicators
 # Geographically Weigthed Summary Statistics - gwModel methods
 
 Other methods that will be useful\
-- gwr (regression methods).\ 
-- bandwidth selection (for fixed and adaptive methods).\
+- gwr (regression methods).  - bandwidth selection (for fixed and adaptive methods).\
 - principal component analysis
 
 ## 1.1 Setting Up
@@ -80,7 +79,22 @@ glimpse(hunan)
 
 ## 1.2 Geospatial Wrangling
 
-### 1.2.1 Convert sf to SpatialPolygonDataFrame 
+### 1.2.1 Mapping GDPPC
+
+```{r}
+
+basemap <- tm_shape(hunan) +
+  tm_polygons() +
+  tm_text("NAME_3", size=0.5)
+
+gdppc <- qtm(hunan, "GDPPC") + 
+  tm_layout(legend.text.size = 0.6,    
+            legend.title.size = 0.8    
+            )
+tmap_arrange(basemap, gdppc, asp=1, ncol=2)
+```
+
+### 1.2.1 Convert sf to SpatialPolygonDataFrame
 
 ```{r}
 hunan_sp <- hunan %>%
@@ -106,6 +120,7 @@ bw_CV <- bw.gwr(GDPPC ~ 1, # Dependent: GDPPC, Independent - assume 1
 
 bw_CV
 ```
+
 # AIC
 
 ```{r}
@@ -118,9 +133,7 @@ bw_AIC <- bw.gwr(GDPPC ~ 1,
 
 bw_AIC
 ```
-
 :::
-
 
 # 2.2 Determine fixed bandwidth
 
@@ -137,6 +150,7 @@ bw_CV_fixed <- bw.gwr(GDPPC ~ 1,
 
 bw_CV_fixed
 ```
+
 # AIC
 
 ```{r}
@@ -149,13 +163,11 @@ bw_AIC_fixed <- bw.gwr(GDPPC ~ 1,
 
 bw_AIC_fixed
 ```
-
 :::
-
 
 It may be recommended to use adaptive distance in this case since both methods for adaptive distance are consistent (22) as compared to the methods for fixed distance.
 
-# 2.3 Compute Geographically Weighted Summary Statistics
+# 2.3 Geographically Weighted Summary Statistics with Adaptive Bandwidth
 
 ```{r}
 # Using adaptive bandwidth 
@@ -175,8 +187,7 @@ gwstat_df <- as.data.frame(gwstat$SDF)
 hunan_gstat <- cbind(hunan, gwstat_df)
 ```
 
-
-```{r fig.width=12, fig.height=8}
+```{r}
 # Plot results
 tm_shape(hunan_gstat) + 
   tm_fill("GDPPC_LM",
@@ -185,30 +196,99 @@ tm_shape(hunan_gstat) +
   tm_borders(alpha = 0.5) +
   tm_layout(main.title = "Distribution of geographically weighted mean",
             main.title.position = "center",
-            main.title.size = 2.0,
-            legend.text.size = 1.2,  # Adjust the size of the legend text
-            legend.title.size = 1.6,
-            legend.height = 1.5,
+            main.title.size = 0.9,
+            legend.text.size = 0.6,  # Adjust the size of the legend text
+            legend.title.size = 0.8,
+            legend.height = 0.7,
             legend.width = 1.50,
-            frame = TRUE)    # Adjust the size of the legend title
+            frame = TRUE)   
 ```
 
-
-
-# 2.4 Geographically Weighted Correlation with Adaptive Bandwidth
-
+# 2.4 Geographically Weighted Summary Statistics with Fixed Bandwidth
 
 ```{r}
-# Determine bandwidth
+# Using fixed bandwidth 
+gwstat <- gwss(data = hunan_sp,
+               vars = "GDPPC",
+               bw = bw_AIC_fixed,
+               kernel = "bisquare",
+               adaptive = FALSE,
+               longlat = T)
 
 ```
 
 ```{r}
-# Compute correlation
-# gwstats_corr <- gwss(hunan_sp,
-#                      vars = )
+# Extract output data and convert into dataframe
+gwstat_df <- as.data.frame(gwstat$SDF)
+
+# Append dataframe to hunan sf dataframe
+hunan_gstat <- cbind(hunan, gwstat_df)
 ```
 
+```{r}
+# Plot results
+tm_shape(hunan_gstat) +
+  tm_fill("GDPPC_LM",
+          n = 5,
+          style = "quantile") +
+  tm_borders(alpha = 0.5) +
+  tm_layout(main.title = "Distribution of geographically weighted mean",
+            main.title.position = "center",
+            main.title.size = 0.9,
+            legend.text.size = 0.6,  # Adjust the size of the legend text
+            legend.title.size = 0.8,
+            legend.height = 0.7,
+            legend.width = 1.50,
+            frame = TRUE) 
+```
+
+# 2.5 Geographically Weighted Correlation with Adaptive Bandwidth
+
+```{r}
+ggscatterstats(
+  data = hunan2012, 
+  x = Agri, 
+  y = GDPPC,
+  xlab = "Gross Agriculture Output", ## label for the x-axis
+  ylab = "GDP per capita", 
+  label.var = County, 
+  label.expression = Agri > 10000 & GDPPC > 50000, 
+  point.label.args = list(alpha = 0.7, size = 4, color = "grey50"),
+  xfill = "#CC79A7", 
+  yfill = "#009E73", 
+  title = "Relationship between GDP PC and Gross Agriculture Output")
+```
+
+```{r}
+# Determine the bandwidth
+bw <- bw.gwr(GDPPC ~ GIO, 
+             data = hunan_sp, 
+             approach = "AICc", 
+             adaptive = TRUE)
+```
+
+```{r}
+# Compute the gwCorrelation
+gwstats <- gwss(hunan_sp, 
+                vars = c("GDPPC", "GIO"), 
+                bw = bw,
+                kernel = "bisquare",
+                adaptive = TRUE, 
+                longlat = T)
+```
+
+```{r}
+# Extract the results from gwss object
+gwstat_df <- as.data.frame(gwstats$SDF) %>%
+  select(c(12,13)) %>%
+  rename(gwCorr = Corr_GDPPC.GIO,
+         gwSpearman = Spearman_rho_GDPPC.GIO)
+```
+
+```{r}
+# Column bind the results
+hunan_Corr <- cbind(hunan, gwstat_df)
+```
 
 # 2.5 Visualising Local Correlation
 
@@ -216,13 +296,36 @@ tm_shape(hunan_gstat) +
 # Spearman Correlation
 
 ```{r}
-# TBC
+# Visualize Spearman Correlation
+tm_shape(hunan_Corr) +
+  tm_fill("gwSpearman",
+          n = 5,
+          style = "quantile") +
+  tm_borders(alpha = 0.5) +
+  tm_layout(main.title = "Local Spearman Rho",
+            main.title.position = "center",
+            main.title.size = 1.2,
+            legend.text.size = 0.6,
+            legend.height = 0.7, 
+            legend.width = 0.8,
+            frame = TRUE)
 ```
+
 # Pearson Correlation
 
 ```{r}
-# TBC
+# Visualize Pearson Correlation
+tm_shape(hunan_Corr) +
+  tm_fill("gwCorr",
+          n = 5,
+          style = "quantile") +
+  tm_borders(alpha = 0.5) +
+  tm_layout(main.title = "Local Correlation Coefficient",
+            main.title.position = "center",
+            main.title.size = 1.2,
+            legend.text.size = 0.6,
+            legend.height = 0.7, 
+            legend.width = 0.8,
+            frame = TRUE)
 ```
-
 :::
-
