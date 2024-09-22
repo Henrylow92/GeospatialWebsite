@@ -690,7 +690,7 @@
     "href": "In-Class_Ex/In-Class_Ex_04/In-Class_Ex04.html#geospatial-wrangling",
     "title": "In Class Exercise 04",
     "section": "1.2 Geospatial Wrangling",
-    "text": "1.2 Geospatial Wrangling\n\n1.2.1 Convert sf to SpatialPolygonDataFrame\n\nhunan_sp &lt;- hunan %&gt;%\n  as_Spatial()\n\nIn spatial dataframe, it is stored as a list. Geospatial data (geometry field) is stored in a separate list (polygons)"
+    "text": "1.2 Geospatial Wrangling\n\n1.2.1 Mapping GDPPC\n\nbasemap &lt;- tm_shape(hunan) +\n  tm_polygons() +\n  tm_text(\"NAME_3\", size=0.5)\n\ngdppc &lt;- qtm(hunan, \"GDPPC\") + \n  tm_layout(legend.text.size = 0.6,    \n            legend.title.size = 0.8    \n            )\ntmap_arrange(basemap, gdppc, asp=1, ncol=2)\n\n\n\n\n\n\n\n\n\n\n1.2.1 Convert sf to SpatialPolygonDataFrame\n\nhunan_sp &lt;- hunan %&gt;%\n  as_Spatial()\n\nIn spatial dataframe, it is stored as a list. Geospatial data (geometry field) is stored in a separate list (polygons)"
   },
   {
     "objectID": "Take-Home_Ex/Take-Home_Ex_01/Take-Home_Ex01.html#first-order-spatial-point-pattern-analysis",
