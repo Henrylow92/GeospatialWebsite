@@ -20,8 +20,6 @@ Chapter 9:\
 Hunan county boundary layer - geospatial dataset\
 Hunan_2012 - csv dataset containing Hunan's 2012 local development indicators\
 
-Chapter 13:\
-URA Master Plan subzone boundary condo_resale_2015 - csv dataset
 
 # Chapter 9: Global Measures of Spatial Autocorrelation
 
