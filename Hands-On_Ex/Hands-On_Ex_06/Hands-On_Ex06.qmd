@@ -32,35 +32,654 @@ pacman::p_load(spdep, tmap, sf, ClustGeo,
 
 ### 12.1.2 Importing spatial data
 
+Load geospatial dataset - Myanmar Township Boundary GIS data
+
+```{r}
+# Load Myanmar Township Boundary GIS data
+shan_sf <- st_read(dsn = "data/geospatial", layer = "myanmar_township_boundaries") %>%
+  filter(ST %in% c("Shan (East)", "Shan (North)", "Shan (South)")) %>%
+  # select(c(2:7))
+  select(`ST`, `ST_PCODE`,`DT`, `DT_PCODE`, `TS`, `TS_PCODE`)
+```
+```{r}
+# Check data
+shan_sf
+```
+
+```{r}
+glimpse(shan_sf)
+```
+
+Load aspatial dataset - Population & Housing Census Data
+
+```{r}
+ict <- read_csv("data/aspatial/Shan-ICT.csv")
+```
+
+```{r}
+# Check data
+summary(ict)
+```
+
 ### 12.1.3 Data Wrangling
 
+Lets do some feature engineering.
+
+```{r}
+# Create penetration figures to standardise variables by household count
+ict_derived <- ict %>%
+  mutate(`RADIO_PR` = `Radio`/`Total households`*1000) %>%
+  mutate(`TV_PR` = `Television`/`Total households`*1000) %>%
+  mutate(`LLPHONE_PR` = `Land line phone`/`Total households`*1000) %>%
+  mutate(`MPHONE_PR` = `Mobile phone`/`Total households`*1000) %>%
+  mutate(`COMPUTER_PR` = `Computer`/`Total households`*1000) %>%
+  mutate(`INTERNET_PR` = `Internet at home`/`Total households`*1000) %>%
+  rename(`DT_PCODE` =`District Pcode`,`DT`=`District Name`,
+         `TS_PCODE`=`Township Pcode`, `TS`=`Township Name`,
+         `TT_HOUSEHOLDS`=`Total households`,
+         `RADIO`=`Radio`, `TV`=`Television`, 
+         `LLPHONE`=`Land line phone`, `MPHONE`=`Mobile phone`,
+         `COMPUTER`=`Computer`, `INTERNET`=`Internet at home`) 
+```
+
+```{r}
+# Check summary of results
+summary(ict_derived)
+```
 
 ## 12.2 Exploratory Data Analysis (EDA)
 
+### 12.2.1 Statistical Graphs
 
+```{r}
+# Visualize distribution of radio
+ggplot(data=ict_derived, 
+       aes(x=`RADIO`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue")
+```
+```{r}
+# Check for potential outliers
+ggplot(data=ict_derived, 
+       aes(x=`RADIO`)) +
+  geom_boxplot(color="black", 
+               fill="light blue")
+```
+```{r}
+# Visualize distribution of radio penetration 
+ggplot(data=ict_derived, 
+       aes(x=`RADIO_PR`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue")
+```
+
+
+```{r}
+# Check for outliers for radio penetration
+ggplot(data=ict_derived, 
+       aes(x=`RADIO_PR`)) +
+  geom_boxplot(color="black", 
+               fill="light blue")
+```
+
+
+*Based on the distribution from the histogram and boxplot, it confirms the rationale behind normalising variables by household numbers. There is a strong left skew to the left with most townships having around 0-10,000 radios. There are also some townships with a large number of radios (15,000, 30,000), which are also represented as dots in the first histogram. With the normalisation, the radio penetration resembles more of a normal distribution around the mean of 250 radios. While there is still an outlier, the 2nd boxplot is more distributed as well (fatter compared to the first boxplot).* 
+
+
+```{r}
+# Visualize other variables by penetration
+radio <- ggplot(data=ict_derived, 
+             aes(x= `RADIO_PR`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue")
+
+tv <- ggplot(data=ict_derived, 
+             aes(x= `TV_PR`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue")
+
+llphone <- ggplot(data=ict_derived, 
+             aes(x= `LLPHONE_PR`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue")
+
+mphone <- ggplot(data=ict_derived, 
+             aes(x= `MPHONE_PR`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue")
+
+computer <- ggplot(data=ict_derived, 
+             aes(x= `COMPUTER_PR`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue")
+
+internet <- ggplot(data=ict_derived, 
+             aes(x= `INTERNET_PR`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue")
+
+ggarrange(radio, tv, llphone, mphone, computer, internet, 
+          ncol = 3, 
+          nrow = 2)
+```
+
+### 12.2.2 Choropleth Maps
+
+```{r}
+# Combine geospatial and aspatial data
+shan_sf <- left_join(shan_sf, ict_derived, by=c("TS_PCODE"="TS_PCODE"))
+  
+# Write combined object to rds for easy retrieval
+write_rds(shan_sf, "data/rds/shan_sf.rds")
+
+# Read combined object
+shan_sf <- read_rds("data/rds/shan_sf.rds")
+```
+
+```{r}
+# Quick thematic map plot of combined dataset
+qtm(shan_sf, "RADIO_PR")
+```
+```{r}
+# Visualize household distribution and radio distribution 
+TT_HOUSEHOLDS.map <- tm_shape(shan_sf) + 
+  tm_fill(col = "TT_HOUSEHOLDS",
+          n = 5,
+          style = "jenks", 
+          title = "Total households") + 
+  tm_borders(alpha = 0.5) +
+  tm_layout(legend.title.size = 0.7, legend.text.size = 0.5)
+
+RADIO.map <- tm_shape(shan_sf) + 
+  tm_fill(col = "RADIO",
+          n = 5,
+          style = "jenks",
+          title = "Number Radio ") + 
+  tm_borders(alpha = 0.5) +
+  tm_layout(legend.title.size = 0.7, legend.text.size = 0.5)
+
+tmap_arrange(TT_HOUSEHOLDS.map, RADIO.map,
+             asp=NA, ncol=2)
+```
+
+
+```{r}
+tm_shape(shan_sf) +
+    tm_polygons(c("TT_HOUSEHOLDS", "RADIO_PR"),
+                style="jenks") +
+    tm_facets(sync = TRUE, ncol = 2) +
+  tm_legend(legend.position = c("right", "bottom"))+
+  tm_layout(outer.margins=0, asp=0)
+```
+
+*Distribution of number of Radio is extremely similar to household distribution, whereas there are significant differences between radio penetration and household distribution.* 
 
 ## 12.3 Correlation Analysis
 
+Use `corrplot.mixed()` of corrplot
 
+```{r}
+# Show correlation plot
+cluster_vars.cor = cor(ict_derived[,12:17])
+corrplot.mixed(cluster_vars.cor,
+         lower = "ellipse", 
+               upper = "number",
+               tl.pos = "lt",
+               diag = "l",
+               tl.col = "black")
+```
 
 
 ## 12.4 Hierarchy Cluster Analysis
 
+### 12.4.1 Data Preproocessing
+
+```{r}
+# Extract clustering variables
+cluster_vars <- shan_sf %>%
+  st_set_geometry(NULL) %>%
+  select("TS.x", "RADIO_PR", "TV_PR", "LLPHONE_PR", "MPHONE_PR", "COMPUTER_PR")
+head(cluster_vars,10)
+```
+
+```{r}
+# Change row names to township name
+row.names(cluster_vars) <- cluster_vars$"TS.x"
+head(cluster_vars,10)
+```
+
+```{r}
+# Delete the previous TS.x field by selecting other columns
+shan_ict <- select(cluster_vars, c(2:6))
+head(shan_ict, 10)
+```
+```{r}
+# Standardise variable with min-max method
+shan_ict.std <- normalize(shan_ict)
+summary(shan_ict.std)
+```
+
+
+```{r}
+# Z score standardisation
+shan_ict.z <- scale(shan_ict)
+psych::describe(shan_ict.z)
+```
+
+
+### 12.4.2 Visualise preprocessed variables
+
+```{r}
+r <- ggplot(data=ict_derived, 
+             aes(x= `RADIO_PR`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue") +
+  ggtitle("Raw values without standardisation")
+
+shan_ict_s_df <- as.data.frame(shan_ict.std)
+s <- ggplot(data=shan_ict_s_df, 
+       aes(x=`RADIO_PR`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue") +
+  ggtitle("Min-Max Standardisation")
+
+shan_ict_z_df <- as.data.frame(shan_ict.z)
+z <- ggplot(data=shan_ict_z_df, 
+       aes(x=`RADIO_PR`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue") +
+  ggtitle("Z-score Standardisation")
+
+ggarrange(r, s, z,
+          ncol = 3,
+          nrow = 1)
+```
+*Min-max standardisation centers the distribution around 0.5, ranging from 0 to 1. Z-score standardisation on the other hand centers the distribution around 0. Min-max rescales the distribution whereas z-score transform the distribution by standard deviation*
+
+
+```{r}
+r <- ggplot(data=ict_derived, 
+             aes(x= `RADIO_PR`)) +
+  geom_density(color="black",
+               fill="light blue") +
+  ggtitle("Raw values without standardisation")
+
+shan_ict_s_df <- as.data.frame(shan_ict.std)
+s <- ggplot(data=shan_ict_s_df, 
+       aes(x=`RADIO_PR`)) +
+  geom_density(color="black",
+               fill="light blue") +
+  ggtitle("Min-Max Standardisation")
+
+shan_ict_z_df <- as.data.frame(shan_ict.z)
+z <- ggplot(data=shan_ict_z_df, 
+       aes(x=`RADIO_PR`)) +
+  geom_density(color="black",
+               fill="light blue") +
+  ggtitle("Z-score Standardisation")
+
+ggarrange(r, s, z,
+          ncol = 3,
+          nrow = 1)
+```
+
+
+### 12.4.3 Proximity Matrix
+
+Use `dist()` of R to calculate proximity matrix
+
+```{r}
+# Calculate proximity matrix with euclidean
+proxmat <- dist(shan_ict, method = 'euclidean')
+
+# Check result
+proxmat
+```
+
+### 12.4.4 Hierarchical Clustering
+
+Use `hclust()` of R to perform hierarchical clustering
+
+```{r}
+# Perform hierarchical clustering with ward.D method
+hclust_ward <- hclust(proxmat, method = 'ward.D')
+
+# Visualize results as Dendrogram
+plot(hclust_ward, cex = 0.6)
+```
+
+
+
+### 12.4.5 Data-driven Clustering
+
+While there are many decisions to make, we can make then through data-driven analysis
+
+
+#### 12.4.5.1 Optimal Clustering Algorithm
+
+Use `agnes()` of cluster package to get agglomerative coefficient (amount of clustering structure found)
+
+```{r}
+# Compute agglomerative coefficients of all hierarchical clustering algorithms
+m <- c( "average", "single", "complete", "ward")
+names(m) <- c( "average", "single", "complete", "ward")
+
+ac <- function(x) {
+  agnes(shan_ict, method = x)$ac
+}
+
+map_dbl(m, ac)
+```
+
+#### 12.4.5.2 Optimal Clusters
+
+Use `clusGap()` of cluster package to compute gap statistic (distance of clustering structure from random uniform distribution of points)
+
+```{r}
+# Compute gap statistic
+set.seed(12345)
+gap_stat <- clusGap(shan_ict, 
+                    FUN = hcut, 
+                    nstart = 25, 
+                    K.max = 10, 
+                    B = 50)
+# Print the result
+print(gap_stat, method = "firstmax")
+```
+
+
+```{r}
+# Visualize plot
+fviz_gap_stat(gap_stat)
+```
+
+
+### 12.4.6 Dendrogram Interpretation
+
+Use `rect.hclust()` of R to draw dendrogram with borders
+
+```{r}
+plot(hclust_ward, cex = 0.6)
+rect.hclust(hclust_ward, 
+            k = 6, 
+            border = 2:5)
+```
+
+
+### 12.4.7 Visually-driven Hierarchical Clustering
+
+
+```{r}
+# Transform dataframe into data matrix
+shan_ict_mat <- data.matrix(shan_ict)
+
+# Build interactive cluster heatmap
+heatmaply(normalize(shan_ict_mat),
+          Colv=NA,
+          dist_method = "euclidean",
+          hclust_method = "ward.D",
+          seriate = "OLO",
+          colors = Blues,
+          k_row = 6,
+          margins = c(NA,200,60,NA),
+          fontsize_row = 4,
+          fontsize_col = 5,
+          main="Geographic Segmentation of Shan State by ICT indicators",
+          xlab = "ICT Indicators",
+          ylab = "Townships of Shan State"
+          )
+```
+
+Use `cutree()` of R to derive a 6-cluster model
+
+```{r}
+# Derive 6 cluster model
+groups <- as.factor(cutree(hclust_ward, k=6))
+
+# Convert group list object into matrix, then column bind it onto shan_sf
+shan_sf_cluster <- cbind(shan_sf, as.matrix(groups)) %>% 
+  rename(`CLUSTER`=`as.matrix.groups.`) 
+```
+
+
+```{r}
+# Quick thematic map plot of clusters
+qtm(shan_sf_cluster, "CLUSTER")
+```
 
 
 ## 12.5 Spatially Constrained Clustering (SKATER approach)
 
+Use `skater()` of spdep package to derive spatially constrained cluster.
+
+### 12.5.1 Data Preproocessing
+
+```{r}
+# Convert shan_sf into SpatialPolygonDataFrame
+shan_sp <- as_Spatial(shan_sf)
+```
+
+
+```{r}
+# Compute neighbour list from polygon list
+shan.nb <- poly2nb(shan_sp)
+summary(shan.nb)
+```
+```{r}
+# Get coordinates of shan_sf polygons centers
+coords <- st_coordinates(
+  st_centroid(st_geometry(shan_sf)))
+
+# Plot neighbour list on shan_sp
+plot(st_geometry(shan_sf), 
+     border=grey(.5))
+plot(shan.nb,
+     coords, 
+     col="blue", 
+     add=TRUE)
+```
+
+
+```{r}
+# Compute edge cost
+lcosts <- nbcosts(shan.nb, shan_ict)
+
+# Incorporate cost into weights object
+shan.w <- nb2listw(shan.nb, 
+                   lcosts, 
+                   style="B") # Use "B" to make sure cost values are not row standardised
+summary(shan.w)
+```
+
+```{r}
+# Compute minimum spanning tree
+shan.mst <- mstree(shan.w)
+
+# Check class of MST
+class(shan.mst)
+
+# Check dimension of MST
+dim(shan.mst)
+
+# Check content of MST
+head(shan.mst)
+```
+```{r}
+# Visualize MST 
+plot(st_geometry(shan_sf), 
+                 border=gray(.5))
+plot.mst(shan.mst, 
+         coords, 
+         col="blue", 
+         cex.lab=0.7, 
+         cex.circles=0.005, 
+         add=TRUE)
+```
+### 12.5.2 Spatially Constrained Clustering
+
+```{r}
+# Compute spatially constrained clusters using SKATER
+clust6 <- spdep::skater(edges = shan.mst[,1:2],  
+                 data = shan_ict,    
+                 method = "euclidean", 
+                 ncuts = 5)
+
+# Check output contents
+str(clust6)
+```
 
 
 
+```{r}
+# Check cluster assignments
+ccs6 <- clust6$groups
+ccs6
+```
 
+```{r}
+# Examine distribution of clusters
+table(ccs6)
+```
+### 
+```{r}
+# Plot pruned tree with 6 clusters
+plot(st_geometry(shan_sf), 
+     border=gray(.5))
+plot(clust6, 
+     coords, 
+     cex.lab=.7,
+     groups.colors=c("red","green","blue", "brown", "pink", "black"),
+     cex.circles=0.005, 
+     add=TRUE)
+```
 
+```{r}
+# Plot clusters
+groups_mat <- as.matrix(clust6$groups)
+shan_sf_spatialcluster <- cbind(shan_sf_cluster, as.factor(groups_mat)) %>%
+  rename(`SP_CLUSTER`=`as.factor.groups_mat.`)
+qtm(shan_sf_spatialcluster, "SP_CLUSTER")
+```
+
+```{r}
+# Visualize hierarchical clustering and spatially constrained hierarchical clustering side by side
+hclust.map <- qtm(shan_sf_cluster,
+                  "CLUSTER") + 
+  tm_borders(alpha = 0.5) 
+
+shclust.map <- qtm(shan_sf_spatialcluster,
+                   "SP_CLUSTER") + 
+  tm_borders(alpha = 0.5) 
+
+tmap_arrange(hclust.map, shclust.map,
+             asp=NA, ncol=2)
+```
 
 
 ## 12.6 Spatially Constrained Clustering (ClustGeo method)
 
+```{r}
+# Use hclustgeo with dissimilarity matrix for non-spatially constrained hierarchical clustering
+nongeo_cluster <- hclustgeo(proxmat)
+
+# Visualize results
+plot(nongeo_cluster, cex = 0.5)
+rect.hclust(nongeo_cluster, 
+            k = 6, 
+            border = 2:5)
+```
+
+```{r}
+# Extract grouping labels
+groups <- as.factor(cutree(nongeo_cluster, k=6))
+
+# Column bind labels to shan_sf
+shan_sf_ngeo_cluster <- cbind(shan_sf, as.matrix(groups)) %>%
+  rename(`CLUSTER` = `as.matrix.groups.`)
+
+# Quick thematic map plot
+qtm(shan_sf_ngeo_cluster, "CLUSTER")
+```
+
+```{r}
+# Derive spatial distance matrix
+dist <- st_distance(shan_sf, shan_sf)
+distmat <- as.dist(dist)
+```
 
 
+```{r}
+# Determine suitable value for mixing parameter alpha
+cr <- choicealpha(proxmat, distmat, range.alpha = seq(0, 1, 0.1), K=6, graph = TRUE)
+```
+
+
+```{r}
+# Use 0.3 based on above chart for spatially constrained hierarchical clustering
+clustG <- hclustgeo(proxmat, distmat, alpha = 0.3)
+
+# Derive cluster object
+groups <- as.factor(cutree(clustG, k=6))
+
+# Column bind the groups back to shan_sf
+shan_sf_Gcluster <- cbind(shan_sf, as.matrix(groups)) %>%
+  rename(`CLUSTER` = `as.matrix.groups.`)
+
+# Quick thematic map plot
+qtm(shan_sf_Gcluster, "CLUSTER")
+```
 
 
 ## 12.7 Visual Interpretation of Clusters
+
+
+### 12.7.1 Individual Clustering Variable
+
+```{r}
+# Check distribution of clustering variable
+ggplot(data = shan_sf_ngeo_cluster,
+       aes(x = CLUSTER, y = RADIO_PR)) +
+  geom_boxplot()
+```
+
+### 12.7.2 Multivariate
+
+
+```{r}
+# Parallel coordinate plot 
+ggparcoord(data = shan_sf_ngeo_cluster, 
+           columns = c(17:21), 
+           scale = "globalminmax",
+           alphaLines = 0.2,
+           boxplot = TRUE, 
+           title = "Multiple Parallel Coordinates Plots of ICT Variables by Cluster") +
+  facet_grid(~ CLUSTER) + 
+  theme(axis.text.x = element_text(angle = 30))
+```
+
+```{r}
+# Derive mean values of clustering variables
+shan_sf_ngeo_cluster %>% 
+  st_set_geometry(NULL) %>%
+  group_by(CLUSTER) %>%
+  summarise(mean_RADIO_PR = mean(RADIO_PR),
+            mean_TV_PR = mean(TV_PR),
+            mean_LLPHONE_PR = mean(LLPHONE_PR),
+            mean_MPHONE_PR = mean(MPHONE_PR),
+            mean_COMPUTER_PR = mean(COMPUTER_PR))
+```
+
+
+
+
