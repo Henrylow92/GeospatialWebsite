@@ -1,7 +1,7 @@
 ---
-title: "In Class Exercise 03"
+title: "In Class Exercise 06"
 author: "Henry Low"
-date: "Aug 26 2024"
+date: "Sep 30 2024"
 date-modified: "last-modified"
 execute:
   evalu: true
@@ -12,4 +12,191 @@ format: html
 editor: visual
 ---
 
-TBC
+# Data Sources
+
+*(saved under 'data' folder)*\
+Myanmar Township Boundary Data - geospatial dataset\
+Shan-ICT - csv dataset containing [2014 Myanmar Population and Housing Census Myanmar](https://myanmar.unfpa.org/en/publications/2014-population-and-housing-census-myanmar-data-sheet)\
+
+## Setting Up
+
+### Loading the R packages
+
+```{r}
+pacman::p_load(sf, sfdep, tmap, plotly, tidyverse)
+```
+
+### Importing spatial data
+
+```{r}
+# Import geospatial hunan data
+hunan <- st_read(dsn = "data/geospatial", layer = "Hunan")
+```
+
+### Importing aspatial data
+
+
+```{r}
+# Import GDPPC data
+GDPPC <- read_csv("data/aspatial/Hunan_GDPPC.csv")
+```
+
+# Emerging Hot Spot Analysis (EHSA)
+
+
+## Step 1 Building Space-time Cube
+
+```{r}
+# Build space-time cube
+GDPPC_st <- spacetime(GDPPC, hunan, 
+                      .loc_col = "County", # Space indicator 
+                      .time_col = "Year")  # Time indicator (needs to be in discrete integer)
+
+# Check space-time cube object
+is_spacetime_cube(GDPPC_st)
+```
+Space-time cube resembles tidyverse table on the surface but contains rules for lookup etc within.
+
+
+## Step 2 Calculate Getis-Ord local Gi\* statistic
+
+
+### Derive Spatial weights
+
+Identify neighbours and derive inverse distance weights. (For Gi\* cannot use proximity weights)
+
+```{r}
+GDPPC_nb <- GDPPC_st %>%
+  activate("geometry") %>%  # Need this to activate geometry context
+  mutate(nb = include_self(st_contiguity(geometry)),  # Nearest neighbour count
+         wt = st_inverse_distance(nb, geometry, scale = 1,  # Inverse distance weight based on nearest neighbour
+                                  alpha = 1), # Alpha used to control distance decay
+         .before = 1) %>%
+  set_nbs("nb") %>%
+  set_wts("wt")
+```
+### Compute Gi\*
+
+
+```{r}
+gi_stars <- GDPPC_nb %>% 
+  group_by(Year) %>% 
+  mutate(gi_star = local_gstar_perm(GDPPC, nb, wt)) %>% 
+  tidyr::unnest(gi_star)
+```
+
+## Step 3 Mann-Kendall Test
+
+H0: No monotonic trend
+H1: Monotonic trend is present
+
+If p-value < alpha value, reject null-hypothesis.
+
+```{r}
+# Perform Mann-Kendall Test
+cbg <- gi_stars %>% 
+  ungroup() %>% 
+  filter(County == "Changsha") |>  # "|> R base piping"
+  select(County, Year, gi_star)
+
+# Visualize results
+ggplot(data = cbg, 
+       aes(x = Year, 
+           y = gi_star)) +
+  geom_line() +
+  theme_light()
+```
+```{r}
+# Visualize using interactive plot
+p <- ggplot(data = cbg, 
+       aes(x = Year, 
+           y = gi_star)) +
+  geom_line() +
+  theme_light()
+
+ggplotly(p)
+```
+
+#### Print Test Report
+
+```{r}
+cbg %>%
+  summarise(mk = list(unclass(Kendall::MannKendall(gi_star)))) %>% 
+  tidyr::unnest_wider(mk)
+```
+
+With reference to sl (p-value), reject null hypothesis as sl < 0.05 and conclude that monotonic trend is present.
+Since tau is >0, it is an increasingly series.
+
+### Mann-Kendall DataFrame
+
+Replicate the test for each location with `group_by()` function of dpylr.
+
+```{r}
+# Repeat Mann-Kendall test
+ehsa <- gi_stars %>%
+  group_by(County) %>%
+  summarise(mk = list(unclass(Kendall::MannKendall(gi_star)))) %>%
+  tidyr::unnest_wider(mk)
+
+# Check output
+head(ehsa)
+```
+
+Sort results by sl and tau to focus on more significant emerging hot/cold spots.
+
+```{r}
+# Sort to show emerging 
+emerging <- ehsa %>% 
+  arrange(sl, abs(tau)) %>% 
+  slice(1:10)
+
+# Check filtered output
+head(emerging)
+```
+
+
+
+
+## Step 4 Perform Emerging Hot Spot Analysis
+
+
+```{r}
+# Perform EHSA
+ehsa_new <- emerging_hotspot_analysis(
+  x = GDPPC_st, 
+  .var = "GDPPC", 
+  k = 1, 
+  nsim = 99
+)
+
+# Visualize results
+ggplot(data = ehsa_new,
+       aes(x = classification)) +
+  geom_bar()
+```
+
+
+```{r}
+# Merge with hunan dataset
+hunan_ehsa <- hunan %>%
+  left_join(ehsa_new,
+            by = join_by(County == location))
+
+```
+
+
+```{r}
+# Visualize results 
+ehsa_sig <- hunan_ehsa  %>%
+  filter(p_value < 0.05)
+tmap_mode("plot")
+tm_shape(hunan_ehsa) +
+  tm_polygons() +
+  tm_borders(alpha = 0.5) +
+tm_shape(ehsa_sig) +
+  tm_fill("classification") + 
+  tm_borders(alpha = 0.4)
+```
+
+
