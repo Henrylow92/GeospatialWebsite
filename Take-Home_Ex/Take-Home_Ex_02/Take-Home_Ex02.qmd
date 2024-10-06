@@ -15,14 +15,14 @@ date-format: "DD MM YYYY"
 
 # Background
 
-Road traffic accidents cause 1.19 million deaths and 20 to 50 million injuries annually, with most fatalities occurring in low- and middle-income countries (World Health Organisation (WHO)). Road traffic injuries are the leading cause of death for individuals aged 5–29 and place a heavy economic burden on nations, costing up to 3% of GDP. Thailand has some of the deadliest roads globally, with about 20,000 fatalities annually. From 2014 to 2021, accidents rose, especially on national highways, with black spots frequently found on straight roads and intersections.
+Tourism has been a key driver of Thailand's gross domestic product (GDP), accounting for up to 20% of it. The COVID-19 pandemic caused the tourism revenue (from domestic and international tourism) to crash to US\$24 billion in 2020, from US\$90 billion in 2019.
 
 # Objectives
 
-Focusing in the Bangkok Metropolitan Region (BMR), Spatial Point Patterns Analysis (SPPA) will be used to explore and identify factors influencing road traffic accidents. Such facts are mainly behavioral and environmental, with this exercise aiming to incorporate temporal factors as well. Specific objectives are as follows:\
-- To visualize the spatio-temporal dynamics of road traffic accidents in BMR using appropriate statistical graphics and geovisualization methods.\
-- To conduct detailed spatial analysis of road traffic accidents using appropriate Network Spatial Point Patterns Analysis methods.\
-- To conduct detailed spatio-temporal analysis of road traffic accidents using appropriate Temporal Network Spatial Point Patterns Analysis methods.
+Using appropriate global and local spatial autocorrelation analysis and emerging hotspot analysis, I would like to find out:\
+- If the key indicators of tourism economy of Thailand are independent from space and space and time.\
+- If the tourism economy is indeed spatial and spatio-temporal dependent.\
+- If so, detect where the clusters and outliers are, and the emerging hotpot and cold spot areas.
 
 # Study Area
 
@@ -31,22 +31,20 @@ The study area will be Thailand (sf_polygon features) at [province](https://en.w
 # Data Sources
 
 *(saved under 'data' folder)*\
-[Thailand Road Accident 2019-2022](https://www.kaggle.com/datasets/thaweewatboy/thailand-road-accident-2019-2022) from Kaggle\
-[Thailand Roads (OpenStreetMap Export) from HDX](https://s3.dualstack.us-east-1.amazonaws.com/production-raw-data-api/ISO3/THA/roads/lines/hotosm_tha_roads_lines_shp.zip)\
+[Thailand Domestic Tourism Statistics 2019-2023](https://www.kaggle.com/datasets/thaweewatboy/thailand-domestic-tourism-statistics) from Kaggle\
 [Thailand - Subnational Administrative Boundaries from HDX](https://data.humdata.org/dataset/cod-ab-tha?)...[Click here to download here](https://data.humdata.org/dataset/d24bdc45-eb4c-4e3d-8b16-44db02667c27/resource/d0c722ff-6939-4423-ac0d-6501830b1759/download/tha_adm_rtsd_itos_20210121_shp.zip)
 
-
 # 1 Setting Up
-
 
 ## 1.1 Loading R Packages
 
 ```{r}
-pacman::p_load(tidyverse, spatstat, sf, spNetwork, tmap, classInt, viridis)
+pacman::p_load(tidyverse, sfdep, sf, tmap)
 ```
 
-
 ## 1.2 Loading Datasets
+
+### 1.2.1 Thailand Subnational Adminstrative Boundaries
 
 ```{r}
 # Load Thailand Province from HDX
@@ -57,9 +55,230 @@ glimpse(th_bound_l1)
 plot(st_geometry(th_bound_l1))
 ```
 
+### 1.2.2 Thailand Tourism Data
+
 ```{r}
-df <- data.frame(Value = unlist(th_bound_l1$ADM1_EN))
-write_csv(df, "data/provinces.csv")
+tbl_tourism <- read_csv('data/archive/thailand_domestic_tourism_2019_2023_ver2.csv')
+
+glimpse(tbl_tourism)
 ```
+
+```{r}
+# Find values in Th bound that are not in Tourism Data
+only_in_th_bound_l1 <- anti_join(th_bound_l1, tbl_tourism, by = c("ADM1_EN" = "province_eng")) %>% pull(ADM1_EN)
+
+# Find values in Tourism Data that are not in Th Bound
+only_in_tbl_tourism <- anti_join(tbl_tourism, th_bound_l1, by = c("province_eng" = "ADM1_EN")) %>% pull(province_eng)
+
+# See all values
+unmatched_values <- union(only_in_th_bound_l1, only_in_tbl_tourism)
+print(unmatched_values)
+```
+```{r}
+# Data processing
+tbl_tourism_wide <- tbl_tourism %>%
+  mutate(province_eng = recode(province_eng,
+                       "Lopburi" = "Lop Buri",
+                       "Chainat" = "Chai Nat",
+                       "Chonburi" = "Chon Buri",
+                       "Prachinburi" = "Prachin Buri",
+                       "Phang Nga" = "Phangnga",
+                       "Buriram" = "Buri Ram",
+                       "Sisaket" = "Si Sa Ket",
+                       "Nong Bua Lamphu" = "Nong Bua Lam Phu"
+                       ),
+         province_eng = trimws(province_eng)
+         ) %>%
+  pivot_wider(., names_from = "variable", values_from = "value") %>%
+  mutate(total_avail_room = round(no_tourist_stay/ratio_tourist_stay*100,0))
+```
+
+```{r}
+# Summarize across all years
+tbl_tourism_sum_all <- tbl_tourism_wide %>%
+  group_by(province_eng, province_thai, region_thai, region_eng) %>%
+  summarize(
+    ratio_tourist_stay = mean(ratio_tourist_stay, na.rm = TRUE),
+    no_tourist_stay = sum(no_tourist_stay, na.rm = TRUE),
+    no_tourist_all = sum(no_tourist_all, na.rm = TRUE),
+    no_tourist_thai = sum(no_tourist_thai, na.rm = TRUE),
+    no_tourist_foreign = sum(no_tourist_foreign, na.rm = TRUE),
+    revenue_all = sum(revenue_all, na.rm = TRUE),
+    revenue_thai = sum(revenue_thai, na.rm = TRUE),
+    revenue_foreign = sum(revenue_foreign, na.rm = TRUE),
+    total_avail_room = sum(total_avail_room, na.rm = TRUE)
+  ) %>%
+  ungroup()
+```
+```{r}
+# Summarize across all years
+tbl_tourism_sum_year <- tbl_tourism_wide %>%
+  mutate(year = year(date)) %>%
+  group_by(year, province_eng, province_thai, region_thai, region_eng) %>%
+  summarize(
+    ratio_tourist_stay = mean(ratio_tourist_stay, na.rm = TRUE),
+    no_tourist_stay = sum(no_tourist_stay, na.rm = TRUE),
+    no_tourist_all = sum(no_tourist_all, na.rm = TRUE),
+    no_tourist_thai = sum(no_tourist_thai, na.rm = TRUE),
+    no_tourist_foreign = sum(no_tourist_foreign, na.rm = TRUE),
+    revenue_all = sum(revenue_all, na.rm = TRUE),
+    revenue_thai = sum(revenue_thai, na.rm = TRUE),
+    revenue_foreign = sum(revenue_foreign, na.rm = TRUE),
+    total_avail_room = sum(total_avail_room, na.rm = TRUE)
+  ) %>%
+  ungroup()
+```
+### 1.2.3 Merge Tourism data
+
+
+```{r}
+# Join with tourism data all
+th_bound_tour_all <- left_join(th_bound_l1, tbl_tourism_sum_all, by = c("ADM1_EN" = "province_eng")) 
+
+# Join with tourism data by year
+th_bound_tour_year <- left_join(th_bound_l1, tbl_tourism_sum_year, by = c("ADM1_EN" = "province_eng")) 
+```
+
+
+```{r, fig.width=12, fig.height=8}
+tmap_mode("plot")
+tm_shape(th_bound_tour_all) +
+  tm_fill("revenue_all", 
+          style = "quantile", 
+          palette = "Blues",
+          title = "revenue_all") +
+  tm_layout(main.title = "Distribution of Tourism Revenue by Province",
+            main.title.position = "center",
+            main.title.size = 1.2,
+            legend.height = 0.45, 
+            legend.width = 0.35,
+            frame = TRUE) +
+  tm_borders(alpha = 0.5) +
+  tm_compass(type="8star", size = 2) +
+  tm_scale_bar() +
+  tm_grid(alpha =0.2)
+```
+```{r}
+# Export to processed sub-folder as RDS
+write_rds(th_bound_tour_all, 'data/processed/th_bound_tour_all.rds')
+
+write_rds(th_bound_tour_year, 'data/processed/th_bound_tour_year.rds')
+```
+
+# 2 Exploratory Data Analysis
+
+```{r}
+th_bound_tour_all <- th_bound_tour_all %>%
+  mutate(revenue_tourist_all = revenue_all/no_tourist_all,
+         revenue_tourist_thai = revenue_thai/no_tourist_thai,
+         revenue_tourist_foreign = revenue_foreign/no_tourist_foreign,
+         revenue_occ = revenue_all/no_tourist_stay,
+         tourist_occ = no_tourist_all/no_tourist_stay,
+         revenue_room = revenue_all/total_avail_room)
+```
+
+
+# 3 Spatial Analysis of Thailand Tourism Key Indicators
+```{r}
+set.seed(42)
+```
+
+```{r}
+nb <- st_contiguity(th_bound_tour_all$geometry)
+```
+
+
+```{r}
+# Step 1: Find the centroid of Phuket (or use the entire geometry)
+phuket_geom <- th_bound_tour_all %>%
+  filter(ADM1_EN == "Phuket") %>%
+  st_geometry()
+
+# Step 2: Find the centroids of all other regions
+other_geoms <- th_bound_tour_all %>%
+  filter(ADM1_EN != "Phuket") %>%
+  st_geometry()
+
+```
+
+```{r}
+# Step 3: Calculate the nearest neighbor using distance
+nearest_region_index <- st_nearest_feature(phuket_geom, other_geoms)
+
+phuket_index <- which(th_bound_tour_all$ADM1_EN == "Phuket")
+nb[[phuket_index]] <- c(nearest_region_index)
+nb[[nearest_region_index]] <- c(nb[[nearest_region_index]], phuket_index)
+```
+
+
+
+## 3.1 Global Spatial Autocorrelation
+
+
+```{r}
+wm_q <- th_bound_tour_all %>%
+  mutate(nb = nb,
+         wt = st_weights(nb, style = "W", allow_zero = TRUE),
+         .before = 1)
+```
+
+
+
+```{r}
+longitude_cent <- map_dbl(th_bound_tour_all$geometry, ~st_centroid(.x)[[1]])
+latitude_cent <- map_dbl(th_bound_tour_all$geometry, ~st_centroid(.x)[[2]])
+
+longitude <- map_dbl(th_bound_tour_all$geometry, ~st_point_on_surface(.x)[[1]])
+latitude <- map_dbl(th_bound_tour_all$geometry, ~st_point_on_surface(.x)[[2]])
+coords <- cbind(longitude, latitude)
+
+coords_cent <- cbind(longitude_cent, latitude_cent)
+```
+
+```{r, fig.width=20, fig.height=20}
+plot(th_bound_tour_all$geometry, border="lightgrey")
+points(coords, pch = 19, cex = 0.6, col = "red")
+
+points(coords_cent, pch = 19, cex = 0.6, col = "blue")
+```
+
+:::panel-tabset
+
+# Revenue
+
+```{r}
+moranI_rev <- global_moran(wm_q$revenue_tourist_all,
+                       wm_q$nb,
+                       wm_q$wt)
+glimpse(moranI_rev)
+```
+```{r}
+global_moran_test(wm_q$revenue_tourist_foreign,
+                       wm_q$nb,
+                       wm_q$wt)
+```
+
+
+
+```{r}
+global_moran_perm(wm_q$tourist_occ,
+                       wm_q$nb,
+                       wm_q$wt,
+                  nsim = 999)
+```
+
+
+:::
+
+## 3.2 Local Spatial Autocorrelation
+
+
+
+
+# 4 Spatial-Temporal Analysis of Thailand Tourism Key Indicators
+
+
+## 3.1 Global Spatial
+
 
 
