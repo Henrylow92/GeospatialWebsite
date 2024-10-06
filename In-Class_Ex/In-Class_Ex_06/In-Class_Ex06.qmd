@@ -162,6 +162,8 @@ head(emerging)
 
 
 ```{r}
+set.seed(42)
+
 # Perform EHSA
 ehsa_new <- emerging_hotspot_analysis(
   x = GDPPC_st, 
