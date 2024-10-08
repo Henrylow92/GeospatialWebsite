@@ -480,3 +480,45 @@ G, F and L functions will be explored as they can each give useful insights:\
                                bandwidth = 50)
               
               summary(gwr_model)
+              
+              
+              ```{r}
+              # Assuming 'coords' contains the coordinates of your data points (province centroids)
+              max_k <- 15  # Set a maximum value of k to test
+              distances <- sapply(1:max_k, function(k) {
+                mean(spatstat.geom::nndist(coords_cent, k = k))  # Calculate the average distance to the k-th neighbor
+              })
+              
+              # Plot the elbow curve
+              elbow_data <- data.frame(k = 1:max_k, distance = distances)
+              ggplot2::ggplot(elbow_data, aes(x = k, y = distance)) +
+                geom_line() +
+                geom_point() +
+                labs(title = "Elbow Method for Determining k",
+                     x = "Number of Neighbors (k)",
+                     y = "Average Distance to k-th Neighbor")
+              ```
+
+              
+              
+              ```{r}
+              # Step 1: Find the centroid of Phuket (or use the entire geometry)
+              phuket_geom <- th_bound_tour_all %>%
+                filter(ADM1_EN == "Phuket") %>%
+                st_geometry()
+              
+              # Step 2: Find the centroids of all other regions
+              other_geoms <- th_bound_tour_all %>%
+                filter(ADM1_EN != "Phuket") %>%
+                st_geometry()
+              
+              ```
+              
+              ```{r}
+              # Step 3: Calculate the nearest neighbor using distance
+              nearest_region_index <- st_nearest_feature(phuket_geom, other_geoms)
+              
+              phuket_index <- which(th_bound_tour_all$ADM1_EN == "Phuket")
+              nb[[phuket_index]] <- c(nearest_region_index)
+              nb[[nearest_region_index]] <- c(nb[[nearest_region_index]], phuket_index)
+              ```
