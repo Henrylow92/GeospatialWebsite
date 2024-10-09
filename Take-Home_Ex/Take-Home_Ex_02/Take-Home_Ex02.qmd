@@ -5,6 +5,7 @@ date: "Sep 25 2024"
 date-modified: "last-modified"
 execute:
   evalu: true
+  context: shared
   echo: true
   message: false
   freeze: true
@@ -42,15 +43,20 @@ I will be using the following R packages:\
 -`sf` package to perform geospatial wrangling tasks \
 - `sfdep` package to perform spatial autocorrelation analysis and emerging hotspot analysis \
 - `tidyverse` package for reading csv files, dataframe processing tasks \
+- `ggplot2` and `ggpubr` package for plotting statistical graphics \
 - `tmap` package for plotting tasks \
 
 ```{r}
-pacman::p_load(tidyverse, sfdep, sf, tmap)
+pacman::p_load(tidyverse, sfdep, sf, ggplot2, ggpubr, tmap)
 ```
 
 ## 1.2 Loading Datasets
 
+The aim here is to load the datasets and do the necessary geospatial data wrangling before proceeding to the subsequent steps.
+
 ### 1.2.1 Thailand Subnational Adminstrative Boundaries
+
+`st_read` from the sf package is used to load the subnational boundaries.
 
 ```{r}
 # Load Thailand Province from HDX
@@ -63,13 +69,15 @@ glimpse(th_bound_l1)
 
 ### 1.2.2 Thailand Tourism Data
 
+`read_csv` from readr package within tidyverse is used to load the aspatial data as a tibble.
+
 ```{r}
 tbl_tourism <- read_csv('data/archive/thailand_domestic_tourism_2019_2023_ver2.csv')
 
 glimpse(tbl_tourism)
 ```
 
-Before joining the 2 datasets, we need to check if there are any non-matching values in either.
+Before joining the 2 datasets, we need to check if there are any non-matching values in either joining columns.
 
 ```{r}
 # Find values in Th bound that are not in Tourism Data
@@ -106,7 +114,7 @@ tbl_tourism_wide <- tbl_tourism %>%
 summary(tbl_tourism_wide)
 ```
 
-There's some weird values in revenue_foreign (negative), more investigation is required. Furthermore, it was picked up for some rows no_tourist_stay is greater than no_tourist_all, which should not be possible.
+There are some weird values in revenue_foreign (negative), more investigation is required. Furthermore, it was picked up for some rows no_tourist_stay is greater than no_tourist_all, which should not be possible.
 
 ```{r}
 tbl_tourism_wide %>%
@@ -124,7 +132,7 @@ tbl_tourism_wide <- tbl_tourism_wide %>%
 summary(tbl_tourism_wide)
 ```
 
-To facilitate spatial autocorrelation across space and space and time, I need the tourism data in different formats. While doing so, additional KPIs will also be calculated.
+To facilitate spatial autocorrelation across space and space and time, I need the tourism data in different formats. While doing so, additional KPIs will also be calculated. Rationale for those will be further explained while exploring the data.
 
 ::: panel-tabset
 # Overall
@@ -149,11 +157,15 @@ tbl_tourism_sum_all <- tbl_tourism_wide %>%
 ```{r}
 # Compute additional KPIs
 tbl_tourism_sum_all <- tbl_tourism_sum_all %>%
-  mutate(revenue_tourist_all = revenue_all/no_tourist_all,
-         revenue_tourist_thai = revenue_thai/no_tourist_thai,
-         revenue_tourist_foreign = revenue_foreign/no_tourist_foreign,
-         revenue_tourist_stay = revenue_all/no_tourist_stay,
-         tourist_stay_all = no_tourist_stay/no_tourist_all)
+  mutate(tourist_thai_prop = ifelse(no_tourist_all == 0, 0, no_tourist_thai/no_tourist_all),
+         tourist_foreign_prop = ifelse(no_tourist_all == 0, 0, no_tourist_foreign/no_tourist_all),
+         revenue_thai_prop = ifelse(revenue_all == 0, 0, revenue_thai/revenue_all),
+         revenue_foreign_prop = ifelse(revenue_all == 0, 0, revenue_foreign/revenue_all),
+         revenue_tourist_all = ifelse(no_tourist_all == 0, 0, revenue_all/no_tourist_all),
+         revenue_tourist_thai = ifelse(no_tourist_thai == 0, 0, revenue_thai/no_tourist_thai),
+         revenue_tourist_foreign = ifelse(no_tourist_foreign == 0, 0, revenue_foreign/no_tourist_foreign),
+         revenue_tourist_stay = ifelse(no_tourist_stay == 0, 0, revenue_all/no_tourist_stay),
+         tourist_stay_all = ifelse(no_tourist_all == 0, 0, no_tourist_stay/no_tourist_all))
 
 # Check output
 summary(tbl_tourism_sum_all)
@@ -182,11 +194,15 @@ tbl_tourism_sum_year <- tbl_tourism_wide %>%
 ```{r}
 # Compute additional KPIs
 tbl_tourism_sum_year <- tbl_tourism_sum_year %>%
-  mutate(revenue_tourist_all = revenue_all/no_tourist_all,
-         revenue_tourist_thai = revenue_thai/no_tourist_thai,
-         revenue_tourist_foreign = revenue_foreign/no_tourist_foreign,
-         revenue_tourist_stay = revenue_all/no_tourist_stay,
-         tourist_stay_all = no_tourist_stay/no_tourist_all)
+  mutate(tourist_thai_prop = ifelse(no_tourist_all == 0, 0, no_tourist_thai/no_tourist_all),
+         tourist_foreign_prop = ifelse(no_tourist_all == 0, 0, no_tourist_foreign/no_tourist_all),
+         revenue_thai_prop = ifelse(revenue_all == 0, 0, revenue_thai/revenue_all),
+         revenue_foreign_prop = ifelse(revenue_all == 0, 0, revenue_foreign/revenue_all),
+         revenue_tourist_all = ifelse(no_tourist_all == 0, 0, revenue_all/no_tourist_all),
+         revenue_tourist_thai = ifelse(no_tourist_thai == 0, 0, revenue_thai/no_tourist_thai),
+         revenue_tourist_foreign = ifelse(no_tourist_foreign == 0, 0, revenue_foreign/no_tourist_foreign),
+         revenue_tourist_stay = ifelse(no_tourist_stay == 0, 0, revenue_all/no_tourist_stay),
+         tourist_stay_all = ifelse(no_tourist_all == 0, 0, no_tourist_stay/no_tourist_all))
 
 # Check output
 summary(tbl_tourism_sum_year)
@@ -198,7 +214,11 @@ summary(tbl_tourism_sum_year)
 # No additional processing required
 # Compute additional KPIs
 tbl_tourism_wide <- tbl_tourism_wide %>%
-  mutate(revenue_tourist_all = ifelse(no_tourist_all == 0, 0, revenue_all/no_tourist_all),
+  mutate(tourist_thai_prop = ifelse(no_tourist_all == 0, 0, no_tourist_thai/no_tourist_all),
+         tourist_foreign_prop = ifelse(no_tourist_all == 0, 0, no_tourist_foreign/no_tourist_all),
+         revenue_thai_prop = ifelse(revenue_all == 0, 0, revenue_thai/revenue_all),
+         revenue_foreign_prop = ifelse(revenue_all == 0, 0, revenue_foreign/revenue_all),
+         revenue_tourist_all = ifelse(no_tourist_all == 0, 0, revenue_all/no_tourist_all),
          revenue_tourist_thai = ifelse(no_tourist_thai == 0, 0, revenue_thai/no_tourist_thai),
          revenue_tourist_foreign = ifelse(no_tourist_foreign == 0, 0, revenue_foreign/no_tourist_foreign),
          revenue_tourist_stay = ifelse(no_tourist_stay == 0, 0, revenue_all/no_tourist_stay),
@@ -211,7 +231,7 @@ summary(tbl_tourism_wide)
 
 ### 1.2.3 Merge Tourism data
 
-Finally, I can merge the tourism dataset to the spatial dataset.
+Finally, I can merge the tourism dataset to the spatial dataset using `left_join` from dplyr.
 
 ```{r}
 # Join with tourism data all
@@ -225,7 +245,7 @@ th_bound_tour_year <- left_join(th_bound_l1, tbl_tourism_sum_year, by = c("ADM1_
 th_bound_tour_year_month <- left_join(th_bound_l1, tbl_tourism_wide, by = c("ADM1_EN" = "province_eng")) 
 ```
 
-A good practise is to save these processed dataset for easy retrieval.
+A good practise is to save these processed datasets for easy retrieval.
 
 ```{r}
 # Export to processed sub-folder as RDS
@@ -235,8 +255,6 @@ write_rds(th_bound_tour_year, 'data/processed/th_bound_tour_year.rds')
 
 write_rds(th_bound_tour_year_month, 'data/processed/th_bound_tour_year_month.rds')
 ```
-
-# 2 Exploratory Data Analysis
 
 After clearing the r environment, I'll load in the various datasets.
 
@@ -250,42 +268,160 @@ th_bound_tour_year <- read_rds('data/processed/th_bound_tour_year.rds')
 th_bound_tour_year_month <- read_rds('data/processed/th_bound_tour_year_month.rds')
 ```
 
-```{r, fig.width=12, fig.height=12}
-tmap_mode("plot")
-tm_shape(th_bound_tour_all) +
-  tm_fill("revenue_all", 
-          style = "quantile", 
-          palette = "Blues",
-          title = "revenue_all") +
-  tm_layout(main.title = "Distribution of Tourism Revenue by Province",
-            main.title.position = "center",
-            main.title.size = 1.2,
-            legend.height = 0.45, 
-            legend.width = 0.35,
-            frame = TRUE) +
-  tm_borders(alpha = 0.5) +
-  tm_compass(type="8star", size = 2) +
-  tm_scale_bar() +
-  tm_grid(alpha =0.2)
-```
+# 2 Exploratory Data Analysis
 
-# 3 Spatial Analysis of Thailand Tourism Key Indicators
+In this section, I will explore the various tourism indicators provided by the dataset.
 
-Lets first set the seed to ensure reproducibility of all subsequent analysis.
+| Variable           | Definition                                                        |
+|--------------------|-------------------------------------------------------------------|
+| revenue_all        | Revenue generated by all tourists in the province (Thai Baht)     |
+| revenue_thai       | Revenue generated by Thai tourists in the province (Thai Baht)    |
+| revenue_foreign    | Revenue generated by Foreign tourists in the province (Thai Baht) |
+| no_tourist_all     | Total number of tourists who visited the province                 |
+| no_tourist_thai    | Number of Thai tourists who visited the province                  |
+| no_tourist_foreign | Number of Foreign tourists who visited the province               |
+| ratio_tourist_stay | Occupancy rate - Percentage of occupied travel accomodation       |
+| no_tourist_stay    | Number of Tourists who stayed overnight in the province           |
+
+Lets first check the revenue indicators.
 
 ```{r}
-set.seed(42)
+# Visualize for revenue
+revenue_all <- ggplot(data=th_bound_tour_all, 
+                      aes(x=`revenue_all`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue") + 
+  labs(x = "Revenue from all tourists")
+
+revenue_thai <- ggplot(data=th_bound_tour_all, 
+                      aes(x=`revenue_thai`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue") + 
+  labs(x = "Revenue from Thai tourists")
+
+revenue_foreign <- ggplot(data=th_bound_tour_all, 
+                      aes(x=`revenue_foreign`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue") + 
+  labs(x = "Revenue from Foreign tourists")
+
+ggarrange(revenue_all, revenue_thai, revenue_foreign, ncol = 3)
 ```
 
-In order to perform any spatial correlation analysis, spatial weights have to be generated first. There are a few options:
+As expected, there is a large left skew, with majority of provinces generating much lesser revenue as compared to the outliers. Lets look at the tourist count then.
 
-| Method                       | Details                                                                      |
-|------------------------|-----------------------------------------------|
-| `st_contiguity` (i.e. Queen) | Based on regions with contiguous boundaries (uses `spdep::poly2nb`)          |
-| `st_dist_band`               | Based on distance band (uses `spdep::dnearneigh`)                            |
-| `st_knn`                     | Based on k nearest neighbours (uses `spdep::knearneigh` and `spdep::knn2nb`) |
+```{r}
+# Visualize for tourist
+tourist_all <- ggplot(data=th_bound_tour_all, 
+                      aes(x=`no_tourist_all`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue") + 
+  labs(x = "Total Number of tourists")
 
-Before passing the coordinates to either functions, checks are required to ensure that the points are in the interior of each province (i.e. not in the middle of the ocean)
+tourist_thai <- ggplot(data=th_bound_tour_all, 
+                      aes(x=`no_tourist_thai`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue") + 
+  labs(x = "Number of Thai tourists")
+
+tourist_foreign <- ggplot(data=th_bound_tour_all, 
+                      aes(x=`no_tourist_foreign`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue") + 
+  labs(x = "Number of Foreign tourists")
+
+ggarrange(tourist_all, tourist_thai, tourist_foreign, ncol = 3)
+```
+
+Again, we see the same distribution for tourist count as compared to revenue. This is can be clearly illustrated when we plot both revenue and tourists as choropleth maps.
+
+```{r, fig.width=12, fig.height=8}
+tourist.map <- tm_shape(th_bound_tour_all) + 
+  tm_fill(col = "no_tourist_all",
+          n = 5,
+          style = "jenks", 
+          title = "Total Tourist") + 
+  tm_borders(alpha = 0.5) 
+
+revenue.map <- tm_shape(th_bound_tour_all) + 
+  tm_fill(col = "revenue_all",
+          n = 5,
+          style = "jenks",
+          title = "Total Revenue") + 
+  tm_borders(alpha = 0.5) 
+
+tmap_arrange(tourist.map, revenue.map,
+             asp=NA, ncol=2)
+```
+
+It is clear that provinces with larger volume of tourists will generate larger revenue. However, that is not necessarily a good indicator of the tourism economy. Other than just trying to increase revenue by increasing the tourist traffic, the Thai government will also be keen into other indicators.
+
+## 2.1 Feature Engineering
+
+Other variables are created in order to provide greater depth to analysing the Thai tourism economy.
+
+| Variable                | Definition                                          |
+|-------------------------|-----------------------------------------------------|
+| tourist_thai_prop       | Proportion of tourists who are Thai                 |
+| tourist_foreign_prop    | Proportion of tourists who are Foreign              |
+| revenue_thai_prop       | Proportion of revenue generated by Thai tourists    |
+| revenue_foreign_prop    | Proportion of revenue generated by Foreign tourists |
+| revenue_tourist_all     | Revenue generated per tourist                       |
+| revenue_tourist_thai    | Revenue generated per Thai tourist                  |
+| revenue_tourist_foreign | Revenue generated per Foreign tourist               |
+| revenue_tourist_stay    | Revenue generated per tourist who stay overnight    |
+| tourist_stay_all        | Proportion of tourists who stayed overnight         |
+
+Here's a quick check for 1 of the
+
+```{r, fig.width=12, fig.height=8}
+# Visualize revenue per tourist
+tm_shape(th_bound_tour_all) + 
+  tm_fill(col = "revenue_tourist_all",
+          n = 5,
+          style = "jenks", 
+          title = "Revenue per Tourist") + 
+  tm_borders(alpha = 0.5) 
+```
+
+This clearly shows a different distribution compared to the basic revenue/tourist count distribution. This indicator is also important the Thai government can try to increase total tourism revenue by increasing per Thai Baht spent by each tourist.
+
+## 2.2 Power BI Visualization
+
+::: {style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%;"}
+<iframe title="Geospatial TakeHome Ex01" src="https://app.powerbi.com/view?r=eyJrIjoiYzQ3MTQzY2ItNjMyZi00ZWIwLTliYTUtOGQwM2JhNWM3OTVhIiwidCI6ImRmNGU4MzA3LWRjNjQtNDcyYS1iNGI1LWE2ZGQ2YmExMTU2NiIsImMiOjEwfQ%3D%3D" frameborder="0" allowFullScreen="true" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+
+</iframe>
+:::
+
+asdlajksldjasklj
+
+# 3 Global Spatial Autocorrelation Analysis of Thailand Tourism Key Indicators
+
+In order to determine whether tourism indicators are independent of space, and space and time, I would need to do the following:
+
+1.  Compute Spatial Weights
+    a.  Get list of neighbours
+    b.  Calculate weights
+2.  Perform Global Moran's I on key indicators
+
+## 3.1 Spatial Weights Matrix
+
+There are a few options to get the list of neighbours in `sfdep` package:
+
+| Method                          | Details                                                                      |
+|---------------------------------|------------------------------------------------------------------------------|
+| `st_contiguity` (i.e. Queen)    | Based on regions with contiguous boundaries (uses `spdep::poly2nb`)          |
+| `st_dist_band` (fixed distance) | Based on distance band (uses `spdep::dnearneigh`)                            |
+| `st_knn` (adaptive distance)    | Based on k nearest neighbours (uses `spdep::knearneigh` and `spdep::knn2nb`) |
+
+Before passing the coordinates to either functions, checks are required to ensure that the points are in the interior of each province (i.e. not in the middle of the ocean).
 
 ```{r}
 # Generate coordinates using st_centroid
@@ -299,17 +435,18 @@ latitude <- map_dbl(th_bound_tour_all$geometry, ~st_point_on_surface(.x)[[2]])
 coords <- cbind(longitude, latitude)
 ```
 
-```{r, fig.width=30, fig.height=20}
+```{r, fig.width=12, fig.height=8}
 # Visualise both points on a map to verify
-plot(th_bound_tour_all$geometry, border="lightgrey")
-points(coords_cent, pch = 19, cex = 0.6, col = "red")
-points(coords, pch = 19, cex = 0.6, col = "blue")
+plot(th_bound_tour_all$geometry, border="lightgrey", main = "Points Comparison")
+points(coords_cent, pch = 19, cex = 0.2, col = "red")
+points(coords, pch = 19, cex = 0.2, col = "blue")
+legend("topright", legend = c("st_centroid", "st_point_on_surface-"), 
+       col = c("red", "blue"), pch = 19, cex = 0.8)
 ```
 
 After closely viewing the plot, all points from `st_centroid` are within the interior of the province polygons. With the exception of a few provinces, the points from `st_centroid` are seemingly better placed towards the center as compared to `st_point_on_surface`. Therefore, this allows the sfdep distance based neighbour functions to be used with ease considering st_centroid is used as the default.
 
-:::panel-tabset
-
+::: panel-tabset
 # st_contiguity
 
 ```{r}
@@ -320,14 +457,11 @@ nb_contiguity <- st_contiguity(th_bound_tour_all$geometry)
 nb_contiguity
 ```
 
-
-
 ```{r, fig.width=12, fig.height=8}
 # Visualize neighbours
 plot(th_bound_tour_all$geometry, border="lightgrey", , main="Queen Contiguity ")
 plot(nb_contiguity, coords_cent, pch = 19, cex = 0.6, add = TRUE, col = "red")
 ```
-
 
 # st_dist_band
 
@@ -338,20 +472,18 @@ nb_dist <- st_dist_band(th_bound_tour_all$geometry)
 # Check output
 nb_dist
 ```
+
 ```{r, fig.width=12, fig.height=8}
 # Visualize neighbours
 plot(th_bound_tour_all$geometry, border="lightgrey", main="Distance Band")
 plot(nb_dist, coords_cent, pch = 19, cex = 0.6, add = TRUE, col = "red")
 ```
 
-
 # st_knn
 
-General rule of thumb for k is square root of observations. 
-$$
+General rule of thumb for k is square root of observations. $$
 k \approx \sqrt{76} \approx 8
-$$
-Just for variety, k = 5 (average number from `st_contiguity`) is also run.
+$$ Just for variety, k = 5 (average number from `st_contiguity`) is also run.
 
 ```{r}
 # Calculate neighbours
@@ -362,6 +494,7 @@ nb_knn_5 <- st_knn(th_bound_tour_all$geometry, k = 5)
 nb_knn_8
 nb_knn_5
 ```
+
 ```{r, fig.width=12, fig.height=8}
 # Visualize neighbours
 par(mfrow=c(1,2))
@@ -370,49 +503,218 @@ plot(nb_knn_8, coords_cent, pch = 19, cex = 0.6, add = TRUE, col = "red")
 plot(th_bound_tour_all$geometry, border="lightgrey", main="K = 5")
 plot(nb_knn_5, coords_cent, pch = 19, cex = 0.6, add = TRUE, col = "red")
 ```
-
 :::
 
-Comparing the various neighbour methods, 
+Comparing the various neighbour methods, I have decided on the adaptive method of determining neighbours, specifically k = 5. Reason are as follows:
 
+-   `st_contiguity` - Not appropriate for this case since not all boundaries are contiguous, (i.e. there is an island - Phuket).
+-   `st_dist_band` - Having a fixed distance causes urban provinces to have much more neighbours (i.e. Bangkok Metropolitan Region) while rural provinces have scarce neighbours. I feel that this is not an appropriate relationship for analyzing tourism indicators.
+-   `st_knn` (k = 8) - Judging from the plot, the neighbour list seemed to be much to congested. k = 5 provides a more reasonable structure.
 
+Although I have determined the neighbour list, there are also a few options to generate the weights:
 
-## 3.1 Global Spatial Autocorrelation
+| Method                | Details                                          |
+|-----------------------|--------------------------------------------------|
+| `st_weights`          | Standardized weights based on neighbour list     |
+| `st_kernel_weights`   | Weights based on kernel functions and distance   |
+| `st_inverse_distance` | Weights based on inverse distance between points |
+
+Given the context of tourism, I have decided to explore `st_weights` and `st_inverse_distance`. The rationale for both are as follows:
+
+-   `st_weights` - ensure that all neighbours have equal influence
+-   `st_inverse_distance` - distance is likely a factor especially for specific tourism indicators (i.e. local preferring areas that are closer for a quick getaway, affecting indicators involving overnight stays)
+
+While performing `st_weights`, the style is less significant due to the adaptive nature of KNN. W is selected as the default style. Rationale for not choosing the other styles are as follows:
+
+-   B (binary weights) - Does not really matter since neighbours are already treated uniformly
+-   C (globally standardized weights) - Will dilute local effects making it not suitable for tourism analysis
+-   U (equal weights) - Similar to C, less focused on local effects required for tourism analysis
+-   S (variance-stabilizing) - More relevant for analysis where variance stability is important
+-   minmax - Similar to C and U with added layer of normalization
 
 ```{r}
 th_tour_knn5_all <- th_bound_tour_all %>%
   mutate(nb = nb_knn_5,
          wt = st_weights(nb, style = "W"),
-         wt_inv = st_inverse_distance(nb, geometry = geometry, scale = 100, alpha = 1),
+         wt_inv = st_inverse_distance(include_self(nb), geometry = geometry, scale = 100, alpha = 1),
          .before = 1)
 ```
+
+## 3.2 Global Moran’s I across Space
+
+In performing Global Moran's I, `global_moran_perm` will be used over `global_moran` and `global_moran_test` as:
+
+-   `global_moran` does not give any p-value
+-   `global_moran_test` is not as robust as `global_moran_perm` which is a Monte-Carlo simulation.
 
 ::: panel-tabset
 # Revenue
 
 ```{r}
-moranI_rev <- global_moran(th_tour_knn5_all$tourist_stay_all,
-                       th_tour_knn5_all$nb,
-                       th_tour_knn5_all$wt)
-glimpse(moranI_rev)
+set.seed(42)
+global_moran_perm(th_tour_knn5_all$revenue_all,
+                  th_tour_knn5_all$nb,
+                  th_tour_knn5_all$wt,
+                  nsim = 999)
 ```
 
 ```{r}
-global_moran_test(th_tour_knn5_all$tourist_stay_all,
-                       th_tour_knn5_all$nb,
-                       th_tour_knn5_all$wt)
+set.seed(42)
+global_moran_perm(th_tour_knn5_all$revenue_thai,
+                  th_tour_knn5_all$nb,
+                  th_tour_knn5_all$wt,
+                  nsim = 999)
 ```
 
 ```{r}
+set.seed(42)
+global_moran_perm(th_tour_knn5_all$revenue_foreign,
+                  th_tour_knn5_all$nb,
+                  th_tour_knn5_all$wt,
+                  nsim = 999)
+```
+
+```{r}
+set.seed(42)
+global_moran_perm(th_tour_knn5_all$revenue_thai_prop,
+                  th_tour_knn5_all$nb,
+                  th_tour_knn5_all$wt,
+                  nsim = 999)
+```
+
+```{r}
+set.seed(42)
+global_moran_perm(th_tour_knn5_all$revenue_foreign_prop,
+                  th_tour_knn5_all$nb,
+                  th_tour_knn5_all$wt,
+                  nsim = 999)
+```
+
+# Tourist
+
+```{r}
+set.seed(42)
+global_moran_perm(th_tour_knn5_all$no_tourist_all,
+                  th_tour_knn5_all$nb,
+                  th_tour_knn5_all$wt,
+                  nsim = 999)
+```
+
+```{r}
+set.seed(42)
+global_moran_perm(th_tour_knn5_all$no_tourist_thai,
+                  th_tour_knn5_all$nb,
+                  th_tour_knn5_all$wt,
+                  nsim = 999)
+```
+
+```{r}
+set.seed(42)
+global_moran_perm(th_tour_knn5_all$no_tourist_foreign,
+                  th_tour_knn5_all$nb,
+                  th_tour_knn5_all$wt,
+                  nsim = 999)
+```
+
+```{r}
+set.seed(42)
+global_moran_perm(th_tour_knn5_all$tourist_thai_prop,
+                  th_tour_knn5_all$nb,
+                  th_tour_knn5_all$wt,
+                  nsim = 999)
+```
+
+```{r}
+set.seed(42)
+global_moran_perm(th_tour_knn5_all$tourist_foreign_prop,
+                  th_tour_knn5_all$nb,
+                  th_tour_knn5_all$wt,
+                  nsim = 999)
+```
+
+# Revenue/Tourist
+
+```{r}
+set.seed(42)
+global_moran_perm(th_tour_knn5_all$revenue_tourist_all,
+                  th_tour_knn5_all$nb,
+                  th_tour_knn5_all$wt,
+                  nsim = 999)
+```
+
+```{r}
+set.seed(42)
+global_moran_perm(th_tour_knn5_all$revenue_tourist_thai,
+                  th_tour_knn5_all$nb,
+                  th_tour_knn5_all$wt,
+                  nsim = 999)
+```
+
+```{r}
+set.seed(42)
+global_moran_perm(th_tour_knn5_all$revenue_tourist_foreign,
+                  th_tour_knn5_all$nb,
+                  th_tour_knn5_all$wt,
+                  nsim = 999)
+```
+
+# Occupancy Rate
+
+```{r}
+set.seed(42)
+global_moran_perm(th_tour_knn5_all$ratio_tourist_stay,
+                  th_tour_knn5_all$nb,
+                  th_tour_knn5_all$wt,
+                  nsim = 999)
+```
+
+# Overnight Guest
+
+```{r}
+set.seed(42)
+global_moran_perm(th_tour_knn5_all$no_tourist_stay,
+                  th_tour_knn5_all$nb,
+                  th_tour_knn5_all$wt,
+                  nsim = 999)
+```
+
+```{r}
+set.seed(42)
 global_moran_perm(th_tour_knn5_all$tourist_stay_all,
+                  th_tour_knn5_all$nb,
+                  th_tour_knn5_all$wt,
+                  nsim = 999)
+```
+
+```{r}
+set.seed(42)
+global_moran_perm(th_tour_knn5_all$revenue_tourist_stay,
                   th_tour_knn5_all$nb,
                   th_tour_knn5_all$wt,
                   nsim = 999)
 ```
 :::
 
-## 3.2 Local Spatial Autocorrelation
+asdjklasjdklasjd
 
-# 4 Spatial-Temporal Analysis of Thailand Tourism Key Indicators
+## 3.3 Global Moran's I across Space and Time
 
-## 3.1 Global Spatial
+### 3.3.1 Across Year
+
+### 3.3.2 Across Year and Month
+
+Datatable
+
+# 4 Local Spatial Autocorrelation Analysis of Thailand Tourism Key Indicators
+
+For this, I will ....
+
+# 5 Spatial-Temporal Analysis of Thailand Tourism Key Indicators
+
+## 5.1 Preprocessing
+
+## 5.2 Mann-Kendall
+
+## 5.3 Emerging Hotspot Analysis
+
+# 6 Conclusion
