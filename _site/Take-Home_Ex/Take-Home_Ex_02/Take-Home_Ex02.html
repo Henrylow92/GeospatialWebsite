@@ -101,6 +101,32 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     "search-label": "Search"
   }
 }</script>
+<script src="../../site_libs/htmlwidgets-1.6.4/htmlwidgets.js"></script>
+
+<link href="../../site_libs/datatables-css-0.0.0/datatables-crosstalk.css" rel="stylesheet">
+
+<script src="../../site_libs/datatables-binding-0.33/datatables.js"></script>
+
+<script src="../../site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+
+<link href="../../site_libs/dt-core-1.13.6/css/jquery.dataTables.min.css" rel="stylesheet">
+
+<link href="../../site_libs/dt-core-1.13.6/css/jquery.dataTables.extra.css" rel="stylesheet">
+
+<script src="../../site_libs/dt-core-1.13.6/js/jquery.dataTables.min.js"></script>
+
+<link href="../../site_libs/dt-ext-scroller-1.13.6/css/scroller.dataTables.min.css" rel="stylesheet">
+
+<script src="../../site_libs/dt-ext-scroller-1.13.6/js/dataTables.scroller.min.js"></script>
+
+<link href="../../site_libs/crosstalk-1.2.1/css/crosstalk.min.css" rel="stylesheet">
+
+<script src="../../site_libs/crosstalk-1.2.1/js/crosstalk.min.js"></script>
+
+<link href="../../site_libs/selectize-0.12.4/css/selectize.bootstrap3.css" rel="stylesheet">
+
+<script src="../../site_libs/selectize-0.12.4/js/selectize.min.js"></script>
+
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
@@ -354,7 +380,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">10 10 2024</p>
+      <p class="date-modified">11 10 2024</p>
     </div>
   </div>
     
@@ -398,7 +424,7 @@ window.Quarto = {
 - <code>tmap</code> package for plotting tasks&nbsp;<br>
 </p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(tidyverse, sfdep, sf, ggplot2, ggpubr, tmap)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(tidyverse, sfdep, sf, ggplot2, ggpubr, tmap, DT, crosstalk)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="loading-datasets" class="level2">
@@ -841,17 +867,20 @@ $ value         &lt;dbl&gt; 93.37, 61.32, 73.37, 67.33, 79.31, 71.70, 64.65, 71.
 </section>
 <section id="merge-tourism-data" class="level3">
 <h3 class="anchored" data-anchor-id="merge-tourism-data">1.2.3 Merge Tourism data</h3>
-<p>Finally, I can merge the tourism dataset to the spatial dataset using <code>left_join</code> from dplyr.</p>
+<p>Finally, I can merge the tourism dataset to the spatial dataset using <code>left_join</code> from dplyr. These are sorted to facilitate filtering later.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Join with tourism data all</span></span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>th_bound_tour_all <span class="ot">&lt;-</span> <span class="fu">left_join</span>(th_bound_l1, tbl_tourism_sum_all, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"ADM1_EN"</span> <span class="ot">=</span> <span class="st">"province_eng"</span>)) </span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Join with tourism data by year</span></span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>th_bound_tour_year <span class="ot">&lt;-</span> <span class="fu">left_join</span>(th_bound_l1, tbl_tourism_sum_year, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"ADM1_EN"</span> <span class="ot">=</span> <span class="st">"province_eng"</span>)) </span>
-<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Join with tourism data by year and month</span></span>
-<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>th_bound_tour_year_month <span class="ot">&lt;-</span> <span class="fu">left_join</span>(th_bound_l1, tbl_tourism_wide, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"ADM1_EN"</span> <span class="ot">=</span> <span class="st">"province_eng"</span>)) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>th_bound_tour_all <span class="ot">&lt;-</span> <span class="fu">left_join</span>(th_bound_l1, tbl_tourism_sum_all, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"ADM1_EN"</span> <span class="ot">=</span> <span class="st">"province_eng"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(ADM1_EN)</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Join with tourism data by year</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>th_bound_tour_year <span class="ot">&lt;-</span> <span class="fu">left_join</span>(th_bound_l1, tbl_tourism_sum_year, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"ADM1_EN"</span> <span class="ot">=</span> <span class="st">"province_eng"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(year, ADM1_EN)</span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Join with tourism data by year and month</span></span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a>th_bound_tour_year_month <span class="ot">&lt;-</span> <span class="fu">left_join</span>(th_bound_l1, tbl_tourism_wide, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"ADM1_EN"</span> <span class="ot">=</span> <span class="st">"province_eng"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(date.y, ADM1_EN)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>A good practise is to save these processed datasets for easy retrieval.</p>
 <div class="cell">
@@ -880,8 +909,8 @@ $ value         &lt;dbl&gt; 93.37, 61.32, 73.37, 67.33, 79.31, 71.70, 64.65, 71.
 <p>In this section, I will explore the various tourism indicators provided by the dataset.</p>
 <table class="caption-top table">
 <colgroup>
-<col style="width: 22%">
-<col style="width: 77%">
+<col style="width: 31%">
+<col style="width: 68%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -1022,8 +1051,8 @@ $ value         &lt;dbl&gt; 93.37, 61.32, 73.37, 67.33, 79.31, 71.70, 64.65, 71.
 <p>Other variables are created in order to provide greater depth to analysing the Thai tourism economy.</p>
 <table class="caption-top table">
 <colgroup>
-<col style="width: 32%">
-<col style="width: 67%">
+<col style="width: 34%">
+<col style="width: 65%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -1114,8 +1143,8 @@ $ value         &lt;dbl&gt; 93.37, 61.32, 73.37, 67.33, 79.31, 71.70, 64.65, 71.
 <p>There are a few options to get the list of neighbours in <code>sfdep</code> package:</p>
 <table class="caption-top table">
 <colgroup>
-<col style="width: 29%">
-<col style="width: 70%">
+<col style="width: 34%">
+<col style="width: 65%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -1183,7 +1212,7 @@ Number of nonzero links: 352
 Percentage nonzero weights: 5.93692 
 Average number of links: 4.571429 
 1 region with no links:
-67
+48
 2 disjoint connected subgraphs</code></pre>
 </div>
 </div>
@@ -1365,7 +1394,7 @@ data:  x
 weights: listw  
 number of simulations + 1: 1000 
 
-statistic = 0.021003, observed rank = 851, p-value = 0.298
+statistic = 0.021003, observed rank = 848, p-value = 0.304
 alternative hypothesis: two.sided</code></pre>
 </div>
 </div>
@@ -1383,7 +1412,7 @@ data:  x
 weights: listw  
 number of simulations + 1: 1000 
 
-statistic = -0.0019269, observed rank = 710, p-value = 0.58
+statistic = -0.0019269, observed rank = 694, p-value = 0.612
 alternative hypothesis: two.sided</code></pre>
 </div>
 </div>
@@ -1401,7 +1430,7 @@ data:  x
 weights: listw  
 number of simulations + 1: 1000 
 
-statistic = 0.035698, observed rank = 900, p-value = 0.2
+statistic = 0.035698, observed rank = 897, p-value = 0.206
 alternative hypothesis: two.sided</code></pre>
 </div>
 </div>
@@ -1457,7 +1486,7 @@ data:  x
 weights: listw  
 number of simulations + 1: 1000 
 
-statistic = 0.025892, observed rank = 847, p-value = 0.306
+statistic = 0.025892, observed rank = 848, p-value = 0.304
 alternative hypothesis: two.sided</code></pre>
 </div>
 </div>
@@ -1475,7 +1504,7 @@ data:  x
 weights: listw  
 number of simulations + 1: 1000 
 
-statistic = 0.029083, observed rank = 840, p-value = 0.32
+statistic = 0.029083, observed rank = 829, p-value = 0.342
 alternative hypothesis: two.sided</code></pre>
 </div>
 </div>
@@ -1493,7 +1522,7 @@ data:  x
 weights: listw  
 number of simulations + 1: 1000 
 
-statistic = 0.059863, observed rank = 931, p-value = 0.138
+statistic = 0.059863, observed rank = 926, p-value = 0.148
 alternative hypothesis: two.sided</code></pre>
 </div>
 </div>
@@ -1605,7 +1634,7 @@ data:  x
 weights: listw  
 number of simulations + 1: 1000 
 
-statistic = 0.087707, observed rank = 936, p-value = 0.128
+statistic = 0.087707, observed rank = 931, p-value = 0.138
 alternative hypothesis: two.sided</code></pre>
 </div>
 </div>
@@ -1625,7 +1654,7 @@ data:  x
 weights: listw  
 number of simulations + 1: 1000 
 
-statistic = 0.027289, observed rank = 815, p-value = 0.37
+statistic = 0.027289, observed rank = 828, p-value = 0.344
 alternative hypothesis: two.sided</code></pre>
 </div>
 </div>
@@ -1661,7 +1690,7 @@ data:  x
 weights: listw  
 number of simulations + 1: 1000 
 
-statistic = 0.35298, observed rank = 999, p-value = 0.002
+statistic = 0.35298, observed rank = 1000, p-value &lt; 2.2e-16
 alternative hypothesis: two.sided</code></pre>
 </div>
 </div>
@@ -1672,12 +1701,241 @@ alternative hypothesis: two.sided</code></pre>
 </section>
 <section id="global-morans-i-across-space-and-time" class="level2">
 <h2 class="anchored" data-anchor-id="global-morans-i-across-space-and-time">3.3 Global Moran’s I across Space and Time</h2>
+<p>To determine whether the tourism indicators are independent of space and time, I will do the following:</p>
+<ol type="1">
+<li>Filter the respective datasets by specific time (Year/Year and month)</li>
+<li>Append the neighbour list created in 3.1</li>
+<li>Calculate the spatial weight matrix</li>
+<li>Perform Global Moran’s I for all KPIs</li>
+<li>Consolidate the results of the Global Moran’s I</li>
+</ol>
+<p>Since this is very repetitive, I’ll use a function to run this iteratively.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb90"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb90-1"><a href="#cb90-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Function to run global_moran_perm iteratively</span></span>
+<span id="cb90-2"><a href="#cb90-2" aria-hidden="true" tabindex="-1"></a>run_global_moran <span class="ot">&lt;-</span> <span class="cf">function</span>(data, date_col, value, kpi_weight, kpi_inv_dist) {</span>
+<span id="cb90-3"><a href="#cb90-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Filter sf dataframe</span></span>
+<span id="cb90-4"><a href="#cb90-4" aria-hidden="true" tabindex="-1"></a>  filtered_data <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
+<span id="cb90-5"><a href="#cb90-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(<span class="sc">!!</span><span class="fu">sym</span>(date_col) <span class="sc">==</span> value)</span>
+<span id="cb90-6"><a href="#cb90-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb90-7"><a href="#cb90-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Append neighbour list and calculate spatial weight matrix</span></span>
+<span id="cb90-8"><a href="#cb90-8" aria-hidden="true" tabindex="-1"></a>  filtered_data <span class="ot">&lt;-</span> filtered_data <span class="sc">%&gt;%</span></span>
+<span id="cb90-9"><a href="#cb90-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">nb =</span> nb_knn_5,</span>
+<span id="cb90-10"><a href="#cb90-10" aria-hidden="true" tabindex="-1"></a>           <span class="at">wt =</span> <span class="fu">st_weights</span>(nb, <span class="at">style =</span> <span class="st">"W"</span>),</span>
+<span id="cb90-11"><a href="#cb90-11" aria-hidden="true" tabindex="-1"></a>           <span class="at">wt_inv =</span> <span class="fu">st_inverse_distance</span>(<span class="fu">include_self</span>(nb), <span class="at">geometry =</span> geometry, <span class="at">scale =</span> <span class="dv">100</span>, <span class="at">alpha =</span> <span class="dv">1</span>),</span>
+<span id="cb90-12"><a href="#cb90-12" aria-hidden="true" tabindex="-1"></a>           <span class="at">.before =</span> <span class="dv">1</span>)</span>
+<span id="cb90-13"><a href="#cb90-13" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb90-14"><a href="#cb90-14" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Run global_moran_perm for each KPI in kpi_weight list</span></span>
+<span id="cb90-15"><a href="#cb90-15" aria-hidden="true" tabindex="-1"></a>  results_wt <span class="ot">&lt;-</span> <span class="fu">lapply</span>(kpi_weight, <span class="cf">function</span>(kpi) {</span>
+<span id="cb90-16"><a href="#cb90-16" aria-hidden="true" tabindex="-1"></a>    moran_output <span class="ot">&lt;-</span> <span class="fu">global_moran_perm</span>(filtered_data[[kpi]],</span>
+<span id="cb90-17"><a href="#cb90-17" aria-hidden="true" tabindex="-1"></a>                                      filtered_data<span class="sc">$</span>nb,</span>
+<span id="cb90-18"><a href="#cb90-18" aria-hidden="true" tabindex="-1"></a>                                      filtered_data<span class="sc">$</span>wt,</span>
+<span id="cb90-19"><a href="#cb90-19" aria-hidden="true" tabindex="-1"></a>                                      <span class="at">nsim =</span> <span class="dv">999</span>)</span>
+<span id="cb90-20"><a href="#cb90-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">data.frame</span>(</span>
+<span id="cb90-21"><a href="#cb90-21" aria-hidden="true" tabindex="-1"></a>      <span class="at">kpi =</span> kpi,</span>
+<span id="cb90-22"><a href="#cb90-22" aria-hidden="true" tabindex="-1"></a>      <span class="at">statistic =</span> moran_output<span class="sc">$</span>statistic,</span>
+<span id="cb90-23"><a href="#cb90-23" aria-hidden="true" tabindex="-1"></a>      <span class="at">p_value =</span> moran_output<span class="sc">$</span>p.value</span>
+<span id="cb90-24"><a href="#cb90-24" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb90-25"><a href="#cb90-25" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb90-26"><a href="#cb90-26" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb90-27"><a href="#cb90-27" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Run global_moran_perm for each KPI in kpi_inv_dist list</span></span>
+<span id="cb90-28"><a href="#cb90-28" aria-hidden="true" tabindex="-1"></a>  results_inv_dist <span class="ot">&lt;-</span> <span class="fu">lapply</span>(kpi_inv_dist, <span class="cf">function</span>(kpi) {</span>
+<span id="cb90-29"><a href="#cb90-29" aria-hidden="true" tabindex="-1"></a>    moran_output <span class="ot">&lt;-</span> <span class="fu">global_moran_perm</span>(filtered_data[[kpi]],</span>
+<span id="cb90-30"><a href="#cb90-30" aria-hidden="true" tabindex="-1"></a>                                      filtered_data<span class="sc">$</span>nb,</span>
+<span id="cb90-31"><a href="#cb90-31" aria-hidden="true" tabindex="-1"></a>                                      filtered_data<span class="sc">$</span>wt_inv,</span>
+<span id="cb90-32"><a href="#cb90-32" aria-hidden="true" tabindex="-1"></a>                                      <span class="at">nsim =</span> <span class="dv">999</span>)</span>
+<span id="cb90-33"><a href="#cb90-33" aria-hidden="true" tabindex="-1"></a>    <span class="fu">data.frame</span>(</span>
+<span id="cb90-34"><a href="#cb90-34" aria-hidden="true" tabindex="-1"></a>      <span class="at">kpi =</span> kpi,</span>
+<span id="cb90-35"><a href="#cb90-35" aria-hidden="true" tabindex="-1"></a>      <span class="at">statistic =</span> moran_output<span class="sc">$</span>statistic,</span>
+<span id="cb90-36"><a href="#cb90-36" aria-hidden="true" tabindex="-1"></a>      <span class="at">p_value =</span> moran_output<span class="sc">$</span>p.value</span>
+<span id="cb90-37"><a href="#cb90-37" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb90-38"><a href="#cb90-38" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb90-39"><a href="#cb90-39" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb90-40"><a href="#cb90-40" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Combine both results</span></span>
+<span id="cb90-41"><a href="#cb90-41" aria-hidden="true" tabindex="-1"></a>  results_df <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(results_wt, results_inv_dist)</span>
+<span id="cb90-42"><a href="#cb90-42" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb90-43"><a href="#cb90-43" aria-hidden="true" tabindex="-1"></a>  results_df <span class="ot">&lt;-</span> results_df <span class="sc">%&gt;%</span></span>
+<span id="cb90-44"><a href="#cb90-44" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">date =</span> value,</span>
+<span id="cb90-45"><a href="#cb90-45" aria-hidden="true" tabindex="-1"></a>           <span class="at">.before =</span> <span class="dv">1</span>)</span>
+<span id="cb90-46"><a href="#cb90-46" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rownames</span>(results_df) <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
+<span id="cb90-47"><a href="#cb90-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(results_df)</span>
+<span id="cb90-48"><a href="#cb90-48" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 <section id="across-year" class="level3">
 <h3 class="anchored" data-anchor-id="across-year">3.3.1 Across Year</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb91"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb91-1"><a href="#cb91-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Set Seed</span></span>
+<span id="cb91-2"><a href="#cb91-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb91-3"><a href="#cb91-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb91-4"><a href="#cb91-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb91-5"><a href="#cb91-5" aria-hidden="true" tabindex="-1"></a><span class="co"># List of KPIs using st_weights</span></span>
+<span id="cb91-6"><a href="#cb91-6" aria-hidden="true" tabindex="-1"></a>kpi_wt <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb91-7"><a href="#cb91-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">"revenue_all"</span>, <span class="st">"revenue_thai"</span>, <span class="st">"revenue_foreign"</span>, <span class="st">"revenue_thai_prop"</span>, <span class="st">"revenue_foreign_prop"</span>,</span>
+<span id="cb91-8"><a href="#cb91-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">"no_tourist_all"</span>, <span class="st">"no_tourist_thai"</span>, <span class="st">"no_tourist_foreign"</span>, <span class="st">"tourist_thai_prop"</span>, <span class="st">"tourist_foreign_prop"</span>,</span>
+<span id="cb91-9"><a href="#cb91-9" aria-hidden="true" tabindex="-1"></a>  <span class="st">"revenue_tourist_all"</span>, <span class="st">"revenue_tourist_thai"</span>, <span class="st">"revenue_tourist_foreign"</span>, </span>
+<span id="cb91-10"><a href="#cb91-10" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ratio_tourist_stay"</span> </span>
+<span id="cb91-11"><a href="#cb91-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb91-12"><a href="#cb91-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb91-13"><a href="#cb91-13" aria-hidden="true" tabindex="-1"></a><span class="co"># List of KPIs using st_inverse_distance</span></span>
+<span id="cb91-14"><a href="#cb91-14" aria-hidden="true" tabindex="-1"></a>kpi_dist <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"no_tourist_stay"</span>, <span class="st">"revenue_tourist_stay"</span>, <span class="st">"tourist_stay_all"</span>)</span>
+<span id="cb91-15"><a href="#cb91-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb91-16"><a href="#cb91-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb91-17"><a href="#cb91-17" aria-hidden="true" tabindex="-1"></a>year_list <span class="ot">&lt;-</span> <span class="fu">unique</span>(th_bound_tour_year<span class="sc">$</span>year)</span>
+<span id="cb91-18"><a href="#cb91-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb91-19"><a href="#cb91-19" aria-hidden="true" tabindex="-1"></a>all_results <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb91-20"><a href="#cb91-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb91-21"><a href="#cb91-21" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (year_val <span class="cf">in</span> year_list) {</span>
+<span id="cb91-22"><a href="#cb91-22" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Run function for each year</span></span>
+<span id="cb91-23"><a href="#cb91-23" aria-hidden="true" tabindex="-1"></a>  result <span class="ot">&lt;-</span> <span class="fu">run_global_moran</span>(th_bound_tour_year, <span class="st">"year"</span>, year_val, kpi_wt, kpi_dist)</span>
+<span id="cb91-24"><a href="#cb91-24" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb91-25"><a href="#cb91-25" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Append results to list</span></span>
+<span id="cb91-26"><a href="#cb91-26" aria-hidden="true" tabindex="-1"></a>  all_results[[<span class="fu">as.character</span>(year_val)]] <span class="ot">&lt;-</span> result</span>
+<span id="cb91-27"><a href="#cb91-27" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb93"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb93-1"><a href="#cb93-1" aria-hidden="true" tabindex="-1"></a>global_moran_year <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(all_results)</span>
+<span id="cb93-2"><a href="#cb93-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb93-3"><a href="#cb93-3" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb93-4"><a href="#cb93-4" aria-hidden="true" tabindex="-1"></a>global_moran_year <span class="ot">&lt;-</span> global_moran_year <span class="sc">%&gt;%</span></span>
+<span id="cb93-5"><a href="#cb93-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">statistic =</span> <span class="fu">ifelse</span>(p_value <span class="sc">&lt;=</span> <span class="fl">0.05</span>, <span class="fu">round</span>(statistic,<span class="dv">3</span>), <span class="st">"-"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb93-6"><a href="#cb93-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(date, kpi, statistic) <span class="sc">%&gt;%</span></span>
+<span id="cb93-7"><a href="#cb93-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> date, <span class="at">values_from =</span> statistic)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now that the data is properly formatted,</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb94"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb94-1"><a href="#cb94-1" aria-hidden="true" tabindex="-1"></a><span class="fu">datatable</span>(global_moran_year, <span class="at">rownames=</span><span class="cn">FALSE</span>, <span class="at">extensions=</span><span class="st">"Scroller"</span>, <span class="at">class=</span><span class="st">"display"</span>, <span class="at">width=</span><span class="st">"100%"</span>,</span>
+<span id="cb94-2"><a href="#cb94-2" aria-hidden="true" tabindex="-1"></a>            <span class="at">options=</span><span class="fu">list</span>(<span class="at">initComplete =</span> <span class="fu">JS</span>(</span>
+<span id="cb94-3"><a href="#cb94-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"function(settings, json) {"</span>,</span>
+<span id="cb94-4"><a href="#cb94-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"$('body').css({'font-family': 'sans-serif'});"</span>,</span>
+<span id="cb94-5"><a href="#cb94-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"}"</span></span>
+<span id="cb94-6"><a href="#cb94-6" aria-hidden="true" tabindex="-1"></a>  ), <span class="at">deferRender=</span><span class="cn">TRUE</span>, <span class="at">scrollY=</span><span class="dv">300</span>, <span class="at">scroller=</span><span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="htmlwidget-fd6fe5fb5edf7e94aa22" style="width:100%;height:auto;" class="datatables html-widget"></div>
+<script type="application/json" data-for="htmlwidget-fd6fe5fb5edf7e94aa22">{"x":{"filter":"none","vertical":false,"extensions":["Scroller"],"data":[["revenue_all","revenue_thai","revenue_foreign","revenue_thai_prop","revenue_foreign_prop","no_tourist_all","no_tourist_thai","no_tourist_foreign","tourist_thai_prop","tourist_foreign_prop","revenue_tourist_all","revenue_tourist_thai","revenue_tourist_foreign","ratio_tourist_stay","no_tourist_stay","revenue_tourist_stay","tourist_stay_all"],["-","-","-","0.331","0.331","-","-","-","0.342","0.342","0.385","0.389","0.31","0.173","-","0.201","0.354"],["-","-","-","0.415","0.415","-","-","-","0.42","0.42","0.443","0.406","0.376","0.294","-","0.261","0.392"],["-","-","-","0.148","0.148","-","-","-","0.223","0.223","0.362","0.425","0.129","0.279","-0.11","0.132","0.503"],["-","-","-","0.217","0.217","-","-","-","0.283","0.283","0.193","0.351","0.102","0.171","-","-","0.436"],["-","-","-","0.217","0.217","-","-","-","0.296","0.296","0.141","0.3","-","0.191","-","-","0.369"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>kpi<\/th>\n      <th>2019<\/th>\n      <th>2020<\/th>\n      <th>2021<\/th>\n      <th>2022<\/th>\n      <th>2023<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"initComplete":"function(settings, json) {\n$('body').css({'font-family': 'sans-serif'});\n}","deferRender":true,"scrollY":300,"scroller":true,"columnDefs":[{"name":"kpi","targets":0},{"name":"2019","targets":1},{"name":"2020","targets":2},{"name":"2021","targets":3},{"name":"2022","targets":4},{"name":"2023","targets":5}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":["options.initComplete"],"jsHooks":[]}</script>
+</div>
+</div>
 </section>
 <section id="across-year-and-month" class="level3">
 <h3 class="anchored" data-anchor-id="across-year-and-month">3.3.2 Across Year and Month</h3>
-<p>Datatable</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb95"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb95-1"><a href="#cb95-1" aria-hidden="true" tabindex="-1"></a>year_month_list <span class="ot">&lt;-</span> <span class="fu">unique</span>(th_bound_tour_year_month<span class="sc">$</span>date.y)</span>
+<span id="cb95-2"><a href="#cb95-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb95-3"><a href="#cb95-3" aria-hidden="true" tabindex="-1"></a>all_results <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb95-4"><a href="#cb95-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb95-5"><a href="#cb95-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (year_month_val <span class="cf">in</span> year_month_list) {</span>
+<span id="cb95-6"><a href="#cb95-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Run function for each year</span></span>
+<span id="cb95-7"><a href="#cb95-7" aria-hidden="true" tabindex="-1"></a>  result <span class="ot">&lt;-</span> <span class="fu">run_global_moran</span>(th_bound_tour_year_month, <span class="st">"date.y"</span>, year_month_val, kpi_wt, kpi_dist)</span>
+<span id="cb95-8"><a href="#cb95-8" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb95-9"><a href="#cb95-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Append results to list</span></span>
+<span id="cb95-10"><a href="#cb95-10" aria-hidden="true" tabindex="-1"></a>  all_results[[<span class="fu">as.character</span>(year_month_val)]] <span class="ot">&lt;-</span> result</span>
+<span id="cb95-11"><a href="#cb95-11" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.
+! Polygon provided. Using point on surface.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb97"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb97-1"><a href="#cb97-1" aria-hidden="true" tabindex="-1"></a>global_moran_year_month <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(all_results)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb98"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb98-1"><a href="#cb98-1" aria-hidden="true" tabindex="-1"></a>global_moran_year_month <span class="ot">&lt;-</span> global_moran_year_month <span class="sc">%&gt;%</span></span>
+<span id="cb98-2"><a href="#cb98-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">date =</span> <span class="fu">as.Date.numeric</span>(date),</span>
+<span id="cb98-3"><a href="#cb98-3" aria-hidden="true" tabindex="-1"></a>         <span class="at">year =</span> <span class="fu">year</span>(date),</span>
+<span id="cb98-4"><a href="#cb98-4" aria-hidden="true" tabindex="-1"></a>         <span class="at">month =</span> <span class="fu">format</span>(date,<span class="st">"%b"</span>),</span>
+<span id="cb98-5"><a href="#cb98-5" aria-hidden="true" tabindex="-1"></a>         <span class="at">statistic =</span> <span class="fu">ifelse</span>(p_value <span class="sc">&lt;=</span> <span class="fl">0.05</span>, <span class="fu">round</span>(statistic,<span class="dv">3</span>), <span class="st">"-"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb98-6"><a href="#cb98-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(year, kpi, statistic, month) <span class="sc">%&gt;%</span></span>
+<span id="cb98-7"><a href="#cb98-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> month, <span class="at">values_from =</span> statistic)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb99"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb99-1"><a href="#cb99-1" aria-hidden="true" tabindex="-1"></a>shared <span class="ot">&lt;-</span> SharedData<span class="sc">$</span><span class="fu">new</span>(global_moran_year_month)</span>
+<span id="cb99-2"><a href="#cb99-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb99-3"><a href="#cb99-3" aria-hidden="true" tabindex="-1"></a><span class="fu">filter_select</span>(</span>
+<span id="cb99-4"><a href="#cb99-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">id =</span> <span class="st">"year"</span>, <span class="at">label =</span> <span class="st">"year"</span>, </span>
+<span id="cb99-5"><a href="#cb99-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">sharedData =</span> shared, <span class="sc">~</span>year</span>
+<span id="cb99-6"><a href="#cb99-6" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display no-overflow-x">
+<div id="year" class="form-group crosstalk-input-select crosstalk-input">
+<label class="control-label" for="year">year</label>
+<div>
+<select multiple=""></select>
+<script type="application/json" data-for="year">{
+  "items": {
+    "value": ["2019", "2020", "2021", "2022", "2023"],
+    "label": ["2019", "2020", "2021", "2022", "2023"]
+  },
+  "map": {
+    "2019": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17"],
+    "2020": ["18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34"],
+    "2021": ["35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51"],
+    "2022": ["52", "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65", "66", "67", "68"],
+    "2023": ["69", "70", "71", "72", "73", "74", "75", "76", "77", "78", "79", "80", "81", "82", "83", "84", "85"]
+  },
+  "group": ["SharedData21229b6b"]
+}</script>
+</div>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb100"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb100-1"><a href="#cb100-1" aria-hidden="true" tabindex="-1"></a><span class="fu">datatable</span>(shared, <span class="at">rownames=</span><span class="cn">FALSE</span>, <span class="at">extensions=</span><span class="st">"Scroller"</span>, <span class="at">class=</span><span class="st">"display"</span>, <span class="at">width=</span><span class="st">"100%"</span>,</span>
+<span id="cb100-2"><a href="#cb100-2" aria-hidden="true" tabindex="-1"></a>            <span class="at">options=</span><span class="fu">list</span>(<span class="at">initComplete =</span> <span class="fu">JS</span>(</span>
+<span id="cb100-3"><a href="#cb100-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"function(settings, json) {"</span>,</span>
+<span id="cb100-4"><a href="#cb100-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"$('body').css({'font-family': 'sans-serif'});"</span>,</span>
+<span id="cb100-5"><a href="#cb100-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"}"</span></span>
+<span id="cb100-6"><a href="#cb100-6" aria-hidden="true" tabindex="-1"></a>  ), <span class="at">deferRender=</span><span class="cn">TRUE</span>, <span class="at">scrollY=</span><span class="dv">300</span>, <span class="at">scroller=</span><span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="htmlwidget-7b16e5c229a647d36070" style="width:100%;height:auto;" class="datatables html-widget"></div>
+<script type="application/json" data-for="htmlwidget-7b16e5c229a647d36070">{"x":{"crosstalkOptions":{"key":["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85"],"group":"SharedData21229b6b"},"filter":"none","vertical":false,"extensions":["Scroller"],"data":[[2019,2019,2019,2019,2019,2019,2019,2019,2019,2019,2019,2019,2019,2019,2019,2019,2019,2020,2020,2020,2020,2020,2020,2020,2020,2020,2020,2020,2020,2020,2020,2020,2020,2020,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2021,2022,2022,2022,2022,2022,2022,2022,2022,2022,2022,2022,2022,2022,2022,2022,2022,2022,2023,2023,2023,2023,2023,2023,2023,2023,2023,2023,2023,2023,2023,2023,2023,2023,2023],["revenue_all","revenue_thai","revenue_foreign","revenue_thai_prop","revenue_foreign_prop","no_tourist_all","no_tourist_thai","no_tourist_foreign","tourist_thai_prop","tourist_foreign_prop","revenue_tourist_all","revenue_tourist_thai","revenue_tourist_foreign","ratio_tourist_stay","no_tourist_stay","revenue_tourist_stay","tourist_stay_all","revenue_all","revenue_thai","revenue_foreign","revenue_thai_prop","revenue_foreign_prop","no_tourist_all","no_tourist_thai","no_tourist_foreign","tourist_thai_prop","tourist_foreign_prop","revenue_tourist_all","revenue_tourist_thai","revenue_tourist_foreign","ratio_tourist_stay","no_tourist_stay","revenue_tourist_stay","tourist_stay_all","revenue_all","revenue_thai","revenue_foreign","revenue_thai_prop","revenue_foreign_prop","no_tourist_all","no_tourist_thai","no_tourist_foreign","tourist_thai_prop","tourist_foreign_prop","revenue_tourist_all","revenue_tourist_thai","revenue_tourist_foreign","ratio_tourist_stay","no_tourist_stay","revenue_tourist_stay","tourist_stay_all","revenue_all","revenue_thai","revenue_foreign","revenue_thai_prop","revenue_foreign_prop","no_tourist_all","no_tourist_thai","no_tourist_foreign","tourist_thai_prop","tourist_foreign_prop","revenue_tourist_all","revenue_tourist_thai","revenue_tourist_foreign","ratio_tourist_stay","no_tourist_stay","revenue_tourist_stay","tourist_stay_all","revenue_all","revenue_thai","revenue_foreign","revenue_thai_prop","revenue_foreign_prop","no_tourist_all","no_tourist_thai","no_tourist_foreign","tourist_thai_prop","tourist_foreign_prop","revenue_tourist_all","revenue_tourist_thai","revenue_tourist_foreign","ratio_tourist_stay","no_tourist_stay","revenue_tourist_stay","tourist_stay_all"],["-","-","-","0.328","0.328","-","-","-","0.331","0.331","0.386","0.383","0.349","-","-","0.25","0.281","-","-","-","0.333","0.333","-","-","-","0.335","0.335","0.401","0.388","0.374","-","-","0.262","0.296","-","-","-","-","-","-","-","-","-","-","0.31","0.315","0.16","0.441","-0.154","-","0.47","-","-","-","0.284","0.284","-","-","0.133","0.399","0.399","0.299","0.405","0.113","0.353","-","0.149","0.486","-","-","-","0.212","0.212","-","-","-","0.285","0.285","0.151","0.301","-","0.19","-","-","0.402"],["-","-","-","0.311","0.311","-","-","0.096","0.306","0.306","0.393","0.383","0.349","0.196","-","0.237","0.28","-","-","-","0.313","0.313","-","-","-","0.305","0.305","0.429","0.395","0.388","-","-","0.246","0.28","-","-","-","-","-","-","-","-","0.159","0.159","0.376","0.38","0.167","0.345","-0.153","0.142","0.491","-","-","-","0.289","0.289","-","-","-","0.406","0.406","0.299","0.411","0.111","0.352","-","0.161","0.461","-","-","-","0.217","0.217","-","-","-","0.296","0.296","0.134","0.299","-","0.193","-","-","0.343"],["-","-","-","0.316","0.316","-","-","0.115","0.32","0.32","0.399","0.383","0.349","0.371","-","0.244","0.287","-","-","-","0.239","0.239","-","-","-","0.225","0.225","0.416","0.408","0.363","0.203","-","0.168","0.329","-","-","-","-","-","-","-","-","0.135","0.135","0.359","0.363","0.244","0.22","-0.168","0.203","0.514","-","-","-","0.329","0.329","-","-","-","0.435","0.435","0.296","0.395","0.127","0.264","-","0.147","0.469",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],["-","-","-","0.304","0.304","-","-","-","0.334","0.334","0.373","0.43","0.267","0.333","-","0.183","0.317","-","-","-","-","0.242","-","-","-","-","0.26","0.149","0.206","0.436","0.153","-0.051","-","-","-","-","-","-","-","-","-","-","0.2","0.2","0.386","0.391","0.275","0.213","-","0.265","0.437","-","-","-","0.319","0.319","-","-","-","0.428","0.428","0.276","0.372","0.123","0.167","-","0.153","0.454",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],["-","-","-","0.307","0.307","-","-","-","0.344","0.344","0.368","0.43","0.267","0.24","-","0.187","0.323","-","-","-","0.459","0.45","-","-","-","0.47","0.515","0.513","0.15","0.347","0.503","-0.062","0.337","0.166","-","-","-","-","-","-","-","-","0.255","0.255","0.5","0.506","0.187","0.269","-0.106","0.27","0.313","-","-","-","0.252","0.252","-","-","-","0.291","0.291","0.212","0.37","0.114","-","-","0.116","0.426",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],["-","-","-","0.312","0.312","-","-","-","0.346","0.346","0.386","0.43","0.267","0.135","-","0.181","0.319","-","-","-","-","-","-","-","-","-","0.12","0.449","0.424","-","0.321","-","0.211","0.358","-","-","-","-","-","-","-","-","0.13","-","0.491","0.496","0.192","0.192","-0.117","0.259","0.273","-","-","-","0.224","0.224","-","-","-","0.26","0.26","0.189","0.359","0.104","-","-","-","0.415",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],["-","-","-","0.302","0.302","-","-","-","0.312","0.312","0.407","0.347","0.325","-","-","0.115","0.358","-","-","-","-","-","-","-","-","-","-","0.372","0.369","0.16","0.281","-","-","0.342","-","-","-","0.137","0.137","-","-","-","0.162","0.162","0.233","0.505","0.077","0.358","-0.12","0.144","0.308","-","-","-","0.205","0.205","-","-","-","0.255","0.255","0.159","0.342","-","-","-","-","0.41",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],["-","-","-","0.302","0.302","-","-","-","0.299","0.299","0.396","0.347","0.325","0.188","-","0.113","0.356","-","-","-","-","-","-","-","-","-","-","0.378","0.368","0.147","0.328","-","-","0.387","-","-","-","0.202","0.202","-","-","-","0.262","0.262","0.215","0.493","0.112","0.376","-0.112","0.125","0.305","-","-","-","0.198","0.198","-","-","-","0.25","0.25","0.171","0.344","0.108","-","-","-","0.398",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],["-","-","-","0.315","0.315","-","-","-","0.319","0.319","0.399","0.347","0.325","0.201","-","-","0.363","-","-","-","-","-","-","-","-","-","-","0.406","0.409","0.129","0.26","-","-","0.379","-","-","-","0.271","0.271","-","-","-","0.372","0.372","0.321","0.494","0.118","0.354","-","0.193","0.402","-","-","-","0.194","0.194","-","-","-","0.248","0.248","0.164","0.332","0.106","-","-","-","0.407",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],["-","-","-","0.346","0.346","-","-","-","0.344","0.344","0.346","0.336","0.257","-","-","0.199","0.332","-","-","-","-","-","-","-","-","0.168","0.168","0.375","0.379","0.178","0.324","-","0.158","0.455","-","-","-","0.307","0.307","-","-","-","0.37","0.37","0.337","0.494","0.106","0.397","-","-","0.424","-","-","-","0.192","0.192","-","-","-","0.257","0.257","0.159","0.315","-","-","-","-","0.416",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],["-","-","-","0.36","0.36","-","-","-","0.36","0.36","0.356","0.336","0.257","-","-","0.201","0.33","-","-","-","0.136","0.136","-","-","-","0.265","0.265","0.372","0.374","0.224","0.379","-","0.15","0.451","-","-","-","0.248","0.248","-","-","-","0.267","0.267","0.345","0.48","0.116","0.431","-","-","0.499","-","-","-","0.185","0.185","-","-","-","0.249","0.249","0.155","0.307","-","0.166","-","-","0.408",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],["-","-","-","0.369","0.369","-","-","-","0.38","0.38","0.36","0.336","0.257","0.158","-","0.191","0.324","-","-","-","0.103","0.103","-","-","-","0.232","0.232","0.361","0.365","0.221","0.362","-","-","0.375","-","-","-","0.193","0.193","-","-","-","0.218","0.218","0.257","0.401","0.124","0.414","-","0.127","0.458","-","-","-","0.207","0.207","-","-","-","0.276","0.276","0.152","0.297","-","0.223","-","-","0.43",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th>year<\/th>\n      <th>kpi<\/th>\n      <th>Jan<\/th>\n      <th>Feb<\/th>\n      <th>Mar<\/th>\n      <th>Apr<\/th>\n      <th>May<\/th>\n      <th>Jun<\/th>\n      <th>Jul<\/th>\n      <th>Aug<\/th>\n      <th>Sep<\/th>\n      <th>Oct<\/th>\n      <th>Nov<\/th>\n      <th>Dec<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"initComplete":"function(settings, json) {\n$('body').css({'font-family': 'sans-serif'});\n}","deferRender":true,"scrollY":300,"scroller":true,"columnDefs":[{"className":"dt-right","targets":0},{"name":"year","targets":0},{"name":"kpi","targets":1},{"name":"Jan","targets":2},{"name":"Feb","targets":3},{"name":"Mar","targets":4},{"name":"Apr","targets":5},{"name":"May","targets":6},{"name":"Jun","targets":7},{"name":"Jul","targets":8},{"name":"Aug","targets":9},{"name":"Sep","targets":10},{"name":"Oct","targets":11},{"name":"Nov","targets":12},{"name":"Dec","targets":13}],"order":[],"autoWidth":false,"orderClasses":false},"selection":{"mode":"multiple","selected":null,"target":"row","selectable":null}},"evals":["options.initComplete"],"jsHooks":[]}</script>
+</div>
+</div>
 </section>
 </section>
 </section>
