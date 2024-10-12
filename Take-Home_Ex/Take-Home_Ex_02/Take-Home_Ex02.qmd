@@ -44,12 +44,12 @@ I will be using the following R packages:\
 - `sfdep` package to perform spatial autocorrelation analysis and emerging hotspot analysis \
 - `tidyverse` package for reading csv files, dataframe processing tasks \
 - `ggplot2` and `ggpubr` package for plotting statistical graphics \
-- `DT` and `crosstalk` package for visualizing results in a table format \
-- `plotly` and `Kendall` package for performing and visualizing Mann-Kendall Test \
+- `DT`, `crosstalk` and `htmltools`, package for visualizing results in a table format \
+- `Kendall` package for performing and visualizing Mann-Kendall Test \
 - `tmap` package for plotting tasks \
 
 ```{r}
-pacman::p_load(tidyverse, sfdep, sf, ggplot2, ggpubr, tmap, DT, crosstalk, plotly, Kendall)
+pacman::p_load(tidyverse, sfdep, sf, ggplot2, ggpubr, tmap, DT, crosstalk, htmltools, Kendall)
 ```
 
 ## 1.2 Loading Datasets
@@ -234,7 +234,6 @@ summary(tbl_tourism_wide)
 # Save processed tbl_tourism_wide
 write_rds(tbl_tourism_wide, 'data/processed/tbl_tourism_wide.rds')
 ```
-
 :::
 
 ### 1.2.3 Merge Tourism data
@@ -957,25 +956,34 @@ global_moran_year_month <- read_rds('data/output/global_moran_year_month.rds')
 `crosstalk` package is then used to provide an interactive way of filtering the table
 
 ```{r}
+#| warning: false
 shared <- SharedData$new(global_moran_year_month)
 
 bscols(widths = c(12, 12),
   filter_select(
-  id = "year", label = "year", 
+  id = "year", label = "Year", 
   sharedData = shared, ~year
   ),
   
+  tags$div(style = 'width:100%; overflow-x: auto;', 
+    
   datatable(shared, rownames=FALSE,
-            options=list(pageLength = 17, initComplete = JS(
+            extensions = c("FixedColumns"),
+            options=list(pageLength = 17,
+                         fixedColumns = list(leftColumns = 2),
+                         initComplete = JS(
     "function(settings, json) {",
-    "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff', 'font-family': 'sans-serif'});",
-    "$(this.api().table().body()).css({'font-family': 'sans-serif'});",
+    "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff', 'font-family': 'sans-serif', 'font-size': '12px'});",
+    "$(this.api().table().body()).css({'font-family': 'sans-serif', 'font-size': '12px'});",
     "}"
-  )))
+    ))
+    )
+    
+    )
 )
 ```
 
-Comparing the output of asd;asd
+Comparing the output of Global Moran's I across year and across year and month, they generally point to the same insight. The impact of covid can be somewhat observed as the key indicators are less statistically significant during 2020-2021.
 
 Therefore, I can conclude that some key indicators of Thailand tourism economy are spatial and spatio-temporal dependent.
 
@@ -1605,7 +1613,7 @@ When looking at the revenue proportion for Foreign tourists, I can see a group o
 
 Looking at revenue per tourists, Bangkok is highlighted as "High-low" from 2019-2022. Zooming into foreign revenue per foreign tourist, Kachanaburi (border province) shows up as "High-low" during 2020. This could be because of Covid, more revenue generated from foreign tourists travelling across the border. A sizable number of provinces around the middle of Thailand are "low-low" throughout the years, for both foreign and Thai tourists, suggesting that either tourists do not spend much in those areas or goods and services are much cheaper in those areas.
 
-Insert evaluation
+The proportion of tourists who stay overnight shows how covid impacted Tourism, with Bangkok being "Low-Low" from 2021-2022.
 
 ## 4.3 Local Moran's I across Space and Time (Year and Month)
 
@@ -1772,13 +1780,15 @@ knitr::include_graphics("images/animated_tourist_stay_all_year_month.gif")
 ```
 :::
 
-Insert evaluation
+When performing Local Moran's I at a more granular level, observations align with those for Local Moran's I across year. An additional insight is that the impact of covid can be more clearly observed with clusters/outliers becoming extremely sparse during the covid period.
 
 # 5 Spatio-Temporal Analysis of Thailand Tourism Key Indicators
 
-As follows:
+To perform spatio-temporal analysis, I will be conducting the Mann-Kendall test with `MannKendall` from `Kendall` package for a brief look of emerging hotspots/coldspots, then a more rigorous Emerging Hotspot Analysis (EHSA) with `emerging_hotspot_analysis` from `sfdep` package.
 
 ## 5.1 Preprocessing
+
+Before proceeding for EHSA, a spacetime cube has to be created first. This will be done using `spacetime` from sfdep package.
 
 ```{r}
 # Load geospatial data
@@ -1799,6 +1809,7 @@ is_spacetime_cube(th_bound_spt)
 ```
 
 ```{r}
+# Apply neighbour list and spatial weights
 th_bound_nb <- th_bound_spt %>%
   activate("geometry") %>%
   mutate(nb = include_self(nb_knn_5),
@@ -1808,8 +1819,14 @@ th_bound_nb <- th_bound_spt %>%
   set_wts("wt")
 ```
 
+## 5.2 Mann-Kendall Test
 
-## 5.2 Mann-Kendall
+In order to run Mann-Kendall test more efficiently for different key indicators, I'll use a function. The function is as follows:
+
+1.  Set seed
+2.  Compute Gi\*
+3.  Perform Mann-Kendall Test for each province
+4.  Post processing
 
 ```{r}
 # Function to run Mann-Kendall iteratively
@@ -1829,8 +1846,11 @@ mann_kendall_function <- function(data, kpi) {
     summarise(mk = list(unclass(Kendall::MannKendall(gi_star)))) %>%
     tidyr::unnest_wider(mk)
   
-  # Proces output
+  # Process output
   emerging <- ehsa %>%
+    mutate(tau = round(tau, 5),
+           sl = round(sl, 5),
+           varS = round(varS, 3)) %>%
     arrange(sl, abs(tau))
   
   return(emerging)
@@ -1838,9 +1858,7 @@ mann_kendall_function <- function(data, kpi) {
 
 ```
 
-
-:::panel-tabset
-
+::: panel-tabset
 # Revenue
 
 ```{r}
@@ -1870,7 +1888,6 @@ datatable(emerging, rownames=FALSE, width="100%",
     "}"
   )))
 ```
-
 
 # Revenue/Tourist
 
@@ -1945,13 +1962,22 @@ datatable(emerging, rownames=FALSE, width="100%",
     "}"
   )))
 ```
-
 :::
 
+Looking at the Mann-Kendall Tsst across various key indicators, it shows provinces that are emerging hotspots and others that are emerging coldspots.
 
-Insert evaluation
+Specifically for Bangkok, while some key indicators are not statistically significant, it shows how it is an emerging coldspot with negative tau for revenue per tourist (foreign and Thai), suggesting the impact of Covid.
 
 ## 5.3 Emerging Hotspot Analysis
+
+Similar to Mann-Kendall's Test, a function will be used for visualizing the output across different key indicators. Inspiration for the visualization (using a color mapper and histogram within the tmap plot) was taken from 1 of the previous seniors.
+
+The functions for visualizing EHSA is as follows:
+
+1.  Join the output to the original geospatial dataset
+2.  Load the color mapping
+3.  Filter the merged output from step 1 to include only statistically significant results
+4.  Visualize EHSA output with `tmap` (including a histogram of the category counts)
 
 ```{r}
 # Category List 
@@ -1979,21 +2005,16 @@ color_mapping <- function(category_list, color_list, mapping) {
 ```{r}
 # Visualize ehsa
 ehsa_fun <- function(ehsa) {
-
-  hist <- ggplot(data = ehsa,
-                 aes(x = classification)) +
-    geom_bar() +
-    coord_flip()
   
   th_ehsa <- th_bound %>%
     left_join(ehsa, by = join_by(ADM1_EN == location))
   
-  color_mapping <- color_mapping(category_list, color_list, sort(unique(th_ehsa$classification)))
-  
-  # plot(hist)
   
   th_ehsa_sig <- th_ehsa  %>%
     filter(p_value < 0.05)
+  
+  color_mapping <- color_mapping(category_list, color_list, sort(unique(th_ehsa_sig$classification)))
+  
   
   tm_shape(th_ehsa) +
     tm_polygons() +
@@ -2013,8 +2034,7 @@ ehsa_fun <- function(ehsa) {
 
 ```
 
-:::panel-tabset
-
+::: panel-tabset
 # Revenue
 
 ```{r}
@@ -2043,6 +2063,7 @@ ehsa <- read_rds('data/output/ehsa_revenue_thai_prop.rds')
 # Visualize for Thai Revenue Proportion
 ehsa_fun(ehsa)
 ```
+
 
 ```{r}
 #| eval: false # eval: false
@@ -2073,7 +2094,6 @@ ehsa_fun(ehsa)
 
 # Revenue/Tourist
 
-
 ```{r}
 #| eval: false # eval: false
 
@@ -2100,7 +2120,6 @@ ehsa <- read_rds('data/output/ehsa_revenue_tourist_all.rds')
 # Visualize for Revenue/Tourist
 ehsa_fun(ehsa)
 ```
-
 
 ```{r}
 #| eval: false # eval: false
@@ -2129,7 +2148,6 @@ ehsa <- read_rds('data/output/ehsa_revenue_tourist_thai.rds')
 ehsa_fun(ehsa)
 ```
 
-
 ```{r}
 #| eval: false # eval: false
 
@@ -2156,7 +2174,6 @@ ehsa <- read_rds('data/output/ehsa_revenue_tourist_foreign.rds')
 # Visualize for Revenue/Tourist (Foreign)
 ehsa_fun(ehsa)
 ```
-
 
 # Overnight Guest
 
@@ -2187,7 +2204,6 @@ ehsa <- read_rds('data/output/ehsa_revenue_tourist_stay.rds')
 ehsa_fun(ehsa)
 ```
 
-
 ```{r}
 #| eval: false # eval: false
 
@@ -2214,11 +2230,23 @@ ehsa <- read_rds('data/output/ehsa_tourist_stay_all.rds')
 # Visualize for Proportion fo Tourists who stay overnight
 ehsa_fun(ehsa)
 ```
-
 :::
 
-Insert evaluation
+Similar to previous analysis, the result of Thai revenue proportion is a mirror of Foreign revenue proportion. A possible impact of Covid can be inferred from the large volume of sporadic coldspots for foreign revenue proportion and revenue per tourist.
+
+Although majority of provinces are sporadic coldspot for revenue per tourist (foreign), there are a sizable number of provinces with that are sporadic hostpot, suggesting a potential rise in appeal of those provinces to foreign tourists. 
+
+Looking at the overnight guests key indicators, there are a few intensifying coldspots (Chiang Rai and Phang Nga), indicating that the intensity of the cold spot has a statistically significant increase over time. This could be an impact of covid causing lesser tourists to decide staying overnight in those areas. 
 
 # 6 Conclusion
 
-Insert evaluation
+Through Global Moran's I, I have established that the key indicators of Thailand's tourism economy is spatially dependent and spatio-temporal dependent. Local Moran's I was then used to further dive into how the individual provinces are to explore where the clusters/outliers are for different key indicators.
+
+Exploratory Mann-Kendall and Emerging Hotspot Analysis are then used to highlight how those cluster/outliers change over time.
+
+Through this, I deduce that there are a few key tourism areas. Bangkok is a consistent outlier ("High-Low") when performing Local Moran's I for several key indicators. 
+
+Phuket is also another region, although different analysis points to how its surrounding provinces have been impact (by covid) over time. While those provinces are ("High-High") on foreign revenue proportion, they have been shown to decline over time ("Sporadic coldspots"), with Phang Nga especially being an intensifying coldspot for proportion of tourists staying overnight. 
+
+Other regions include those in the middle (i.e. Uthai Thani), which are largely driven by domestic tourism in general. 
+

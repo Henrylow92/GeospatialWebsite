@@ -1,0 +1,15 @@
+{
+  "hash": "128070869e94d5cbf23d0fe9d9aea214",
+  "result": {
+    "engine": "knitr",
+    "markdown": "---\ntitle: \"Hands-On Exercise 07\"\nauthor: \"Henry Low\"\ndate: \"Sep 13 2024\"\ndate-modified: \"last-modified\"\nexecute:\n  evalu: true\n  echo: true\n  message: false\n  freeze: true\nformat: html\neditor: visual\n---\n\n::: {.cell}\n\n```{.r .cell-code}\npacman::p_load(olsrr, corrplot, ggpubr, sf, spdep, GWmodel, tmap, tidyverse, gtsummary)\n```\n\n::: {.cell-output .cell-output-stderr}\n\n```\nalso installing the dependencies 'nortest', 'xplorerr'\n```\n\n\n:::\n\n::: {.cell-output .cell-output-stderr}\n\n```\nWarning: unable to access index for repository http://www.stats.ox.ac.uk/pub/RWin/bin/windows/contrib/4.4:\n  cannot open URL 'http://www.stats.ox.ac.uk/pub/RWin/bin/windows/contrib/4.4/PACKAGES'\n```\n\n\n:::\n\n::: {.cell-output .cell-output-stdout}\n\n```\npackage 'nortest' successfully unpacked and MD5 sums checked\npackage 'xplorerr' successfully unpacked and MD5 sums checked\npackage 'olsrr' successfully unpacked and MD5 sums checked\n\nThe downloaded binary packages are in\n\tC:\\Users\\Henry\\AppData\\Local\\Temp\\RtmpYNHtZu\\downloaded_packages\n```\n\n\n:::\n\n::: {.cell-output .cell-output-stderr}\n\n```\n\nolsrr installed\n```\n\n\n:::\n\n::: {.cell-output .cell-output-stderr}\n\n```\nalso installing the dependencies 'cards', 'glue'\n```\n\n\n:::\n\n::: {.cell-output .cell-output-stderr}\n\n```\nWarning: unable to access index for repository http://www.stats.ox.ac.uk/pub/RWin/bin/windows/contrib/4.4:\n  cannot open URL 'http://www.stats.ox.ac.uk/pub/RWin/bin/windows/contrib/4.4/PACKAGES'\n```\n\n\n:::\n\n::: {.cell-output .cell-output-stdout}\n\n```\npackage 'cards' successfully unpacked and MD5 sums checked\npackage 'glue' successfully unpacked and MD5 sums checked\n```\n\n\n:::\n\n::: {.cell-output .cell-output-stderr}\n\n```\nWarning: cannot remove prior installation of package 'glue'\n```\n\n\n:::\n\n::: {.cell-output .cell-output-stderr}\n\n```\nWarning in file.copy(savedcopy, lib, recursive = TRUE): problem copying\nC:\\R-4.4.1\\library\\00LOCK\\glue\\libs\\x64\\glue.dll to\nC:\\R-4.4.1\\library\\glue\\libs\\x64\\glue.dll: Permission denied\n```\n\n\n:::\n\n::: {.cell-output .cell-output-stderr}\n\n```\nWarning: restored 'glue'\n```\n\n\n:::\n\n::: {.cell-output .cell-output-stdout}\n\n```\npackage 'gtsummary' successfully unpacked and MD5 sums checked\n\nThe downloaded binary packages are in\n\tC:\\Users\\Henry\\AppData\\Local\\Temp\\RtmpYNHtZu\\downloaded_packages\n```\n\n\n:::\n\n::: {.cell-output .cell-output-stderr}\n\n```\n\ngtsummary installed\n```\n\n\n:::\n\n::: {.cell-output .cell-output-stderr}\n\n```\nWarning in pacman::p_load(olsrr, corrplot, ggpubr, sf, spdep, GWmodel, tmap, : Failed to install/load:\ngtsummary\n```\n\n\n:::\n:::\n",
+    "supporting": [],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}
