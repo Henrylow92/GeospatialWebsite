@@ -45,10 +45,11 @@ I will be using the following R packages:\
 - `tidyverse` package for reading csv files, dataframe processing tasks \
 - `ggplot2` and `ggpubr` package for plotting statistical graphics \
 - `DT` and `crosstalk` package for visualizing results in a table format \
+- `plotly` and `Kendall` package for performing and visualizing Mann-Kendall Test \
 - `tmap` package for plotting tasks \
 
 ```{r}
-pacman::p_load(tidyverse, sfdep, sf, ggplot2, ggpubr, tmap, DT, crosstalk)
+pacman::p_load(tidyverse, sfdep, sf, ggplot2, ggpubr, tmap, DT, crosstalk, plotly, Kendall)
 ```
 
 ## 1.2 Loading Datasets
@@ -228,6 +229,12 @@ tbl_tourism_wide <- tbl_tourism_wide %>%
 # Check output
 summary(tbl_tourism_wide)
 ```
+
+```{r}
+# Save processed tbl_tourism_wide
+write_rds(tbl_tourism_wide, 'data/processed/tbl_tourism_wide.rds')
+```
+
 :::
 
 ### 1.2.3 Merge Tourism data
@@ -319,48 +326,48 @@ As expected, there is a large left skew, with majority of provinces generating m
 
 ```{r}
 # Visualize for tourist
-tourist_all <- ggplot(data=th_bound_tour_all, 
+map1 <- ggplot(data=th_bound_tour_all, 
                       aes(x=`no_tourist_all`)) +
   geom_histogram(bins=20, 
                  color="black", 
                  fill="light blue") + 
   labs(x = "Total Number of tourists")
 
-tourist_thai <- ggplot(data=th_bound_tour_all, 
+map2 <- ggplot(data=th_bound_tour_all, 
                       aes(x=`no_tourist_thai`)) +
   geom_histogram(bins=20, 
                  color="black", 
                  fill="light blue") + 
   labs(x = "Number of Thai tourists")
 
-tourist_foreign <- ggplot(data=th_bound_tour_all, 
+map3 <- ggplot(data=th_bound_tour_all, 
                       aes(x=`no_tourist_foreign`)) +
   geom_histogram(bins=20, 
                  color="black", 
                  fill="light blue") + 
   labs(x = "Number of Foreign tourists")
 
-ggarrange(tourist_all, tourist_thai, tourist_foreign, ncol = 3)
+ggarrange(map1, map2, map3, ncol = 3)
 ```
 
 Again, we see the same distribution for tourist count as compared to revenue. This is can be clearly illustrated when we plot both revenue and tourists as choropleth maps.
 
 ```{r, fig.width=12, fig.height=8}
-tourist.map <- tm_shape(th_bound_tour_all) + 
+map1 <- tm_shape(th_bound_tour_all) + 
   tm_fill(col = "no_tourist_all",
           n = 5,
           style = "jenks", 
           title = "Total Tourist") + 
   tm_borders(alpha = 0.5) 
 
-revenue.map <- tm_shape(th_bound_tour_all) + 
+map2 <- tm_shape(th_bound_tour_all) + 
   tm_fill(col = "revenue_all",
           n = 5,
           style = "jenks",
           title = "Total Revenue") + 
   tm_borders(alpha = 0.5) 
 
-tmap_arrange(tourist.map, revenue.map,
+tmap_arrange(map1, map2,
              asp=NA, ncol=2)
 ```
 
@@ -536,10 +543,10 @@ Although I have determined the neighbour list, there are also a few options to g
 | `st_kernel_weights`   | Weights based on kernel functions and distance   |
 | `st_inverse_distance` | Weights based on inverse distance between points |
 
-Given the context of tourism, I have decided to explore `st_weights` and `st_inverse_distance`. The rationale for both are as follows:
+Given the context of tourism, I have decided to focus on `st_weights`. The rationale is as follows:
 
 -   `st_weights` - ensure that all neighbours have equal influence
--   `st_inverse_distance` - distance is likely a factor especially for specific tourism indicators (i.e. local preferring areas that are closer for a quick getaway, affecting indicators involving overnight stays)
+-   `st_inverse_distance` - while it can be argued that distance is likely a factor especially for specific tourism indicators (i.e. local preferring areas that are closer for a quick getaway, affecting indicators involving overnight stays), it is not clear the extent to which it impacts the overall tourism industry.
 
 While performing `st_weights`, the style is less significant due to the adaptive nature of KNN. W is selected as the default style. Rationale for not choosing the other styles are as follows:
 
@@ -553,7 +560,6 @@ While performing `st_weights`, the style is less significant due to the adaptive
 th_tour_knn5_all <- th_bound_tour_all %>%
   mutate(nb = nb_knn_5,
          wt = st_weights(nb, style = "W"),
-         wt_inv = st_inverse_distance(include_self(nb), geometry = geometry, scale = 100, alpha = 1),
          .before = 1)
 ```
 
@@ -728,17 +734,21 @@ Therefore, with those indicators in mind I can conclude that Thailand's tourism 
 
 To determine whether the tourism indicators are independent of space and time, I will do the following:
 
-1.  Filter the respective datasets by specific time (Year/Year and month)
-2.  Append the neighbour list created in 3.1
-3.  Calculate the spatial weight matrix
-4.  Perform Global Moran's I for all KPIs
-5.  Consolidate the results of the Global Moran's I
+1.  Set seed
+2.  Filter the respective datasets by specific time (Year/Year and month)
+3.  Append the neighbour list created in 3.1
+4.  Calculate the spatial weight matrix
+5.  Perform Global Moran's I for all KPIs
+6.  Consolidate the results of the Global Moran's I
 
 Since this is very repetitive, I'll use a function to run this iteratively.
 
 ```{r}
 # Function to run global_moran_perm iteratively
-run_global_moran <- function(data, date_col, value, kpi_weight, kpi_inv_dist) {
+run_global_moran <- function(data, date_col, value, kpi_list) {
+  # Set seed
+  set.seed(42)
+
   # Filter sf dataframe
   filtered_data <- data %>%
     filter(!!sym(date_col) == value)
@@ -747,12 +757,10 @@ run_global_moran <- function(data, date_col, value, kpi_weight, kpi_inv_dist) {
   filtered_data <- filtered_data %>%
     mutate(nb = nb_knn_5,
            wt = st_weights(nb, style = "W"),
-           wt_inv = st_inverse_distance(include_self(nb), geometry = coords_cent, 
-                                        scale = 100, alpha = 1),
            .before = 1)
   
   # Run global_moran_perm for each KPI in kpi_weight list
-  results_wt <- lapply(kpi_weight, function(kpi) {
+  results <- lapply(kpi_list, function(kpi) {
     moran_output <- global_moran_perm(filtered_data[[kpi]],
                                       filtered_data$nb,
                                       filtered_data$wt,
@@ -764,21 +772,9 @@ run_global_moran <- function(data, date_col, value, kpi_weight, kpi_inv_dist) {
       )
   })
   
-  # Run global_moran_perm for each KPI in kpi_inv_dist list
-  results_inv_dist <- lapply(kpi_inv_dist, function(kpi) {
-    moran_output <- global_moran_perm(filtered_data[[kpi]],
-                                      filtered_data$nb,
-                                      filtered_data$wt_inv,
-                                      nsim = 999)
-    data.frame(
-      kpi = kpi,
-      statistic = mean(moran_output$res),
-      p_value = moran_output$p.value
-      )
-  })
   
   # Combine both results
-  results_df <- bind_rows(results_wt, results_inv_dist)
+  results_df <- bind_rows(results)
   
   results_df <- results_df %>%
     mutate(date = value,
@@ -792,28 +788,22 @@ run_global_moran <- function(data, date_col, value, kpi_weight, kpi_inv_dist) {
 
 On top of running the function a few additional steps are required:
 
-1.  Set seed
-2.  Define kpi lists
-3.  Define list of date to iterate
-4.  Consolidate output
+1.  Define kpi list
+2.  Define list of date to iterate
+3.  Consolidate output
 
 The output is also processed in a way that only replaces statistic values for those that are not significant (p_value \> 0.05), and pivot to a format for ease of visualization in a table.
 
-```{r, warning=FALSE}
-# Set Seed
-set.seed(42)
+```{r}
+#| eval: false # eval: false
 
-
-# List of KPIs using st_weights
-kpi_wt <- c(
+# List of KPIs
+kpi_list <- c(
   "revenue_all", "revenue_thai", "revenue_foreign", "revenue_thai_prop", "revenue_foreign_prop",
   "no_tourist_all", "no_tourist_thai", "no_tourist_foreign", "tourist_thai_prop", "tourist_foreign_prop",
   "revenue_tourist_all", "revenue_tourist_thai", "revenue_tourist_foreign", 
-  "ratio_tourist_stay" 
+  "ratio_tourist_stay", "no_tourist_stay", "revenue_tourist_stay", "tourist_stay_all" 
 )
-
-# List of KPIs using st_inverse_distance
-kpi_dist <- c("no_tourist_stay", "revenue_tourist_stay", "tourist_stay_all")
 
 # List of years to iterate
 year_list <- unique(th_bound_tour_year$year)
@@ -823,7 +813,7 @@ all_results <- list()
 
 for (year_val in year_list) {
   # Run function for each year
-  result <- run_global_moran(th_bound_tour_year, "year", year_val, kpi_wt, kpi_dist)
+  result <- run_global_moran(th_bound_tour_year, "year", year_val, kpi_list)
   
   # Append results to list
   all_results[[as.character(year_val)]] <- result
@@ -839,30 +829,46 @@ global_moran_year <- global_moran_year %>%
   pivot_wider(names_from = date, values_from = statistic)
 ```
 
+Results are saved for ease of rendering
+
+```{r}
+# # Export output object and read it in to minimize rendering time
+# write_rds(global_moran_year, 'data/output/global_moran_year.rds') # Uncomment when running the Global Moran's I again
+
+# Read in output object
+global_moran_year <- read_rds('data/output/global_moran_year.rds')
+```
+
 Now that the data is properly formatted, we can view the table with `datatable` from `DT` package.
 
 ```{r}
-datatable(global_moran_year, rownames=FALSE, extensions="Scroller", class="display", width="100%",
-            options=list(initComplete = JS(
+# datatable(global_moran_year, rownames=FALSE, extensions="Scroller", class="display", width="100%",
+#             options=list(initComplete = JS(
+#     "function(settings, json) {",
+#     "$('body').css({'font-family': 'sans-serif'});",
+#     "}"
+#   ), deferRender=TRUE, scrollY=300, scroller=TRUE))
+
+datatable(global_moran_year, rownames=FALSE, width="100%",
+            options=list(pageLength = 17, initComplete = JS(
     "function(settings, json) {",
-    "$('body').css({'font-family': 'sans-serif'});",
+    "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff', 'font-family': 'sans-serif'});",
+    "$(this.api().table().body()).css({'font-family': 'sans-serif'});",
     "}"
-  ), deferRender=TRUE, scrollY=300, scroller=TRUE))
+  )))
 ```
 
 As expected, the basic indicators do not show any statistically significant spatial autocorrelation. Nevertheless, although the engineered indicators are generally statistically significant across the years, they are negative and very close to 0. This suggests that there is an extremely weak dispersal.
 
 ### 3.3.2 Across Year and Month
 
-Simliar to the processes in 3.3.1, I will need to:
+Similiar to the processes in 3.3.1, I will need to:
 
-1.  Set seed
-2.  Define list of dates to iterate
-3.  Consolidate output
+1.  Define list of dates to iterate
+2.  Consolidate output
 
 ```{r}
-# Set seed
-set.seed(42)
+#| eval: false # eval: false
 
 # List of year and month to iterate
 year_month_list <- unique(th_bound_tour_year_month$date.y)
@@ -872,7 +878,7 @@ all_results <- list()
 
 for (year_month_val in year_month_list) {
   # Run function for each year
-  result <- run_global_moran(th_bound_tour_year_month, "date.y", year_month_val, kpi_wt, kpi_dist)
+  result <- run_global_moran(th_bound_tour_year_month, "date.y", year_month_val, kpi_list)
   
   # Append results to list
   all_results[[as.character(year_month_val)]] <- result
@@ -889,6 +895,8 @@ Additional data processing steps are required to format the data appropriately.
 3.  Pivot to a format for ease of visualization in a table.
 
 ```{r}
+#| eval: false # eval: false
+
 # Process output
 global_moran_year_month <- global_moran_year_month %>%
   mutate(date = as.Date.numeric(date),
@@ -897,6 +905,16 @@ global_moran_year_month <- global_moran_year_month %>%
          statistic = ifelse(p_value <= 0.05, round(statistic,3), "-")) %>%
   select(year, kpi, statistic, month) %>%
   pivot_wider(names_from = month, values_from = statistic)
+```
+
+Results are saved for ease of rendering
+
+```{r}
+# # Export output object and read it in to minimize rendering time
+# write_rds(global_moran_year_month, 'data/output/global_moran_year_month.rds') # Uncomment when running the Global Moran's I again
+
+# Read in output object
+global_moran_year_month <- read_rds('data/output/global_moran_year_month.rds')
 ```
 
 `crosstalk` package is then used to provide an interactive way of filtering the table
@@ -910,12 +928,13 @@ bscols(widths = c(12, 12),
   sharedData = shared, ~year
   ),
   
-  datatable(shared, rownames=FALSE, extensions="Scroller", class="display", width="100%",
-            options=list(initComplete = JS(
+  datatable(shared, rownames=FALSE, width="100%",
+            options=list(pageLength = 17, initComplete = JS(
     "function(settings, json) {",
-    "$('body').css({'font-family': 'sans-serif', 'font-size': '60%'});",
+    "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff', 'font-family': 'sans-serif'});",
+    "$(this.api().table().body()).css({'font-family': 'sans-serif'});",
     "}"
-  ), deferRender=TRUE, scrollY=300, scroller=TRUE))
+  )))
 )
 ```
 
@@ -925,7 +944,7 @@ Therefore, I can conclude that some key indicators of Thailand tourism economy a
 
 # 4 Local Spatial Autocorrelation Analysis of Thailand Tourism Key Indicators
 
-To identify where are clusters and outliers, `local_moran` of the `sfdep` package will be used. The indicators that will be analysed are those that have been proven to be spatially dependent. To ensure that analysis are mindfully conducted, the local spatial autocorrelation analysis will be done across space first. 
+To identify where are clusters and outliers, `local_moran` of the `sfdep` package will be used. The indicators that will be analysed are those that have been proven to be spatially dependent. To ensure that analysis are mindfully conducted, the local spatial autocorrelation analysis will be done across space first.
 
 Following which, carefully selected indicators will then be used with Local Moran's I across year and year and month.
 
@@ -935,18 +954,16 @@ Furthermore, While I can continue to do emerging hotspot analysis (EHSA) with `l
 
 The main tourism key indicators are revenue proportion (Thai vs Foreign), tourist proportion (Thai vs Foreign), Revenue/Tourist (all tourist, Thai, Foreign), and Overnight Guest (revenue/overnight guest, proportion of tourists who stayed overnight)
 
-A similar process will be conducted iteratively for each key indicator
-1. Set seed
-2. Run Local Moran's I
-3. Visualize Local Moran's I statistics and p-value from Step 2
-4. Filter results by p-value <= 0.05
-5. Visualize LISA chart from Step 4
+A similar process will be conducted iteratively for each key indicator 1. Set seed 2. Run Local Moran's I 3. Visualize Local Moran's I statistics and p-value from Step 2 4. Filter results by p-value \<= 0.05 5. Visualize LISA chart from Step 4
 
 ::: panel-tabset
-
 # Revenue
 
 ```{r, fig.height=12, fig.width=8}
+#| warning: false
+# Set seed
+set.seed(24)
+
 # Thai Revenue Proportion
 lisa_th <- th_tour_knn5_all %>%
   mutate(local_moran = local_moran(
@@ -961,6 +978,7 @@ lisa_fr <- th_tour_knn5_all %>%
     .before = 1) %>%
   unnest(local_moran)
 
+# Visualize statistics and p-value plots for all key indicators together 
 tmap_mode("plot")
 map1 <- tm_shape(lisa_th) +
   tm_fill("ii") + 
@@ -995,13 +1013,17 @@ map4 <- tm_shape(lisa_fr) +
 
 tmap_arrange(map1, map2, map3, map4, ncol = 2, nrow = 2)
 ```
+
 ```{r, fig.height=12, fig.width=8}
+#| warning: false
+
+# Filter output for only those that are statistically significant
 lisa_th_sig <- lisa_th  %>%
   filter(p_ii_sim < 0.05)
 lisa_fr_sig <- lisa_fr  %>%
   filter(p_ii_sim < 0.05)
 
-
+# Visualize LISA maps for both Key indicators side by side
 tmap_mode("plot")
 map1 <- tm_shape(lisa_th) +
   tm_polygons() +
@@ -1023,10 +1045,14 @@ map2 <- tm_shape(lisa_fr) +
 
 tmap_arrange(map1, map2, ncol = 2)
 ```
+
 # Tourist
 
-
 ```{r, fig.height=12, fig.width=8}
+#| warning: false
+# Set seed
+set.seed(24)
+
 # Thai Tourist Proportion
 lisa_th <- th_tour_knn5_all %>%
   mutate(local_moran = local_moran(
@@ -1041,6 +1067,7 @@ lisa_fr <- th_tour_knn5_all %>%
     .before = 1) %>%
   unnest(local_moran)
 
+# Visualize statistics and p-value plots for both key indicators together 
 tmap_mode("plot")
 map1 <- tm_shape(lisa_th) +
   tm_fill("ii") + 
@@ -1076,14 +1103,16 @@ map4 <- tm_shape(lisa_fr) +
 tmap_arrange(map1, map2, map3, map4, ncol = 2, nrow = 2)
 ```
 
-
 ```{r, fig.height=12, fig.width=8}
+#| warning: false
+
+# Filter output for only those that are statistically significant
 lisa_th_sig <- lisa_th  %>%
   filter(p_ii_sim < 0.05)
 lisa_fr_sig <- lisa_fr  %>%
   filter(p_ii_sim < 0.05)
 
-
+# Visualize LISA maps for both Key indicators side by side
 tmap_mode("plot")
 map1 <- tm_shape(lisa_th) +
   tm_polygons() +
@@ -1108,8 +1137,11 @@ tmap_arrange(map1, map2, ncol = 2)
 
 # Revenue/Tourist
 
-
 ```{r, fig.height=12, fig.width=8}
+#| warning: false
+# Set seed
+set.seed(24)
+
 # Revenue/Tourist
 lisa_all <- th_tour_knn5_all %>%
   mutate(local_moran = local_moran(
@@ -1131,6 +1163,7 @@ lisa_fr <- th_tour_knn5_all %>%
     .before = 1) %>%
   unnest(local_moran)
 
+# Visualize statistics and p-value plots for all key indicators together 
 tmap_mode("plot")
 map1 <- tm_shape(lisa_all) +
   tm_fill("ii") + 
@@ -1182,6 +1215,9 @@ tmap_arrange(map1, map2, map3, map4, map5, map6, ncol = 2, nrow = 3)
 ```
 
 ```{r, fig.height=12, fig.width=8}
+#| warning: false
+
+# Filter output for only those that are statistically significant
 lisa_all_sig <- lisa_all  %>%
   filter(p_ii_sim < 0.05)
 lisa_th_sig <- lisa_th  %>%
@@ -1189,7 +1225,7 @@ lisa_th_sig <- lisa_th  %>%
 lisa_fr_sig <- lisa_fr  %>%
   filter(p_ii_sim < 0.05)
 
-
+# Visualize LISA maps for all Key indicators side by side
 tmap_mode("plot")
 map1 <- tm_shape(lisa_all) +
   tm_polygons() +
@@ -1221,10 +1257,13 @@ map3 <- tm_shape(lisa_fr) +
 tmap_arrange(map1, map2, map3, ncol = 3)
 ```
 
-
 # Overnight Guest
 
 ```{r, fig.height=12, fig.width=8}
+#| warning: false
+# Set seed
+set.seed(24)
+
 # Revenue/Overnight Guest
 lisa_og <- th_tour_knn5_all %>%
   mutate(local_moran = local_moran(
@@ -1239,6 +1278,7 @@ lisa_ogp <- th_tour_knn5_all %>%
     .before = 1) %>%
   unnest(local_moran)
 
+# Visualize statistics and p-value plots for both key indicators together 
 tmap_mode("plot")
 map1 <- tm_shape(lisa_og) +
   tm_fill("ii") + 
@@ -1274,14 +1314,16 @@ map4 <- tm_shape(lisa_ogp) +
 tmap_arrange(map1, map2, map3, map4, ncol = 2, nrow = 2)
 ```
 
-
 ```{r, fig.height=12, fig.width=8}
+#| warning: false
+
+# Filter output for only those that are statistically significant
 lisa_og_sig <- lisa_og  %>%
   filter(p_ii_sim < 0.05)
 lisa_ogp_sig <- lisa_ogp  %>%
   filter(p_ii_sim < 0.05)
 
-
+# Visualize LISA maps for both Key indicators side by side
 tmap_mode("plot")
 map1 <- tm_shape(lisa_og) +
   tm_polygons() +
@@ -1305,16 +1347,18 @@ tmap_arrange(map1, map2, ncol = 2)
 ```
 :::
 
-While not unexpected, aklds;akdsl;fakdl;sfk;a
+Unsurprisingly the plots for Revenue and Tourist are very similar. Nevertheless, they serve as a good indictor to show regions that are largely driven by foreign tourism ("High-High" on foreign proportion - near Phuket) and regions that are largely driven by domestic tourism ("High-High" on Thai proportion - near Nakhon Sawan).
 
+The revenue spent per tourist highlights Bangkok as an outlier ("High-High") for both foreign and Thai tourists, signifying its status as a key tourist destination. Comparing the expenditure per Tourist for both foreign and Thai tourists, Khon Kaen stands out ("High-Low") for Thai tourist, suggesting a local tourist destination. Phatthalung stands out as "Low-High", suggesting that it is not as attractive to foreign tourists.
+
+Looking at overnight guest indicators, while the revenue/overnight guests presents similar clusters as those in revenue/tourist, proportion of guests staying overnight highlights other insights. The "Low-High" of Phang Nga affirms the EDA hypothesis of tourists behaviour - wherein they are likely to center their trip around Phuket and making day trips to provinces around. Bangkok showing up as "High-Low" further cements its status as a main tourist destination.
 
 ## 4.2 Local Moran's I across Space and Time (Year)
 
 Given the iterative process and charts, I created a function to generate the LISA chart. Using another function that iterates across different years, I can then visualize the changes with `tmap_animation`. While the Local Moran's I and p-value charts are not shown, it is believed that the main takeaway of the Local Moran's I is in the LISA chart (in order to identify clusters and outliers).
 
-
 ```{r}
-# Function to 
+# Function to generate LISA maps
 local_moran_space <- function(data, col, value, kpi) {
   # Set Seed
   set.seed(42)
@@ -1322,13 +1366,6 @@ local_moran_space <- function(data, col, value, kpi) {
   # Filter sf dataframe
   filtered_data <- data %>%
     filter(!!sym(col) == value)
-  
-  lisa_ogp <- th_tour_knn5_all %>%
-  mutate(local_moran = local_moran(
-    tourist_stay_all, nb, wt, nsim = 999),
-    .before = 1) %>%
-  unnest(local_moran)
-  
   
   # Append neighbour list and calculate spatial weight matrix
   filtered_data <- filtered_data %>%
@@ -1340,25 +1377,12 @@ local_moran_space <- function(data, col, value, kpi) {
            .before = 1) %>%
     unnest(local_moran)
   
-  # map1 <- tm_shape(filtered_data) +
-  #   tm_fill("ii") + 
-  #   tm_borders(alpha = 0.5) +
-  #   tm_view(set.zoom.limits = c(6,8)) +
-  #   tm_layout(main.title = paste0("local Moran's I ",kpi," (",value, ")"),
-  #             main.title.size = 0.8)
-  # 
-  # map2 <- tm_shape(filtered_data) +
-  #   tm_fill("p_ii",
-  #         breaks = c(0, 0.001, 0.01, 0.05, 1),
-  #             labels = c("0.001", "0.01", "0.05", "Not sig")) + 
-  #   tm_borders(alpha = 0.5) +
-  #   tm_layout(main.title = paste0("p-value of local Moran's I ",kpi," (",value, ")"),
-  #             main.title.size = 0.8)
-  
+  # Filter out non-significant results
   filter_sig <- filtered_data  %>%
     filter(p_ii_sim < 0.05)
   
-  map3 <- tm_shape(filtered_data) +
+  # Visualize clusters with LISA map
+  map1 <- tm_shape(filtered_data) +
     tm_polygons() +
     tm_borders(alpha = 0.5) +
     tm_shape(filter_sig) +
@@ -1368,21 +1392,12 @@ local_moran_space <- function(data, col, value, kpi) {
               main.title.size = 0.4,
               legend.text.size = 0.3,
               legend.title.size = 0.4)
-    # tm_layout(main.title = paste0("LISA Map of ",kpi," (",value, ")"),
-    #       main.title.size = 0.8)
-  
-  # all_map <- tmap_arrange(map1, map2, map3, ncol = 3)
-  # return(all_map)
-  # return(list(map1 = map1, map2 = map2, map3 = map3))
+
   return(map3)
 }
-
 ```
 
-
-
-:::panel-tabset
-
+::: panel-tabset
 # Revenue
 
 First, the animated chart for "revenue_thai_prop" has to be created.
@@ -1435,7 +1450,6 @@ And now I can visualize the gif.
 knitr::include_graphics("images/animated_revenue_foreign_prop_year.gif")
 ```
 
-
 # Revenue/Tourist
 
 In Revenue/Tourist, I am interested in "revenue_tourist_all", "revenue_tourist_thai" and "revenue_tourist_foreign". Lets create and view the gif for each of them.
@@ -1460,7 +1474,6 @@ tmap_animation(all_local_moran_maps, filename = "images/animated_revenue_tourist
 # Visualize gif
 knitr::include_graphics("images/animated_revenue_tourist_all_year.gif")
 ```
-
 
 ```{r}
 #| eval: false # eval: false
@@ -1504,7 +1517,6 @@ tmap_animation(all_local_moran_maps, filename = "images/animated_revenue_tourist
 knitr::include_graphics("images/animated_revenue_tourist_foreign_year.gif")
 ```
 
-
 # Overnight Guest
 
 Finally, for overnight guest key indicators, I'm interested in how the LISA chart will act for "revenue_tourist_stay" and "tourist_stay_all".
@@ -1530,7 +1542,6 @@ tmap_animation(all_local_moran_maps, filename = "images/animated_revenue_tourist
 knitr::include_graphics("images/animated_revenue_tourist_stay_year.gif")
 ```
 
-
 ```{r}
 #| eval: false # eval: false
 all_local_moran_maps <- lapply(year_list, function(value) {
@@ -1551,25 +1562,22 @@ tmap_animation(all_local_moran_maps, filename = "images/animated_tourist_stay_al
 # Visualize gif
 knitr::include_graphics("images/animated_tourist_stay_all_year.gif")
 ```
-
 :::
 
 When looking at the revenue proportion for Foreign tourists, I can see a group of provinces surrounding Phuket (exhibiting "high-high" behaviour across the years. They in turn are then surrounded by provinces exhibiting "low-high" for 2019-2020. In 2022, Krabi changed from "high-high" to "low-low", suggesting the impact of Covid on how foreign tourists not travelling less further from Phuket. Provinces intersperse around the middle of Thailand are "low-low" throughout the years, highlighting how tourism is driven by domestic travel in those provinces.
 
 Looking at revenue per tourists, Bangkok is highlighted as "High-low" from 2019-2022. Zooming into foreign revenue per foreign tourist, Kachanaburi (border province) shows up as "High-low" during 2020. This could be because of Covid, more revenue generated from foreign tourists travelling across the border. A sizable number of provinces around the middle of Thailand are "low-low" throughout the years, for both foreign and Thai tourists, suggesting that either tourists do not spend much in those areas or goods and services are much cheaper in those areas.
 
-
-
+Insert evaluation
 
 ## 4.3 Local Moran's I across Space and Time (Year and Month)
 
-asdaadsads
+A slight adjustment when performing Local Moran's I across year and month is to reference the appropriate sf dataframe, the corresponding date column and list of dates. They have been used earlier when performing Global Moran's I, therefore I am able to reuse those objects. Key indicators used will mirror that of 4.2 for consistency.
 
-:::panel-tabset
-
+::: panel-tabset
 # Revenue
 
-asadsad
+In Revenue, I will still be looking at "revenue_thai_prop" and "revenue_foreign_prop"
 
 ```{r}
 #| eval: false # eval: false
@@ -1587,13 +1595,10 @@ tmap_animation(all_local_moran_maps, filename = "images/animated_revenue_thai_pr
                width = 1000, height = 1000, dpi = 300, delay = 50)
 ```
 
-
 ```{r}
 # Visualize gif
 knitr::include_graphics("images/animated_revenue_thai_prop_year_month.gif")
 ```
-
-adsdads
 
 ```{r}
 #| eval: false # eval: false
@@ -1611,16 +1616,14 @@ tmap_animation(all_local_moran_maps, filename = "images/animated_revenue_foreign
                width = 1000, height = 1000, dpi = 300, delay = 50)
 ```
 
-
 ```{r}
 # Visualize gif
 knitr::include_graphics("images/animated_revenue_foreign_prop_year_month.gif")
 ```
 
-
 # Revenue/Tourist
 
-adsaads
+In Revenue/Tourist, I am interested in "revenue_tourist_all", "revenue_tourist_thai" and "revenue_tourist_foreign". Lets create and view the gif for each of them.
 
 ```{r}
 #| eval: false # eval: false
@@ -1643,8 +1646,6 @@ tmap_animation(all_local_moran_maps, filename = "images/animated_revenue_tourist
 knitr::include_graphics("images/animated_revenue_tourist_all_year_month.gif")
 ```
 
-asasd
-
 ```{r}
 #| eval: false # eval: false
 all_local_moran_maps <- lapply(year_month_list, function(value) {
@@ -1665,8 +1666,6 @@ tmap_animation(all_local_moran_maps, filename = "images/animated_revenue_tourist
 # Visualize gif
 knitr::include_graphics("images/animated_revenue_tourist_thai_year_month.gif")
 ```
-
-adsadsdsa
 
 ```{r}
 #| eval: false # eval: false
@@ -1689,10 +1688,9 @@ tmap_animation(all_local_moran_maps, filename = "images/animated_revenue_tourist
 knitr::include_graphics("images/animated_revenue_tourist_foreign_year_month.gif")
 ```
 
-
 # Overnight Guest
 
-adsa
+Likewise, I will do the same for the "revenue_tourist_stay" and "tourist_stay_all".
 
 ```{r}
 #| eval: false # eval: false
@@ -1715,7 +1713,6 @@ tmap_animation(all_local_moran_maps, filename = "images/animated_revenue_tourist
 knitr::include_graphics("images/animated_revenue_tourist_stay_year_month.gif")
 ```
 
-
 ```{r}
 #| eval: false # eval: false
 all_local_moran_maps <- lapply(year_month_list, function(value) {
@@ -1736,10 +1733,9 @@ tmap_animation(all_local_moran_maps, filename = "images/animated_tourist_stay_al
 # Visualize gif
 knitr::include_graphics("images/animated_tourist_stay_all_year_month.gif")
 ```
-
 :::
 
-
+Insert evaluation
 
 # 5 Spatio-Temporal Analysis of Thailand Tourism Key Indicators
 
@@ -1747,10 +1743,437 @@ As follows:
 
 ## 5.1 Preprocessing
 
+```{r}
+# Load geospatial data
+th_bound <- st_read(dsn = "data/tha_adm_rtsd_itos_20210121_shp/", layer = "tha_admbnda_adm1_rtsd_20220121") %>%
+  st_transform(crs = 32647)
+
+# Load processed aspatial data
+th_aspatial <- read_rds('data/processed/tbl_tourism_wide.rds') %>%
+  mutate(date_int = year(date)*12 + month(date)) %>%
+  rename(ADM1_EN = province_eng)
+
+# Create spacetime cube
+th_bound_spt <- spacetime(th_aspatial, th_bound, .loc_col = "ADM1_EN", .time_col = "date_int")
+
+
+# Check spacetime cube
+is_spacetime_cube(th_bound_spt)
+```
+
+```{r}
+th_bound_nb <- th_bound_spt %>%
+  activate("geometry") %>%
+  mutate(nb = include_self(nb_knn_5),
+         wt = st_weights(nb),
+         .before = 1) %>%
+  set_nbs("nb") %>%
+  set_wts("wt")
+```
+
+
 ## 5.2 Mann-Kendall
+
+```{r}
+# Function to run Mann-Kendall iteratively
+mann_kendall_function <- function(data, kpi) {
+  # Set seed
+  set.seed(42)
+  
+  # Compute Gi*
+  gi_stars <- data %>%
+    group_by(date) %>%
+    mutate(gi_star = local_gstar_perm(!!sym(kpi), nb, wt)) %>%
+    tidyr::unnest(gi_star)
+  
+  # Perform Mann-Kendall for each Province
+  ehsa <- gi_stars %>%
+    group_by(ADM1_EN) %>%
+    summarise(mk = list(unclass(Kendall::MannKendall(gi_star)))) %>%
+    tidyr::unnest_wider(mk)
+  
+  # Proces output
+  emerging <- ehsa %>%
+    arrange(sl, abs(tau))
+  
+  return(emerging)
+}
+
+```
+
+
+:::panel-tabset
+
+# Revenue
+
+```{r}
+# Run for foreign revenue proportion
+emerging <- mann_kendall_function(th_bound_nb, "revenue_foreign_prop")
+
+# Visualize output
+datatable(emerging, rownames=FALSE, width="100%",
+            options=list(initComplete = JS(
+    "function(settings, json) {",
+    "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff', 'font-family': 'sans-serif'});",
+    "$(this.api().table().body()).css({'font-family': 'sans-serif'});",
+    "}"
+  )))
+```
+
+```{r}
+# Run for thai revenue proportion
+emerging <- mann_kendall_function(th_bound_nb, "revenue_thai_prop")
+
+# Visualize output
+datatable(emerging, rownames=FALSE, width="100%",
+            options=list(initComplete = JS(
+    "function(settings, json) {",
+    "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff', 'font-family': 'sans-serif'});",
+    "$(this.api().table().body()).css({'font-family': 'sans-serif'});",
+    "}"
+  )))
+```
+
+
+# Revenue/Tourist
+
+```{r}
+# Run for revenue/tourist
+emerging <- mann_kendall_function(th_bound_nb, "revenue_tourist_all")
+
+# Visualize output
+datatable(emerging, rownames=FALSE, width="100%",
+            options=list(initComplete = JS(
+    "function(settings, json) {",
+    "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff', 'font-family': 'sans-serif'});",
+    "$(this.api().table().body()).css({'font-family': 'sans-serif'});",
+    "}"
+  )))
+```
+
+```{r}
+# Run for revenue/tourist (Thai)
+emerging <- mann_kendall_function(th_bound_nb, "revenue_tourist_thai")
+
+# Visualize output
+datatable(emerging, rownames=FALSE, width="100%",
+            options=list(initComplete = JS(
+    "function(settings, json) {",
+    "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff', 'font-family': 'sans-serif'});",
+    "$(this.api().table().body()).css({'font-family': 'sans-serif'});",
+    "}"
+  )))
+```
+
+```{r}
+# Run for revenue/tourist (Foreign)
+emerging <- mann_kendall_function(th_bound_nb, "revenue_tourist_foreign")
+
+# Visualize output
+datatable(emerging, rownames=FALSE, width="100%",
+            options=list(initComplete = JS(
+    "function(settings, json) {",
+    "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff', 'font-family': 'sans-serif'});",
+    "$(this.api().table().body()).css({'font-family': 'sans-serif'});",
+    "}"
+  )))
+```
+
+# Overnight Guest
+
+```{r}
+# Run for revenue/overnight guest
+emerging <- mann_kendall_function(th_bound_nb, "revenue_tourist_stay")
+
+# Visualize output
+datatable(emerging, rownames=FALSE, width="100%",
+            options=list(initComplete = JS(
+    "function(settings, json) {",
+    "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff', 'font-family': 'sans-serif'});",
+    "$(this.api().table().body()).css({'font-family': 'sans-serif'});",
+    "}"
+  )))
+```
+
+```{r}
+# Run for proportion of tourist who stay overnight
+emerging <- mann_kendall_function(th_bound_nb, "tourist_stay_all")
+
+# Visualize output
+datatable(emerging, rownames=FALSE, width="100%",
+            options=list(initComplete = JS(
+    "function(settings, json) {",
+    "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff', 'font-family': 'sans-serif'});",
+    "$(this.api().table().body()).css({'font-family': 'sans-serif'});",
+    "}"
+  )))
+```
+
+:::
+
+
+Insert evaluation
 
 ## 5.3 Emerging Hotspot Analysis
 
+```{r}
+# Category List 
+category_list <- c("consecutive coldspot", "consecutive hotspot", "new coldspot", "new hotspot", "no pattern detected", "intensifying coldspot", "intensifying hotspot", "oscilating coldspot", "oscilating hotspot", "persistent coldspot", "persistent hotspot", "sporadic coldspot", "sporadic hotspot"
+)
+
+# Color List
+color_list <- c("#83CBEB", "#FF6161", "#DCEAF7", "#FFB3B3", "#7F7F7F", "#4E95D9", "#FF0101",
+  "#D86ECB", "#F87306", "#104862", "#C00000", "#F2CFEE", "#FCB67C")
+
+# Color Mapping Function
+color_mapping <- function(category_list, color_list, mapping) {
+  color <- rep(NA, length(mapping))
+  for (i in seq_along(mapping))
+  {
+    match_index <- match(mapping[i], category_list)
+    if (!is.na(match_index)) {
+      color[i] <- color_list[match_index]
+    }
+  }
+  return(color)
+}
+```
+
+```{r}
+# Visualize ehsa
+ehsa_fun <- function(ehsa) {
+
+  hist <- ggplot(data = ehsa,
+                 aes(x = classification)) +
+    geom_bar() +
+    coord_flip()
+  
+  th_ehsa <- th_bound %>%
+    left_join(ehsa, by = join_by(ADM1_EN == location))
+  
+  color_mapping <- color_mapping(category_list, color_list, sort(unique(th_ehsa$classification)))
+  
+  plot(hist)
+  
+  th_ehsa_sig <- th_ehsa  %>%
+    filter(p_value < 0.05)
+  
+  tm_shape(th_ehsa) +
+    tm_polygons() +
+    tm_borders(alpha = 0.5) +
+    tm_shape(th_ehsa_sig) +
+    tm_fill("classification", title = "Classification", palette = color_mapping) + 
+    tm_borders(alpha = 0.4)
+}
+
+```
+
+:::panel-tabset
+
+# Revenue
+
+```{r}
+#| eval: false # eval: false
+
+# Set seed
+set.seed(42)
+
+# Run emerging hotspot analysis
+ehsa <- emerging_hotspot_analysis(x = th_bound_spt, .var = "revenue_thai_prop", k = 1, nsim = 99)
+```
+
+Results are saved for ease of rendering
+
+```{r}
+# # Export output object and read it in to minimize rendering time
+# write_rds(ehsa, 'data/output/ehsa_revenue_thai_prop.rds') # Uncomment when running the ehsa again
+
+# Read in output object
+ehsa <- read_rds('data/output/ehsa_revenue_thai_prop.rds')
+```
+
+```{r, fig.height = 12, fig.width=8}
+#| warning: false 
+
+# Visualize for Thai Revenue Proportion
+ehsa_fun(ehsa)
+```
+
+```{r}
+#| eval: false # eval: false
+
+# Set seed
+set.seed(42)
+
+# Run emerging hotspot analysis
+ehsa <- emerging_hotspot_analysis(x = th_bound_spt, .var = "revenue_foreign_prop", k = 1, nsim = 99)
+```
+
+Results are saved for ease of rendering
+
+```{r}
+# # Export output object and read it in to minimize rendering time
+# write_rds(ehsa, 'data/output/ehsa_revenue_foreign_prop.rds') # Uncomment when running the ehsa again
+
+# Read in output object
+ehsa <- read_rds('data/output/ehsa_revenue_foreign_prop.rds')
+```
+
+```{r, fig.height = 12, fig.width=8}
+#| warning: false 
+
+# Visualize for Foreign Revenue Proportion
+ehsa_fun(ehsa)
+```
+
+# Revenue/Tourist
+
+
+```{r}
+#| eval: false # eval: false
+
+# Set seed
+set.seed(42)
+
+# Run emerging hotspot analysis
+ehsa <- emerging_hotspot_analysis(x = th_bound_spt, .var = "revenue_tourist_all", k = 1, nsim = 99)
+```
+
+Results are saved for ease of rendering
+
+```{r}
+# # Export output object and read it in to minimize rendering time
+# write_rds(ehsa, 'data/output/ehsa_revenue_tourist_all.rds') # Uncomment when running the ehsa again
+
+# Read in output object
+ehsa <- read_rds('data/output/ehsa_revenue_tourist_all.rds')
+```
+
+```{r, fig.height = 12, fig.width=8}
+#| warning: false 
+
+# Visualize for Revenue/Tourist
+ehsa_fun(ehsa)
+```
+
+
+```{r}
+#| eval: false # eval: false
+
+# Set seed
+set.seed(42)
+
+# Run emerging hotspot analysis
+ehsa <- emerging_hotspot_analysis(x = th_bound_spt, .var = "revenue_tourist_thai", k = 1, nsim = 99)
+```
+
+Results are saved for ease of rendering
+
+```{r}
+# # Export output object and read it in to minimize rendering time
+# write_rds(ehsa, 'data/output/ehsa_revenue_tourist_thai.rds') # Uncomment when running the ehsa again
+
+# Read in output object
+ehsa <- read_rds('data/output/ehsa_revenue_tourist_thai.rds')
+```
+
+```{r, fig.height = 12, fig.width=8}
+#| warning: false 
+
+# Visualize for Revenue/Tourist (Thai)
+ehsa_fun(ehsa)
+```
+
+
+```{r}
+#| eval: false # eval: false
+
+# Set seed
+set.seed(42)
+
+# Run emerging hotspot analysis
+ehsa <- emerging_hotspot_analysis(x = th_bound_spt, .var = "revenue_tourist_foreign", k = 1, nsim = 99)
+```
+
+Results are saved for ease of rendering
+
+```{r}
+# # Export output object and read it in to minimize rendering time
+# write_rds(ehsa, 'data/output/ehsa_revenue_tourist_foreign.rds') # Uncomment when running the ehsa again
+
+# Read in output object
+ehsa <- read_rds('data/output/ehsa_revenue_tourist_foreign.rds')
+```
+
+```{r, fig.height = 12, fig.width=8}
+#| warning: false 
+
+# Visualize for Revenue/Tourist (Foreign)
+ehsa_fun(ehsa)
+```
+
+
+# Overnight Guest
+
+```{r}
+#| eval: false # eval: false
+
+# Set seed
+set.seed(42)
+
+# Run emerging hotspot analysis
+ehsa <- emerging_hotspot_analysis(x = th_bound_spt, .var = "revenue_tourist_stay", k = 1, nsim = 99)
+```
+
+Results are saved for ease of rendering
+
+```{r}
+# # Export output object and read it in to minimize rendering time
+# write_rds(ehsa, 'data/output/ehsa_revenue_tourist_stay.rds') # Uncomment when running the ehsa again
+
+# Read in output object
+ehsa <- read_rds('data/output/ehsa_revenue_tourist_stay.rds')
+```
+
+```{r, fig.height = 12, fig.width=8}
+#| warning: false 
+
+# Visualize for Revenue/Overnight Guest
+ehsa_fun(ehsa)
+```
+
+
+```{r}
+#| eval: false # eval: false
+
+# Set seed
+set.seed(42)
+
+# Run emerging hotspot analysis
+ehsa <- emerging_hotspot_analysis(x = th_bound_spt, .var = "tourist_stay_all", k = 1, nsim = 99)
+```
+
+Results are saved for ease of rendering
+
+```{r}
+# # Export output object and read it in to minimize rendering time
+# write_rds(ehsa, 'data/output/ehsa_tourist_stay_all.rds') # Uncomment when running the ehsa again
+
+# Read in output object
+ehsa <- read_rds('data/output/ehsa_tourist_stay_all.rds')
+```
+
+```{r, fig.height = 12, fig.width=8}
+#| warning: false 
+
+# Visualize for Proportion fo Tourists who stay overnight
+ehsa_fun(ehsa)
+```
+
+:::
+
+Insert evaluation
+
 # 6 Conclusion
 
-
+Insert evaluation

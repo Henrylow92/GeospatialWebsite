@@ -522,3 +522,66 @@ G, F and L functions will be explored as they can each give useful insights:\
               nb[[phuket_index]] <- c(nearest_region_index)
               nb[[nearest_region_index]] <- c(nb[[nearest_region_index]], phuket_index)
               ```
+              
+              
+              # Function to 
+              local_moran_space <- function(data, col, value, kpi) {
+                # Set Seed
+                set.seed(42)
+                
+                # Filter sf dataframe
+                filtered_data <- data %>%
+                  filter(!!sym(col) == value)
+                
+                lisa_ogp <- th_tour_knn5_all %>%
+                  mutate(local_moran = local_moran(
+                    tourist_stay_all, nb, wt, nsim = 999),
+                    .before = 1) %>%
+                  unnest(local_moran)
+                
+                
+                # Append neighbour list and calculate spatial weight matrix
+                filtered_data <- filtered_data %>%
+                  mutate(nb = nb_knn_5,
+                         wt = st_weights(nb, style = "W"),
+                         wt_inv = st_inverse_distance(include_self(nb), geometry = coords_cent, 
+                                                      scale = 100, alpha = 1),
+                         local_moran = local_moran(!!sym(kpi), nb, wt, nsim = 999),
+                         .before = 1) %>%
+                  unnest(local_moran)
+                
+                # map1 <- tm_shape(filtered_data) +
+                #   tm_fill("ii") + 
+                #   tm_borders(alpha = 0.5) +
+                #   tm_view(set.zoom.limits = c(6,8)) +
+                #   tm_layout(main.title = paste0("local Moran's I ",kpi," (",value, ")"),
+                #             main.title.size = 0.8)
+                # 
+                # map2 <- tm_shape(filtered_data) +
+                #   tm_fill("p_ii",
+                #         breaks = c(0, 0.001, 0.01, 0.05, 1),
+                #             labels = c("0.001", "0.01", "0.05", "Not sig")) + 
+                #   tm_borders(alpha = 0.5) +
+                #   tm_layout(main.title = paste0("p-value of local Moran's I ",kpi," (",value, ")"),
+                #             main.title.size = 0.8)
+                
+                filter_sig <- filtered_data  %>%
+                  filter(p_ii_sim < 0.05)
+                
+                map3 <- tm_shape(filtered_data) +
+                  tm_polygons() +
+                  tm_borders(alpha = 0.5) +
+                  tm_shape(filter_sig) +
+                  tm_fill("mean") + 
+                  tm_borders(alpha = 0.4) + 
+                  tm_layout(main.title = paste0("LISA Map of ",kpi," (",value, ")"),
+                            main.title.size = 0.4,
+                            legend.text.size = 0.3,
+                            legend.title.size = 0.4)
+                # tm_layout(main.title = paste0("LISA Map of ",kpi," (",value, ")"),
+                #       main.title.size = 0.8)
+                
+                # all_map <- tmap_arrange(map1, map2, map3, ncol = 3)
+                # return(all_map)
+                # return(list(map1 = map1, map2 = map2, map3 = map3))
+                return(map3)
