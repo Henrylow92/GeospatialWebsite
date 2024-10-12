@@ -474,8 +474,20 @@ After closely viewing the plot, all points from `st_centroid` are within the int
 # st_contiguity
 
 ```{r}
+#| eval: false # eval: false
+
 # Calculate neighbours
 nb_contiguity <- st_contiguity(th_bound_tour_all$geometry)
+```
+
+Results are saved for ease of rendering
+
+```{r}
+# # Export output object and read it in to minimize rendering time
+# write_rds(nb_contiguity, 'data/output/nb_contiguity.rds') # Uncomment when running again
+
+# Read in output object
+nb_contiguity <- read_rds('data/output/nb_contiguity.rds')
 
 # Check output
 nb_contiguity
@@ -490,8 +502,19 @@ plot(nb_contiguity, coords_cent, pch = 19, cex = 0.6, add = TRUE, col = "red")
 # st_dist_band
 
 ```{r}
+#| eval: false # eval: false
 # Calculate neighbours
 nb_dist <- st_dist_band(th_bound_tour_all$geometry)
+```
+
+Results are saved for ease of rendering
+
+```{r}
+# # Export output object and read it in to minimize rendering time
+# write_rds(nb_dist, 'data/output/nb_dist.rds') # Uncomment when running again
+
+# Read in output object
+nb_dist <- read_rds('data/output/nb_dist.rds')
 
 # Check output
 nb_dist
@@ -513,6 +536,20 @@ $$ Just for variety, k = 5 (average number from `st_contiguity`) is also run.
 # Calculate neighbours
 nb_knn_8 <- st_knn(th_bound_tour_all$geometry, k = 8)
 nb_knn_5 <- st_knn(th_bound_tour_all$geometry, k = 5)
+
+
+```
+
+Results are saved for ease of rendering
+
+```{r}
+# # # Export output object and read it in to minimize rendering time
+# write_rds(nb_knn_8, 'data/output/nb_knn_8.rds') # Uncomment when running again
+# write_rds(nb_knn_5, 'data/output/nb_knn_5.rds') # Uncomment when running again
+
+# Read in output object
+nb_knn_8 <- read_rds('data/output/nb_knn_8.rds')
+nb_knn_5 <- read_rds('data/output/nb_knn_5.rds')
 
 # Check output
 nb_knn_8
@@ -928,7 +965,7 @@ bscols(widths = c(12, 12),
   sharedData = shared, ~year
   ),
   
-  datatable(shared, rownames=FALSE, width="100%",
+  datatable(shared, rownames=FALSE,
             options=list(pageLength = 17, initComplete = JS(
     "function(settings, json) {",
     "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff', 'font-family': 'sans-serif'});",
@@ -1014,7 +1051,7 @@ map4 <- tm_shape(lisa_fr) +
 tmap_arrange(map1, map2, map3, map4, ncol = 2, nrow = 2)
 ```
 
-```{r, fig.height=12, fig.width=8}
+```{r, fig.height=8, fig.width=6}
 #| warning: false
 
 # Filter output for only those that are statistically significant
@@ -1031,7 +1068,7 @@ map1 <- tm_shape(lisa_th) +
   tm_shape(lisa_th_sig) +
   tm_fill("mean") + 
   tm_borders(alpha = 0.4) + 
-  tm_layout(main.title = "LISA Map of Thai Revenue Proportion across Province",
+  tm_layout(main.title = "LISA Map of Thai Revenue Proportion",
           main.title.size = 0.8)
 
 map2 <- tm_shape(lisa_fr) +
@@ -1040,7 +1077,7 @@ map2 <- tm_shape(lisa_fr) +
   tm_shape(lisa_fr_sig) +
   tm_fill("mean") + 
   tm_borders(alpha = 0.4) + 
-  tm_layout(main.title = "LISA Map of Foreign Revenue Proportion across Province",
+  tm_layout(main.title = "LISA Map of Foreign Revenue Proportion",
           main.title.size = 0.8)
 
 tmap_arrange(map1, map2, ncol = 2)
@@ -1048,7 +1085,7 @@ tmap_arrange(map1, map2, ncol = 2)
 
 # Tourist
 
-```{r, fig.height=12, fig.width=8}
+```{r, fig.height=8, fig.width=6}
 #| warning: false
 # Set seed
 set.seed(24)
@@ -1103,7 +1140,7 @@ map4 <- tm_shape(lisa_fr) +
 tmap_arrange(map1, map2, map3, map4, ncol = 2, nrow = 2)
 ```
 
-```{r, fig.height=12, fig.width=8}
+```{r, fig.height=8, fig.width=6}
 #| warning: false
 
 # Filter output for only those that are statistically significant
@@ -1120,7 +1157,7 @@ map1 <- tm_shape(lisa_th) +
   tm_shape(lisa_th_sig) +
   tm_fill("mean") + 
   tm_borders(alpha = 0.4) + 
-  tm_layout(main.title = "LISA Map of Thai Tourist Proportion across Province",
+  tm_layout(main.title = "LISA Map of Thai Tourist Proportion",
           main.title.size = 0.8)
 
 map2 <- tm_shape(lisa_fr) +
@@ -1129,7 +1166,7 @@ map2 <- tm_shape(lisa_fr) +
   tm_shape(lisa_fr_sig) +
   tm_fill("mean") + 
   tm_borders(alpha = 0.4) + 
-  tm_layout(main.title = "LISA Map of Foreign Tourist Proportion across Province",
+  tm_layout(main.title = "LISA Map of Foreign Tourist Proportion",
           main.title.size = 0.8)
 
 tmap_arrange(map1, map2, ncol = 2)
@@ -1137,7 +1174,7 @@ tmap_arrange(map1, map2, ncol = 2)
 
 # Revenue/Tourist
 
-```{r, fig.height=12, fig.width=8}
+```{r, fig.height=8, fig.width=6}
 #| warning: false
 # Set seed
 set.seed(24)
@@ -1214,7 +1251,7 @@ map6 <- tm_shape(lisa_fr) +
 tmap_arrange(map1, map2, map3, map4, map5, map6, ncol = 2, nrow = 3)
 ```
 
-```{r, fig.height=12, fig.width=8}
+```{r, fig.height=8, fig.width=6}
 #| warning: false
 
 # Filter output for only those that are statistically significant
@@ -1233,7 +1270,7 @@ map1 <- tm_shape(lisa_all) +
   tm_shape(lisa_all_sig) +
   tm_fill("mean") + 
   tm_borders(alpha = 0.4) + 
-  tm_layout(main.title = "LISA Map of Revenue/Tourist across Province",
+  tm_layout(main.title = "LISA Map of Revenue/Tourist",
           main.title.size = 0.8)
 
 map2 <- tm_shape(lisa_th) +
@@ -1242,7 +1279,7 @@ map2 <- tm_shape(lisa_th) +
   tm_shape(lisa_th_sig) +
   tm_fill("mean") + 
   tm_borders(alpha = 0.4) + 
-  tm_layout(main.title = "LISA Map of Revenue/Tourist (Thai) across Province",
+  tm_layout(main.title = "LISA Map of Revenue/Tourist (Thai)",
           main.title.size = 0.8)
 
 map3 <- tm_shape(lisa_fr) +
@@ -1251,7 +1288,7 @@ map3 <- tm_shape(lisa_fr) +
   tm_shape(lisa_fr_sig) +
   tm_fill("mean") + 
   tm_borders(alpha = 0.4) + 
-  tm_layout(main.title = "LISA Map of Revenue/Tourist (Foreign) across Province",
+  tm_layout(main.title = "LISA Map of Revenue/Tourist (Foreign)",
           main.title.size = 0.8)
 
 tmap_arrange(map1, map2, map3, ncol = 3)
@@ -1259,7 +1296,7 @@ tmap_arrange(map1, map2, map3, ncol = 3)
 
 # Overnight Guest
 
-```{r, fig.height=12, fig.width=8}
+```{r, fig.height=8, fig.width=6}
 #| warning: false
 # Set seed
 set.seed(24)
@@ -1314,7 +1351,7 @@ map4 <- tm_shape(lisa_ogp) +
 tmap_arrange(map1, map2, map3, map4, ncol = 2, nrow = 2)
 ```
 
-```{r, fig.height=12, fig.width=8}
+```{r, fig.height=8, fig.width=6}
 #| warning: false
 
 # Filter output for only those that are statistically significant
@@ -1331,7 +1368,7 @@ map1 <- tm_shape(lisa_og) +
   tm_shape(lisa_og_sig) +
   tm_fill("mean") + 
   tm_borders(alpha = 0.4) + 
-  tm_layout(main.title = "LISA Map of Revenue/Overnight Guest across Province",
+  tm_layout(main.title = "LISA Map of Revenue/Overnight Guest",
           main.title.size = 0.8)
 
 map2 <- tm_shape(lisa_ogp) +
@@ -1340,7 +1377,7 @@ map2 <- tm_shape(lisa_ogp) +
   tm_shape(lisa_ogp_sig) +
   tm_fill("mean") + 
   tm_borders(alpha = 0.4) + 
-  tm_layout(main.title = "LISA Map of Overnight Tourist Proportion across Province",
+  tm_layout(main.title = "LISA Map of Overnight Tourist Proportion",
           main.title.size = 0.8)
 
 tmap_arrange(map1, map2, ncol = 2)
@@ -1953,7 +1990,7 @@ ehsa_fun <- function(ehsa) {
   
   color_mapping <- color_mapping(category_list, color_list, sort(unique(th_ehsa$classification)))
   
-  plot(hist)
+  # plot(hist)
   
   th_ehsa_sig <- th_ehsa  %>%
     filter(p_value < 0.05)
@@ -1962,8 +1999,16 @@ ehsa_fun <- function(ehsa) {
     tm_polygons() +
     tm_borders(alpha = 0.5) +
     tm_shape(th_ehsa_sig) +
-    tm_fill("classification", title = "Classification", palette = color_mapping) + 
-    tm_borders(alpha = 0.4)
+    tm_fill("classification", title = "Classification", palette = color_mapping,
+            legend.hist = TRUE, legend.hist.z = 0.1) + 
+    tm_borders(alpha = 0.4) +
+    tm_layout(main.title = "Emerging Hotspots & Coldspots",
+              main.title.position = "center",
+              main.title.size = 0.8,
+              main.title.fontface = "bold",
+              legend.title.size = 0.6,
+              legend.text.size = 0.6,
+              legend.hist.width = 0.5)
 }
 
 ```
@@ -1992,7 +2037,7 @@ Results are saved for ease of rendering
 ehsa <- read_rds('data/output/ehsa_revenue_thai_prop.rds')
 ```
 
-```{r, fig.height = 12, fig.width=8}
+```{r, fig.height = 8, fig.width=6}
 #| warning: false 
 
 # Visualize for Thai Revenue Proportion
@@ -2019,7 +2064,7 @@ Results are saved for ease of rendering
 ehsa <- read_rds('data/output/ehsa_revenue_foreign_prop.rds')
 ```
 
-```{r, fig.height = 12, fig.width=8}
+```{r, fig.height = 8, fig.width=6}
 #| warning: false 
 
 # Visualize for Foreign Revenue Proportion
@@ -2049,7 +2094,7 @@ Results are saved for ease of rendering
 ehsa <- read_rds('data/output/ehsa_revenue_tourist_all.rds')
 ```
 
-```{r, fig.height = 12, fig.width=8}
+```{r, fig.height = 8, fig.width=6}
 #| warning: false 
 
 # Visualize for Revenue/Tourist
@@ -2077,7 +2122,7 @@ Results are saved for ease of rendering
 ehsa <- read_rds('data/output/ehsa_revenue_tourist_thai.rds')
 ```
 
-```{r, fig.height = 12, fig.width=8}
+```{r, fig.height = 8, fig.width=6}
 #| warning: false 
 
 # Visualize for Revenue/Tourist (Thai)
@@ -2105,7 +2150,7 @@ Results are saved for ease of rendering
 ehsa <- read_rds('data/output/ehsa_revenue_tourist_foreign.rds')
 ```
 
-```{r, fig.height = 12, fig.width=8}
+```{r, fig.height = 8, fig.width=6}
 #| warning: false 
 
 # Visualize for Revenue/Tourist (Foreign)
@@ -2135,7 +2180,7 @@ Results are saved for ease of rendering
 ehsa <- read_rds('data/output/ehsa_revenue_tourist_stay.rds')
 ```
 
-```{r, fig.height = 12, fig.width=8}
+```{r, fig.height = 8, fig.width=6}
 #| warning: false 
 
 # Visualize for Revenue/Overnight Guest
@@ -2163,7 +2208,7 @@ Results are saved for ease of rendering
 ehsa <- read_rds('data/output/ehsa_tourist_stay_all.rds')
 ```
 
-```{r, fig.height = 12, fig.width=8}
+```{r, fig.height = 8, fig.width=6}
 #| warning: false 
 
 # Visualize for Proportion fo Tourists who stay overnight
