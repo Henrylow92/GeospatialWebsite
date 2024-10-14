@@ -1,7 +1,7 @@
 ---
-title: "In Class Exercise 03"
+title: "In Class Exercise 07"
 author: "Henry Low"
-date: "Aug 26 2024"
+date: "Oct 14 2024"
 date-modified: "last-modified"
 execute:
   evalu: true
@@ -13,3 +13,308 @@ editor: visual
 ---
 
 TBC
+
+# Setting Up
+
+## Load Packages
+
+```{r}
+pacman::p_load(olsrr, ggstatsplot, corrplot, performance, see, ggpubr, sf, sfdep, GWmodel, tmap, tidyverse, gtsummary)
+```
+
+## Import geospatial data
+
+```{r}
+# Import geospatial data
+mpsz = st_read(dsn = "data/geospatial", layer = "MP14_SUBZONE_WEB_PL") %>%
+  st_transform(3414)
+```
+
+```{r}
+# Import aspatial data
+condo_resale = read_csv("data/aspatial/Condo_resale_2015.csv")
+
+# Check imported data
+glimpse(condo_resale)
+```
+
+Since the file is in csv, there is no metadata to indicate what the CRS is. Therefore, I need to assign a CRS first (4326) before doing the projection. The "4326" is best guess estimate and in practice I would have to plot to see if the coordinates fall within the expected plot to verify.
+
+```{r}
+# Convert tibble to sf 
+condo_resale.sf <- st_as_sf(condo_resale,
+                            coords = c("LONGITUDE", "LATITUDE"),
+                            crs=4326) %>%
+  st_transform(crs=3414)
+
+# Check result
+head(condo_resale.sf)
+```
+
+```{r}
+
+write_rds(condo_resale.sf, "data/processed/condo_resale.sf.rds")
+write_rds(mpsz, "data/processed/mpsz.rds")
+```
+
+```{r, fig.height=10, fig.width=12}
+ggcorrmat(condo_resale[, 5:23])
+```
+
+Dont need to worry about VIF for K-means, but it is important in multiple linear regression.
+
+## Build Linear Regression Model
+
+```{r}
+# Build multiple lienar regression model
+condo.mlr <- lm(formula = SELLING_PRICE ~ AREA_SQM + AGE    + 
+                  PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE +
+                  PROX_URA_GROWTH_AREA + PROX_HAWKER_MARKET + PROX_KINDERGARTEN + 
+                  PROX_MRT  + PROX_PARK + PROX_PRIMARY_SCH + 
+                  PROX_TOP_PRIMARY_SCH + PROX_SHOPPING_MALL + PROX_SUPERMARKET + 
+                  PROX_BUS_STOP + NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD + LEASEHOLD_99YR,  # Add in LEASEHOLD_99YR to test VIF later
+                data=condo_resale.sf)
+
+# Check results
+summary(condo.mlr)
+```
+
+Output is an LM object with various important information - residual: to be used later in geospatial - fitted value: estimated price
+
+`olsrr` package is very useful
+
+```{r}
+ols_regress(condo.mlr)
+```
+
+From the report, it is clear that not all variables are statistically significant.
+
+### Multicolinearity Test
+
+```{r}
+ols_vif_tol(condo.mlr)
+```
+
+Even though FREEHOLD and LEASEHOLD_99YR is highly correlated, since VIF shows that they are \<5, we dont have to remove either one.
+
+### Variable Selection
+
+1.  Forward stepwise - Include 1 by 1.
+2.  Backward stepwise - Remove 1 by 1/
+3.  Mix stepwise - take out with replacement
+
+Normally we use forward_p since we want to focus on the variable being statistically significant.
+
+```{r}
+condo_fw_mlr <- ols_step_forward_p(
+  condo.mlr,
+  p_val = 0.05,
+  details = FALSE # True if want to see the output each step
+)
+```
+
+Checking the results, I can just print the output.
+
+```{r}
+condo_fw_mlr
+```
+
+```{r, fig.height=10, fig.width=12}
+plot(condo_fw_mlr)
+```
+
+### Normality Assumption Test
+
+### Non-Linearity Test
+
+Testing the forward stepwise regression model created for linear assumption Assumption.
+
+```{r}
+ols_plot_resid_fit(condo_fw_mlr$model)
+```
+
+Since majority of the point hover around the red line, it means that the model conforms to the linearity assumption.
+
+```{r}
+ols_plot_resid_hist(condo_fw_mlr$model)
+```
+
+This shows that the residual resembles a normal distribution.
+
+```{r}
+ols_test_normality(condo_fw_mlr$model)
+```
+
+### Testing for Spatial Autocorrelation
+
+```{r}
+mlr_output <- as.data.frame(condo_fw_mlr$model$residuals) %>%
+  rename(`FW_MLR_RES` = `condo_fw_mlr$model$residuals`)
+```
+
+Then i'll join the dataframe with condo_resale_sf object.
+
+```{r}
+condo_resale_sf <- cbind(condo_resale.sf, mlr_output$FW_MLR_RES) %>%
+  rename(`MLR_RES` = `mlr_output.FW_MLR_RES`)
+```
+
+Finally, i will use tmap to display the distribution of the residuals on an interactive map.
+
+```{r}
+# Set to interactive
+tmap_mode("view")
+
+# Visualzize point symbol map
+tm_shape(mpsz)+
+  tmap_options(check.and.fix = TRUE) +
+  tm_polygons(alpha = 0.4) +
+tm_shape(condo_resale_sf) + 
+  tm_dots(col = "MLR_RES",
+          alpha = 0.6,
+          style = "quantile") 
+
+# Check tmap mode back to plot
+tmap_mode("plot")
+```
+
+The map looks like there are some spatial autocorrelation. Lets check. Spatial weights are created with `sfdep` package with `st_weights()` on the neighbour list created with `st_knn()`. Longlat is set to be FALSE because we dont want it to do the projection.
+
+```{r}
+condo_resale_sf <- condo_resale_sf %>%
+  mutate(nb = st_knn(geometry, k = 6, longlat = FALSE),
+         wt = st_weights(nb, style = "W"),
+         .before = 1)
+```
+
+```{r}
+# Set seed
+set.seed(42)
+
+
+a <- global_moran_perm(condo_resale_sf$MLR_RES,
+                  condo_resale_sf$nb,
+                  condo_resale_sf$wt,
+                  alternative = "two.sided",
+                  nsim = 99)
+```
+
+```{r}
+hist(a$res)
+```
+
+## Build Fixed Bandwith GWR Model
+
+```{r}
+bw_fixed <- bw.gwr(formula = SELLING_PRICE ~ AREA_SQM + AGE + 
+                     PROX_CBD + PROX_CHILDCARE + 
+                     PROX_ELDERLYCARE + PROX_URA_GROWTH_AREA + 
+                     PROX_MRT + PROX_PARK + PROX_PRIMARY_SCH + 
+                     PROX_SHOPPING_MALL + PROX_BUS_STOP + 
+                     NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD,
+                   data = condo_resale_sf,
+                   approach = "CV",
+                   kernel="gaussian",
+                   adaptive = FALSE,
+                   longlat=FALSE)
+```
+
+```{r}
+gwr_fixed <- gwr.basic(formula = SELLING_PRICE ~ AREA_SQM + AGE + 
+                     PROX_CBD + PROX_CHILDCARE + 
+                     PROX_ELDERLYCARE + PROX_URA_GROWTH_AREA + 
+                     PROX_MRT + PROX_PARK + PROX_PRIMARY_SCH + 
+                     PROX_SHOPPING_MALL + PROX_BUS_STOP + 
+                     NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD,
+                   data = condo_resale_sf,
+                   bw = bw_fixed,
+                   kernel="gaussian",
+                   adaptive = FALSE,
+                   longlat=FALSE)
+
+# Check results
+gwr_fixed
+```
+
+R-square improved form 0.64 to 0.84, which is very significant. The output contains a SDF dataframe which has a lot of useful information.
+
+To better visualize the coefficients, 
+
+```{r}
+gwr_fixed_output <- as.data.frame(gwr_fixed$SDF) %>%
+  select(-c(2:15)) # To remove redundant variables
+```
+
+```{r}
+gwr_sf_fixed <- cbind(condo_resale_sf,
+                      gwr_fixed_output)
+```
+
+## Build Adaptive Bandwidth GWR Model
+
+```{r}
+bw_adaptive <- bw.gwr(formula = SELLING_PRICE ~ AREA_SQM + AGE + 
+                     PROX_CBD + PROX_CHILDCARE + 
+                     PROX_ELDERLYCARE + PROX_URA_GROWTH_AREA + 
+                     PROX_MRT + PROX_PARK + PROX_PRIMARY_SCH + 
+                     PROX_SHOPPING_MALL + PROX_BUS_STOP + 
+                     NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD,
+                   data = condo_resale_sf,
+                   approach = "CV",
+                   kernel="gaussian",
+                   adaptive = TRUE,
+                   longlat=FALSE)
+```
+
+
+
+```{r}
+gwr_adaptive <- gwr.basic(formula = SELLING_PRICE ~ AREA_SQM + AGE + 
+                     PROX_CBD + PROX_CHILDCARE + 
+                     PROX_ELDERLYCARE + PROX_URA_GROWTH_AREA + 
+                     PROX_MRT + PROX_PARK + PROX_PRIMARY_SCH + 
+                     PROX_SHOPPING_MALL + PROX_BUS_STOP + 
+                     NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD,
+                   data = condo_resale_sf,
+                   bw = bw_adaptive,
+                   kernel="gaussian",
+                   adaptive = TRUE,
+                   longlat=FALSE)
+
+# Check results
+gwr_adaptive
+```
+
+
+
+
+```{r}
+gwr_adaptive_output <- as.data.frame(gwr_adaptive$SDF) %>%
+  select(-c(2:15)) # To remove redundant variables
+```
+
+```{r}
+gwr_sf_adaptive <- cbind(condo_resale_sf,
+                      gwr_adaptive_output)
+
+# Check result
+glimpse(gwr_sf_adaptive)
+```
+
+```{r}
+summary(gwr_sf_adaptive$yhat)
+```
+
+
+
+```{r}
+
+tm_shape(mpsz)+
+  tm_polygons()+
+tm_shape(gwr_sf_adaptive) + 
+  tm_bubbles(col = "Local_R2",
+           size = 0.15,
+           border.col = "gray60",
+           border.lwd = 1)
+```
+
