@@ -12,23 +12,50 @@ format: html
 editor: visual
 ---
 
-TBC
+# Data Sources
+
+*(saved under 'data' folder)*\
+From [data.gov.sg](https://data.gov.sg/):\
+- [Master Plan 2014 Subzone Boundary (Web) (SHP)](https://data.gov.sg/datasets?query=Master+Plan+2014+Subzone+Boundary&page=1&resultId=d_d14da225fccf921049ab64238ff473d9)
+
+Others:\
+condo_resale_2015 in csv format (i.e. condo_resale_2015.csv)
 
 # Setting Up
 
 ## Load Packages
 
+-   `sf` package to perform geospatial wrangling tasks 
+-   `corrplot` package for multivariate data visualisation and analysis 
+-   `tidyverse` package for reading csv files, dataframe processing tasks 
+-   `ggpubr` package to assist in plotting 
+-   `performance` package to ?
+-   `ggpubr` package to assist in plotting 
+-   `olsrr` package for building OLS and performing diagnostics tests 
+-   `GWModel` package for calibrating geographical weighted family of models 
+-   `tmap` package for plotting tasks 
+
 ```{r}
-pacman::p_load(olsrr, ggstatsplot, corrplot, performance, see, ggpubr, sf, sfdep, GWmodel, tmap, tidyverse, gtsummary)
+pacman::p_load(olsrr, GWmodel, 
+               performance,
+               sfdep, 
+               tidyverse, sf,
+               ggstatsplot, corrplot, tmap, gtsummary, ggpubr, see)
 ```
 
 ## Import geospatial data
+
+Lets import the geospatial data, remembering to do the projection to 3414.
 
 ```{r}
 # Import geospatial data
 mpsz = st_read(dsn = "data/geospatial", layer = "MP14_SUBZONE_WEB_PL") %>%
   st_transform(3414)
 ```
+
+## Importing Aspatial data
+
+Lets import the aspatial data and check it.
 
 ```{r}
 # Import aspatial data
@@ -51,19 +78,46 @@ condo_resale.sf <- st_as_sf(condo_resale,
 head(condo_resale.sf)
 ```
 
-```{r}
+## Save processed datasets
 
+Now once basic data processing is completed, I will proceed to save it in rds format for easy retrieval.
+
+```{r}
+write_rds(condo_resale, "data/processed/condo_resale.rds")
 write_rds(condo_resale.sf, "data/processed/condo_resale.sf.rds")
 write_rds(mpsz, "data/processed/mpsz.rds")
 ```
 
+# Exploratory Data Analysis (EDA)
+
+First, I'll clear the R cache and load in the datasets
+
+```{r}
+# Clear R console
+rm(list = ls(all.names = TRUE))
+
+# Load datasets
+condo_resale <- read_rds("data/processed/condo_resale.rds")
+condo_resale.sf <- read_rds("data/processed/condo_resale.sf.rds")
+mpsz <- read_rds("data/processed/mpsz.rds")
+```
+
+`ggcorrmat()` from `ggstatsplot` package is used to build the correlation matrix
+
 ```{r, fig.height=10, fig.width=12}
+# Build correlation matrix
 ggcorrmat(condo_resale[, 5:23])
 ```
 
+::: note
 Dont need to worry about VIF for K-means, but it is important in multiple linear regression.
+:::
 
-## Build Linear Regression Model
+From this, we can see that there is very high correlation between LEASEHOLD_99YR and FREEHOLD. But does this matter? We will find later.
+
+# Building Multiple Linear Regression Model
+
+`lm()` is used to create the multiple linear regression model. After that, `summary()` is used to check the results
 
 ```{r}
 # Build multiple lienar regression model
@@ -79,25 +133,39 @@ condo.mlr <- lm(formula = SELLING_PRICE ~ AREA_SQM + AGE    +
 summary(condo.mlr)
 ```
 
+::: note
 Output is an LM object with various important information - residual: to be used later in geospatial - fitted value: estimated price
+:::
 
-`olsrr` package is very useful
+# Model Assessment (Olsrr)
+
+In this section, we will make use of `olsrr()`. It has a variety of useful methods to build better models.
+
+## Tidy Report
+
+First, `ols_regress()` will be used to print out a nice report.
 
 ```{r}
+# Print report
 ols_regress(condo.mlr)
 ```
 
 From the report, it is clear that not all variables are statistically significant.
 
-### Multicolinearity Test
+## Multicolinearity Test
+
+`ols_vif_tol()` is then used to check for multicolinearity.
 
 ```{r}
+# Multicolinearity Test
 ols_vif_tol(condo.mlr)
 ```
 
 Even though FREEHOLD and LEASEHOLD_99YR is highly correlated, since VIF shows that they are \<5, we dont have to remove either one.
 
-### Variable Selection
+## Variable Selection
+
+For variable selection, olsrr provides a few options
 
 1.  Forward stepwise - Include 1 by 1.
 2.  Backward stepwise - Remove 1 by 1/
@@ -106,6 +174,7 @@ Even though FREEHOLD and LEASEHOLD_99YR is highly correlated, since VIF shows th
 Normally we use forward_p since we want to focus on the variable being statistically significant.
 
 ```{r}
+# Forward stepwise regression
 condo_fw_mlr <- ols_step_forward_p(
   condo.mlr,
   p_val = 0.05,
@@ -115,46 +184,70 @@ condo_fw_mlr <- ols_step_forward_p(
 
 Checking the results, I can just print the output.
 
-```{r}
+```{r, fig.height = 10, fig.width=12}
 condo_fw_mlr
 ```
+
+The `plot()` function can be used to see how the statistical results change with each step.
 
 ```{r, fig.height=10, fig.width=12}
 plot(condo_fw_mlr)
 ```
 
-### Normality Assumption Test
+Model parameters can also be visualised with `ggcoefstats()`
 
-### Non-Linearity Test
+```{r, fig.height = 10, fig.width=12}
+# Plot coefficient statistics
+ggcoefstats(condo_fw_mlr$model, sort = "ascending")
+```
 
-Testing the forward stepwise regression model created for linear assumption Assumption.
+## Non-Linearity Test
+
+In the context of multiple linear regression, it is important to test model created to ensure that the assumption that linearity and additivity of the relationship between dependent and independent variables hold.
+
+`ols_plot_resid_fit()` from `olsrr` package is used to visualise the relationship between residual and fitted values
 
 ```{r}
+# Plot residual vs fitted values
 ols_plot_resid_fit(condo_fw_mlr$model)
 ```
 
 Since majority of the point hover around the red line, it means that the model conforms to the linearity assumption.
 
+## Normality Assumption Test
+
+`ols_plot_resid_hist()` is then used to test the normality assumption.
+
 ```{r}
+# Normality assumption test visualization
 ols_plot_resid_hist(condo_fw_mlr$model)
 ```
 
-This shows that the residual resembles a normal distribution.
+This shows that the residual resembles a normal distribution. Another way of doing this test is using `ols_test-normality()`.
 
 ```{r}
+# Alternative normality assumption test
 ols_test_normality(condo_fw_mlr$model)
 ```
 
-### Testing for Spatial Autocorrelation
+Since the summary table shows the p-values of all tests being smaller than alpha value of 0.05, I can reject the null hypothesis and infer that there is statistical evidence that residuals are not normally distributed.
+
+## Spatial Autocorrelation Test
+
+Since the context of hedonic modelling is for geospatial analysis, we need to visualize the residual of the model
+
+First, I will export the residual and save it as a dataframe.
 
 ```{r}
+# Export residual
 mlr_output <- as.data.frame(condo_fw_mlr$model$residuals) %>%
   rename(`FW_MLR_RES` = `condo_fw_mlr$model$residuals`)
 ```
 
-Then i'll join the dataframe with condo_resale_sf object.
+Then I'll join the dataframe with condo_resale_sf object.
 
 ```{r}
+# Join residual dataframe with sf dataframe
 condo_resale_sf <- cbind(condo_resale.sf, mlr_output$FW_MLR_RES) %>%
   rename(`MLR_RES` = `mlr_output.FW_MLR_RES`)
 ```
@@ -178,34 +271,52 @@ tm_shape(condo_resale_sf) +
 tmap_mode("plot")
 ```
 
-The map looks like there are some spatial autocorrelation. Lets check. Spatial weights are created with `sfdep` package with `st_weights()` on the neighbour list created with `st_knn()`. Longlat is set to be FALSE because we dont want it to do the projection.
+The map looks like there are some spatial autocorrelation. More investigation needs to be done.
+
+## Spatial Stationary Test
+
+To prove that there are indeed spatial autocorrelation, Moran's I test will be used. Spatial weights are created with `sfdep` package with `st_weights()` on the neighbour list created with `st_knn()`. Longlat is set to be FALSE because we dont want it to do the projection.
 
 ```{r}
+# Create spatial weights
 condo_resale_sf <- condo_resale_sf %>%
   mutate(nb = st_knn(geometry, k = 6, longlat = FALSE),
          wt = st_weights(nb, style = "W"),
          .before = 1)
 ```
 
+`global_moran_perm()` from `sfdep` package will then be used to perform the global Moran's I test.
+
 ```{r}
 # Set seed
 set.seed(42)
 
-
-a <- global_moran_perm(condo_resale_sf$MLR_RES,
+# Perform Global Moran's I test
+global_moran <- global_moran_perm(condo_resale_sf$MLR_RES,
                   condo_resale_sf$nb,
                   condo_resale_sf$wt,
                   alternative = "two.sided",
                   nsim = 99)
+global_moran
 ```
 
-```{r}
-hist(a$res)
-```
+Since the observed Global Moran's I test shows that the p-value is less than the alpha value of 0.05, I will reject the null hypothesis that the residuals are randomly distributed. With a observed global Moran I test statistic of 0.32254, which is greater than 0, I can infer that the residuals resemble cluster distribution.
+
+# Building Hedonic Pricing Models (GWmodel)
+
+In this section, I will model hedonic pricing with a geographically weighted regression model.
 
 ## Build Fixed Bandwith GWR Model
 
+`bw.gwr()` from `GWmodel` package is used to determine the optiaml fixed bandwidth for the model. While there are 2 ways to determine the stopping rule:
+
+-   CV - cross-validatiation approach
+-   AIC - AIC corrected (AICc) approach
+
+I will use CV method.
+
 ```{r}
+# Calculate optimal fixed bandwidth
 bw_fixed <- bw.gwr(formula = SELLING_PRICE ~ AREA_SQM + AGE + 
                      PROX_CBD + PROX_CHILDCARE + 
                      PROX_ELDERLYCARE + PROX_URA_GROWTH_AREA + 
@@ -219,7 +330,12 @@ bw_fixed <- bw.gwr(formula = SELLING_PRICE ~ AREA_SQM + AGE +
                    longlat=FALSE)
 ```
 
+This shows that the recommended bandwidth is 971.3405 meters. ::: note See st_crs - CS length is in meters :::
+
+Now the fixed bandwidth can be used to calibrate the model with `gwr.basic()`. The output is saved as a class `gwrm`. We can check it by printing. It contains a SDF dataframe which has a lot of useful information.
+
 ```{r}
+# Calibrate model with fixed bandwidth
 gwr_fixed <- gwr.basic(formula = SELLING_PRICE ~ AREA_SQM + AGE + 
                      PROX_CBD + PROX_CHILDCARE + 
                      PROX_ELDERLYCARE + PROX_URA_GROWTH_AREA + 
@@ -236,23 +352,14 @@ gwr_fixed <- gwr.basic(formula = SELLING_PRICE ~ AREA_SQM + AGE +
 gwr_fixed
 ```
 
-R-square improved form 0.64 to 0.84, which is very significant. The output contains a SDF dataframe which has a lot of useful information.
-
-To better visualize the coefficients, 
-
-```{r}
-gwr_fixed_output <- as.data.frame(gwr_fixed$SDF) %>%
-  select(-c(2:15)) # To remove redundant variables
-```
-
-```{r}
-gwr_sf_fixed <- cbind(condo_resale_sf,
-                      gwr_fixed_output)
-```
+R-square improved form 0.64 to 0.84, which is very significant.
 
 ## Build Adaptive Bandwidth GWR Model
 
+Now, I will repeat the same but for adaptive bandwidth this time.
+
 ```{r}
+# Select optimal adaptive bandwidth
 bw_adaptive <- bw.gwr(formula = SELLING_PRICE ~ AREA_SQM + AGE + 
                      PROX_CBD + PROX_CHILDCARE + 
                      PROX_ELDERLYCARE + PROX_URA_GROWTH_AREA + 
@@ -265,8 +372,6 @@ bw_adaptive <- bw.gwr(formula = SELLING_PRICE ~ AREA_SQM + AGE +
                    adaptive = TRUE,
                    longlat=FALSE)
 ```
-
-
 
 ```{r}
 gwr_adaptive <- gwr.basic(formula = SELLING_PRICE ~ AREA_SQM + AGE + 
@@ -285,15 +390,28 @@ gwr_adaptive <- gwr.basic(formula = SELLING_PRICE ~ AREA_SQM + AGE +
 gwr_adaptive
 ```
 
+## Visualizing GWR Output
 
+As mentioned earlier, the output feature class table contains many useful information
 
+-   Condition Number: this diagnostic evaluates local collinearity. In the presence of strong local collinearity, results become unstable. Results associated with condition numbers larger than 30, may be unreliable.
+-   Local R2: these values range between 0.0 and 1.0 and indicate how well the local regression model fits observed y values. Very low values indicate the local model is performing poorly. Mapping the Local R2 values to see where GWR predicts well and where it predicts poorly may provide clues about important variables that may be missing from the regression model.
+-   Predicted: these are the estimated (or fitted) y values 3. computed by GWR.
+-   Residuals: to obtain the residual values, the fitted y values are subtracted from the observed y values. Standardized residuals have a mean of zero and a standard deviation of 1. A cold-to-hot rendered map of standardized residuals can be produce by using these values.
+-   Coefficient Standard Error: these values measure the reliability of each coefficient estimate. Confidence in those estimates are higher when standard errors are small in relation to the actual coefficient values. Large standard errors may indicate problems with local collinearity.
+
+To visualize the fields, I will first need to convert it into a sf dataframe.
 
 ```{r}
+# Select
 gwr_adaptive_output <- as.data.frame(gwr_adaptive$SDF) %>%
   select(-c(2:15)) # To remove redundant variables
 ```
 
+Then i will column bind it to the sf dataframe. `glimpse()` is then used to check the contents.
+
 ```{r}
+# Combine dataframes
 gwr_sf_adaptive <- cbind(condo_resale_sf,
                       gwr_adaptive_output)
 
@@ -301,14 +419,17 @@ gwr_sf_adaptive <- cbind(condo_resale_sf,
 glimpse(gwr_sf_adaptive)
 ```
 
+`summary()` is also useful to check the predicted values.
+
 ```{r}
+# Check yhat
 summary(gwr_sf_adaptive$yhat)
 ```
 
-
+To visualise the local R2, i will use the `tmap` package.
 
 ```{r}
-
+# Plot R2
 tm_shape(mpsz)+
   tm_polygons()+
 tm_shape(gwr_sf_adaptive) + 
@@ -318,3 +439,47 @@ tm_shape(gwr_sf_adaptive) +
            border.lwd = 1)
 ```
 
+Now i will try to plot them side by side.
+
+```{r}
+# Visualize side by side
+tmap_options(check.and.fix = TRUE)
+# Set to interactive plot
+tmap_mode("view")
+
+# Plot AREA_SQM_SE coefficients
+AREA_SQM_SE <- tm_shape(mpsz)+
+  tm_polygons(alpha = 0.1) +
+tm_shape(gwr_sf_adaptive) +  
+  tm_dots(col = "AREA_SQM_SE",
+          border.col = "gray60",
+          border.lwd = 1) +
+  tm_view(set.zoom.limits = c(11,14))
+
+# Plot AREA_SQM_TV coefficients
+AREA_SQM_TV <- tm_shape(mpsz)+
+  tm_polygons(alpha = 0.1) +
+tm_shape(gwr_sf_adaptive) +  
+  tm_dots(col = "AREA_SQM_TV",
+          border.col = "gray60",
+          border.lwd = 1) +
+  tm_view(set.zoom.limits = c(11,14))
+
+# Show them side by side
+tmap_arrange(AREA_SQM_SE, AREA_SQM_TV, 
+             asp=1, ncol=2,
+             sync = TRUE)
+```
+
+This can also be done by region
+
+```{r}
+# View central region
+tm_shape(mpsz[mpsz$REGION_N=="CENTRAL REGION", ])+
+  tm_polygons()+
+tm_shape(gwr_sf_adaptive) + 
+  tm_bubbles(col = "Local_R2",
+           size = 0.15,
+           border.col = "gray60",
+           border.lwd = 1)
+```

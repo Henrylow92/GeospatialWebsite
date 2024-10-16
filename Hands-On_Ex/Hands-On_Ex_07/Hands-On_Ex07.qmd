@@ -400,7 +400,6 @@ nb <- dnearneigh(coordinates(condo_resale.sp), 0, 1500, longlat = FALSE)
 summary(nb)
 ```
 
-
 ```{r}
 # Create spatial weights matrix
 nb_lw <- nb2listw(nb, style = 'W')
@@ -409,8 +408,6 @@ nb_lw <- nb2listw(nb, style = 'W')
 summary(nb_lw)
 ```
 
-
-
 ```{r}
 # Perform Moran's I test
 lm.morantest(condo.mlr1, nb_lw)
@@ -418,7 +415,7 @@ lm.morantest(condo.mlr1, nb_lw)
 
 The Global Moran’s I test for residual spatial autocorrelation shows that it’s p-value is less than the alpha value of 0.05. Therefore I will reject the null hypothesis that the residuals are randomly distributed.
 
-Since the Observed Global Moran I = 0.1424418 > 0, we can infer than the residuals resemble cluster distribution.
+Since the Observed Global Moran I = 0.1424418 \> 0, we can infer than the residuals resemble cluster distribution.
 
 ## 13.4 Building Hedonic Pricing Modelling with GWmodel
 
@@ -426,8 +423,7 @@ Now, I will model hedocnic pricing with both fixed and adaptive bandwidth scheme
 
 ### 13.4.1 Fixed Bandwidth GWR Model
 
-`bw.gwr()` from `GWmodel` package to determine the optimal fixed bandwidth to be used in the model. 
-While there are 2 possible approaches: (1) CV cross-validation approach and (2) AIC corrected (AICc) approach, i will use the CV approach.
+`bw.gwr()` from `GWmodel` package to determine the optimal fixed bandwidth to be used in the model. While there are 2 possible approaches: (1) CV cross-validation approach and (2) AIC corrected (AICc) approach, i will use the CV approach.
 
 ```{r}
 # Determine optimal fixed bandwidth
@@ -442,6 +438,7 @@ bw.fixed <- bw.gwr(formula = SELLING_PRICE ~ AREA_SQM + AGE + PROX_CBD +
                    adaptive=FALSE, 
                    longlat=FALSE)
 ```
+
 The recommended bandwidth is 971.3405 metres. (in meters with CRS Axis length units)
 
 With the fixed bandwidth I can calibrate the gwr model.
@@ -464,11 +461,10 @@ gwr.fixed
 
 The result shows that AICc is 42263.61 which is much smaller than the multiple linear regression model of 42967.1.
 
-
 ### 13.4.2 Adaptive Bandwidth GWR Model
 
 I will use `bw.gwr()`again to determine the recommended data point.
- 
+
 ```{r}
 # Compute adaptive bandwidth 
 bw.adaptive <- bw.gwr(formula = SELLING_PRICE ~ AREA_SQM + AGE  + 
@@ -482,9 +478,10 @@ bw.adaptive <- bw.gwr(formula = SELLING_PRICE ~ AREA_SQM + AGE  +
                       adaptive=TRUE, 
                       longlat=FALSE)
 ```
+
 This recommends 30 data points to be used.
 
-I can then calibrate the gwr model with the adaptive bandwidth and gaussian kernel. 
+I can then calibrate the gwr model with the adaptive bandwidth and gaussian kernel.
 
 ```{r}
 # Calibrate gwr model with adaptive bandwidth
@@ -501,6 +498,7 @@ gwr.adaptive <- gwr.basic(formula = SELLING_PRICE ~ AREA_SQM + AGE +
 # Check results
 gwr.adaptive
 ```
+
 The report shows that AICc is 41982.22 which is even smaller than the AICc of the fixed distance gwr of 42263.61.
 
 ### 13.4.3 Visualize GWR Output
@@ -527,11 +525,13 @@ condo_resale.sf.adaptive <- cbind(condo_resale.res.sf, as.matrix(gwr.adaptive.ou
 # Check results
 glimpse(condo_resale.sf.adaptive)
 ```
+
 A quick check for the yhat.
 
 ```{r}
 summary(gwr.adaptive$SDF$yhat)
 ```
+
 Now i will visualize the local R2.
 
 ```{r}
@@ -584,7 +584,6 @@ tmap_mode("plot")
 
 This can be viewed by URA Planning Region
 
-
 ```{r}
 # Visualize by planning region
 tm_shape(mpsz_svy21[mpsz_svy21$REGION_N=="CENTRAL REGION", ])+
@@ -595,7 +594,6 @@ tm_shape(condo_resale.sf.adaptive) +
            border.col = "gray60",
            border.lwd = 1)
 ```
-
 
 ## 13.5 Refernce
 
