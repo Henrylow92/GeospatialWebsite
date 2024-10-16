@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Henry Low">
-<meta name="dcterms.date" content="2024-09-01">
+<meta name="dcterms.date" content="2024-10-17">
 
 <title>Hands-On Exercise 08 – GeospatialWebsite</title>
 <style>
@@ -21,6 +21,40 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -218,8 +252,23 @@ ul.task-list li input[type="checkbox"] {
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#data-sources" id="toc-data-sources" class="nav-link active" data-scroll-target="#data-sources">Data Sources</a></li>
+  <li><a href="#chapter-14-geographically-weighted-predictive-models" id="toc-chapter-14-geographically-weighted-predictive-models" class="nav-link" data-scroll-target="#chapter-14-geographically-weighted-predictive-models">Chapter 14: Geographically Weighted Predictive Models</a>
+  <ul class="collapse">
+  <li><a href="#setting-up" id="toc-setting-up" class="nav-link" data-scroll-target="#setting-up">14.1 Setting Up</a>
+  <ul class="collapse">
+  <li><a href="#loading-the-r-packages" id="toc-loading-the-r-packages" class="nav-link" data-scroll-target="#loading-the-r-packages">14.1.1 Loading the R packages</a></li>
+  <li><a href="#importing-data" id="toc-importing-data" class="nav-link" data-scroll-target="#importing-data">14.1.2 Importing data</a></li>
+  </ul></li>
+  <li><a href="#section" id="toc-section" class="nav-link" data-scroll-target="#section"></a></li>
+  </ul></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
@@ -243,14 +292,14 @@ ul.task-list li input[type="checkbox"] {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">September 1, 2024</p>
+      <p class="date">October 17, 2024</p>
     </div>
   </div>
   
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">September 6, 2024</p>
+      <p class="date-modified">October 17, 2024</p>
     </div>
   </div>
     
@@ -261,9 +310,86 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>TBC</p>
+<section id="data-sources" class="level1">
+<h1>Data Sources</h1>
+<p><em>(saved under ‘data’ folder)</em><br>
+A data file <code>mdata.rds</code> that consists of the following information:</p>
+<ul>
+<li><strong>Aspatial dataset</strong>:
+<ul>
+<li>HDB Resale data: a list of HDB resale transacted prices in Singapore from Jan 2017 onwards. It is in csv format which can be downloaded from Data.gov.sg.</li>
+</ul></li>
+<li><strong>Geospatial dataset</strong>:
+<ul>
+<li><em>MP14_SUBZONE_WEB_PL</em>: a polygon feature data providing information of URA 2014 Master Plan Planning Subzone boundary data. It is in ESRI shapefile format. This data set was also downloaded from Data.gov.sg</li>
+</ul></li>
+<li><strong>Locational factors with geographic coordinates</strong>:
+<ul>
+<li><p>Downloaded from <strong>Data.gov.sg</strong>.</p>
+<ul>
+<li><p><strong>Eldercare</strong> data is a list of eldercare in Singapore. It is in shapefile format.</p></li>
+<li><p><strong>Hawker Centre</strong> data is a list of hawker centres in Singapore. It is in geojson format.</p></li>
+<li><p><strong>Parks</strong> data is a list of parks in Singapore. It is in geojson format.</p></li>
+<li><p><strong>Supermarket</strong> data is a list of supermarkets in Singapore. It is in geojson format.</p></li>
+<li><p><strong>CHAS clinics</strong> data is a list of CHAS clinics in Singapore. It is in geojson format.</p></li>
+<li><p><strong>Childcare service</strong> data is a list of childcare services in Singapore. It is in geojson format.</p></li>
+<li><p><strong>Kindergartens</strong> data is a list of kindergartens in Singapore. It is in geojson format.</p></li>
+</ul></li>
+<li><p>Downloaded from <strong>Datamall.lta.gov.sg</strong>.</p>
+<ul>
+<li><p><strong>MRT</strong> data is a list of MRT/LRT stations in Singapore with the station names and codes. It is in shapefile format.</p></li>
+<li><p><strong>Bus stops</strong> data is a list of bus stops in Singapore. It is in shapefile format.</p></li>
+</ul></li>
+</ul></li>
+<li><strong>Locational factors without geographic coordinates</strong>:
+<ul>
+<li><p>Downloaded from <strong>Data.gov.sg</strong>.</p>
+<ul>
+<li><strong>Primary school</strong> data is extracted from the list on General information of schools from data.gov portal. It is in csv format.</li>
+</ul></li>
+<li><p>Retrieved/Scraped from <strong>other sources</strong></p>
+<ul>
+<li><strong>CBD</strong> coordinates obtained from Google.</li>
+<li><strong>Shopping malls</strong> data is a list of Shopping malls in Singapore obtained from <a href="https://en.wikipedia.org/wiki/List_of_shopping_malls_in_Singapore">Wikipedia</a>.</li>
+<li><strong>Good primary schools</strong> is a list of primary schools that are ordered in ranking in terms of popularity and this can be found at <a href="https://www.salary.sg/2021/best-primary-schools-2021-by-popularity">Local Salary Forum</a>.</li>
+</ul></li>
+</ul></li>
+</ul>
+</section>
+<section id="chapter-14-geographically-weighted-predictive-models" class="level1">
+<h1>Chapter 14: Geographically Weighted Predictive Models</h1>
+<section id="setting-up" class="level2">
+<h2 class="anchored" data-anchor-id="setting-up">14.1 Setting Up</h2>
+<p>Geospatial predictive modelling is conceptually rooted in the principle that the occurrences of events being modeled are limited in distribution. When geographically referenced data are used, occurrences of events are neither uniform nor random in distribution over space. There are geospatial factors (infrastructure, sociocultural, topographic, etc.) that constrain and influence where the locations of events occur. Geospatial predictive modeling attempts to describe those constraints and influences by spatially correlating occurrences of historical geospatial locations with environmental factors that represent those constraints and influences.</p>
+<section id="loading-the-r-packages" class="level3">
+<h3 class="anchored" data-anchor-id="loading-the-r-packages">14.1.1 Loading the R packages</h3>
+<p>-<code>sf</code> package to perform geospatial wrangling tasks&nbsp;<br>
+-<code>spdep</code> package to calculate spatial weights tasks&nbsp;<br>
+- <code>GWModel</code> package for calibrating geographical weighted family of models&nbsp;<br>
+- <code>SpatialML</code> package for ?&nbsp;<br>
+- <code>tmap</code> package for plotting tasks&nbsp;<br>
+- <code>rsample`` package to ?&nbsp;\ -</code>Metrics<code>package for ?&nbsp;\ -</code>tidyverse` package for reading csv files, dataframe processing tasks&nbsp;<br>
+</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(sf, spdep, GWmodel, SpatialML, </span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>               tmap, rsample, Metrics, tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="importing-data" class="level3">
+<h3 class="anchored" data-anchor-id="importing-data">14.1.2 Importing data</h3>
+<p>First, I will import the data</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Import input datasets</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>mdata <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">"data/mdata.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="section" class="level2">
+<h2 class="anchored" data-anchor-id="section"></h2>
 
 
+</section>
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
