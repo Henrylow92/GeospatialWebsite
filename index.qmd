@@ -2,19 +2,34 @@
 title: "GeospatialWebsite"
 ---
 
-This is a website documenting the MITB module ISSS626 Geospatial Analytics and Applications
+This is a website documenting the MITB module ISSS626 Geospatial Analytics and Applications.
 
-```{r}
-# Placeholder
-```
+As a student in the field of geospatial analytics, I am embarking on an exciting learning journey where data, geography, and technology intersect to solve real-world problems. This website serves as a reflection of my growth and exploration within the module, covering the key concepts, tools, and techniques I've encountered.
 
+From understanding spatial data to applying cutting-edge analytics, each page will showcase the knowledge and skills I've gained. I invite you to follow along as I dive into the world of spatial data analysis, and the application of geospatial technology in various contexts.
 
-<div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
-  <iframe
-    src="https://www.google.com/maps/embed?pb=!4v1727704795448!6m8!1m7!1s7KQ-wT_KLoqwJbWqGgjbcw!2m2!1d1.297903473269969!2d103.8495100564587!3f250.82085496238565!4f-2.519623176232784!5f0.7820865974627469"
-    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
-    allowfullscreen=""
-    loading="lazy"
-    referrerpolicy="no-referrer-when-downgrade">
-  </iframe>
-</div>
+##### *powered by ChatGPT*
+
+#### Here's where I am learning this Module
+
+::: {style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;"}
+<iframe src="https://www.google.com/maps/embed?pb=!4v1727704795448!6m8!1m7!1s7KQ-wT_KLoqwJbWqGgjbcw!2m2!1d1.297903473269969!2d103.8495100564587!3f250.82085496238565!4f-2.519623176232784!5f0.7820865974627469" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade">
+
+</iframe>
+:::
+
+# Take Home Assignments
+
+Check out my bespoke assignments!
+
+---
+title: Take Home Exercises
+listing:
+  contents:
+  - "Take-Home_Ex/Take-Home_Ex_01/Take-Home_Ex01.qmd"
+  - "Take-Home_Ex/Take-Home_Ex_02/Take-Home_Ex02.qmd"
+  fields: [image, date, title, reading-time]
+  type : grid
+  sort:
+  - "date"
+---
