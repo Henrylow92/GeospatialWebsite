@@ -29,18 +29,16 @@ condo_resale_2015 in csv format (i.e. condo_resale_2015.csv)
 -   `corrplot` package for multivariate data visualisation and analysis 
 -   `tidyverse` package for reading csv files, dataframe processing tasks 
 -   `ggpubr` package to assist in plotting 
--   `performance` package to ?
--   `ggpubr` package to assist in plotting 
 -   `olsrr` package for building OLS and performing diagnostics tests 
 -   `GWModel` package for calibrating geographical weighted family of models 
 -   `tmap` package for plotting tasks 
 
 ```{r}
 pacman::p_load(olsrr, GWmodel, 
-               performance,
+               # performance, corrplot, gtsummary, see # Not used
                sfdep, 
                tidyverse, sf,
-               ggstatsplot, corrplot, tmap, gtsummary, ggpubr, see)
+               ggstatsplot, tmap, ggpubr)
 ```
 
 ## Import geospatial data
@@ -469,6 +467,10 @@ tm_shape(gwr_sf_adaptive) +
 tmap_arrange(AREA_SQM_SE, AREA_SQM_TV, 
              asp=1, ncol=2,
              sync = TRUE)
+
+
+# Change tmap back to plot
+tmap_mode("plot")
 ```
 
 This can also be done by region
