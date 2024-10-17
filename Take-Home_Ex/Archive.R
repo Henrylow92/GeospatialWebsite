@@ -585,3 +585,60 @@ G, F and L functions will be explored as they can each give useful insights:\
                 # return(all_map)
                 # return(list(map1 = map1, map2 = map2, map3 = map3))
                 return(map3)
+                
+                
+                
+                
+                ```{r}
+                # Test alternative function to split data
+                ensure_min_max_split_sf <- function(data, prop = 0.65, var_list) {
+                  
+                  # Ensure the input is an sf object
+                  if (!inherits(data, "sf")) {
+                    stop("The input data must be an sf object.")
+                  }
+                  
+                  # Drop geometry temporarily for processing
+                  data_no_geom <- st_drop_geometry(data)
+                  
+                  # Find min/max rows for each variable in var_list
+                  min_max_rows <- data_no_geom %>%
+                    summarise(across(all_of(var_list), list(min = min, max = max))) %>%
+                    pivot_longer(everything(), names_to = c(".value", "stat"), names_pattern = "(.*)_(.*)") %>%
+                    distinct()
+                  
+                  # Find the row indices for min and max values
+                  min_max_rows_idx <- unique(
+                    c(
+                      which(data_no_geom[var_list] == min_max_rows[[1]]), 
+                      which(data_no_geom[var_list] == min_max_rows[[2]])
+                    )
+                  )
+                  
+                  # Determine the size of the training set
+                  train_size <- round(nrow(data_no_geom) * prop)
+                  
+                  # Ensure that min/max rows are included in the training set
+                  train_rows <- unique(c(min_max_rows_idx, sample(setdiff(1:nrow(data_no_geom), min_max_rows_idx), train_size - length(min_max_rows_idx))))
+                  
+                  # Split the data into train and test sets
+                  train_data <- data[train_rows, ]
+                  test_data <- data[-train_rows, ]
+                  
+                  return(list(train_data = train_data, test_data = test_data))
+                }
+                
+                
+                # Define the variables to ensure their min/max range is included
+                vars_to_check <- c("resale_price", "floor_area_sqm", "storey_order", "remaining_lease_mths", "PROX_CBD", "PROX_ELDERLYCARE",
+                                   "PROX_HAWKER", "PROX_MRT", "PROX_PARK", "PROX_MALL", "PROX_SUPERMARKET", "WITHIN_350M_KINDERGARTEN", "WITHIN_350M_CHILDCARE", 
+                                   "WITHIN_350M_BUS", "WITHIN_1KM_PRISCH")
+                
+                # Apply the function
+                split_data <- ensure_min_max_split_sf(mdata, prop = 0.65, var_list = vars_to_check)
+                
+                # Access train and test data
+                train_data <- split_data$train_data
+                test_data <- split_data$test_data
+                ```
+                

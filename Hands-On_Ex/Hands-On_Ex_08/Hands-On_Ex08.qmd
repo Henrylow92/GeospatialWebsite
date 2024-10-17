@@ -65,9 +65,11 @@ Geospatial predictive modelling is conceptually rooted in the principle that the
 \-`sf` package to perform geospatial wrangling tasks \
 -`spdep` package to calculate spatial weights tasks \
 - `GWModel` package for calibrating geographical weighted family of models \
-- `SpatialML` package for ? \
+- `SpatialML` package for calibrating geographical random forest model \
 - `tmap` package for plotting tasks \
-- ``` rsample`` package to ? \ - ```Metrics`package for ? \ -`tidyverse\` package for reading csv files, dataframe processing tasks \
+- `rsample` package to split the data into training and test sets \
+- `Metrics`package for computing RMSE \
+-`tidyverse` package for reading csv files, dataframe processing tasks \
 
 ```{r}
 pacman::p_load(sf, spdep, GWmodel, SpatialML, 
@@ -83,11 +85,419 @@ First, I will import the data
 mdata <- read_rds("data/mdata.rds")
 ```
 
+### 14.1.3 Data Sampling
+
+To split the dataset into training and test splits, `initial_split()` from `rsample` package will be used.
+
+```{r}
+# Set seed
+set.seed(1234)
+
+# Train test split
+resale_split <- initial_split(mdata, 
+                              prop = 6.5/10,)
+
+# Create train test datasets
+train_data <- training(resale_split)
+test_data <- testing(resale_split)
+```
 
 
+Once done, those should be saved as RDS files.
+
+```{r}
+# Save data to rds
+write_rds(train_data, "data/processed/train_data.rds")
+write_rds(test_data, "data/processed/test_data.rds")
+```
+
+## 14.2 Exploratory Data Analysis
+
+Before building the model, we should always check the correlation matrix. Before doing so, I will need to drop the geometry data.
+
+```{r, fig.height=10, fig.width=12}
+# Drop geometry data
+mdata_nogeo <- mdata %>%
+  st_drop_geometry()
+
+# Build correlation matrix
+corrplot::corrplot(cor(mdata_nogeo[, 2:17]), 
+                   diag = FALSE, 
+                   order = "AOE",
+                   tl.pos = "td", 
+                   tl.cex = 0.5, 
+                   method = "number", 
+                   type = "upper")
+```
+
+Since the correlation matrix shows that all values are below 0.8, there should not be any sign of multicolinearity. 
+
+```{r}
+# Load data
+train_data <- read_rds("data/processed/train_data.rds")
+test_data <- read_rds("data/processed/test_data.rds")
+```
+
+## 14.3 Building Non-Spatial Multiple Linear Regression
+
+`lm()` will be used to build a multiple linear regression model. `summary()` is then used to check the model.
+
+```{r}
+# Build model
+price_mlr <- lm(resale_price ~ floor_area_sqm +
+                  storey_order + remaining_lease_mths +
+                  PROX_CBD + PROX_ELDERLYCARE + PROX_HAWKER +
+                  PROX_MRT + PROX_PARK + PROX_MALL + 
+                  PROX_SUPERMARKET + WITHIN_350M_KINDERGARTEN +
+                  WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+                  WITHIN_1KM_PRISCH,
+                data=train_data)
+
+# Check model
+summary(price_mlr)
+```
+
+The model is then saved for easy retrieval.
+
+```{r}
+# Save model
+write_rds(price_mlr, "data/model/price_mlr.rds" ) 
+```
+
+## 14.4 GWR Predictive Method
+
+First, I will calibrate the model. To do so, I would need to do the following:
+
+1.  Convert sf data frame to SpatialPointDataFrame
+2.  Compute adaptive bandwidth
+3.  Calibrate gwr-based hedonic pricing model with calculated adaptive bandwidth
+
+### 14.4.1 Calibrate GWR-based Model
+
+Using `as_Spatial()`, I will convert the sf dataframe into SpatialPointDataFrame.
+
+```{r}
+# Convert sf dataframe to SpatialPointDataFrame
+train_data_sp <- as_Spatial(train_data)
+
+# Check output
+train_data_sp
+```
+
+Next, the adaptive bandwidth will be computed.
+
+```{r}
+#| eval: false
+# Compute adaptive bandwidth
+bw_adaptive <- bw.gwr(resale_price ~ floor_area_sqm +
+                  storey_order + remaining_lease_mths +
+                  PROX_CBD + PROX_ELDERLYCARE + PROX_HAWKER +
+                  PROX_MRT + PROX_PARK + PROX_MALL + 
+                  PROX_SUPERMARKET + WITHIN_350M_KINDERGARTEN +
+                  WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+                  WITHIN_1KM_PRISCH,
+                  data=train_data_sp,
+                  approach="CV",
+                  kernel="gaussian",
+                  adaptive=TRUE,
+                  longlat=FALSE)
+```
+
+The output will be saved for easy retrieval
+
+```{r}
+#| eval: false
+# Save adaptive bandwidth
+write_rds(bw_adaptive, "data/model/bw_adaptive.rds")
+```
+
+Before calibrating the gwr-based hedonic pricing model, I will first load in the adaptive bandwidth, then use `gwr.basic()` to calibrate the model.
+
+```{r}
+#| eval: false
+# Load adaptive bandwidth
+bw_adaptive <- read_rds("data/model/bw_adaptive.rds")
+
+# Calibrate gwr-based hedonic pricing model
+gwr_adaptive <- gwr.basic(formula = resale_price ~
+                            floor_area_sqm + storey_order +
+                            remaining_lease_mths + PROX_CBD + 
+                            PROX_ELDERLYCARE + PROX_HAWKER +
+                            PROX_MRT + PROX_PARK + PROX_MALL + 
+                            PROX_SUPERMARKET + WITHIN_350M_KINDERGARTEN +
+                            WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+                            WITHIN_1KM_PRISCH,
+                          data=train_data_sp,
+                          bw = 36, # bw=bw_adaptive, 
+                          kernel = 'gaussian', 
+                          adaptive=TRUE,
+                          longlat = FALSE)
+```
+
+The output will be saved again for easy retrieval.
+
+```{r}
+#| eval: false
+# Save calibrated model
+write_rds(gwr_adaptive, "data/model/gwr_adaptive.rds")
+```
+
+I'll load it again and print it to check the model output
+
+```{r}
+# Load calibrated model
+gwr_adaptive <- read_rds("data/model/gwr_adaptive.rds")
+
+# Check model output
+gwr_adaptive
+```
+
+### 14.4.2 Compute Predicted Values
+
+To compute the predicted values of test data, I would need to do mostly the same steps as before, with the exception of the last step. Instead of calibrating with `gwr.basic()`, i will use `gwr.predict()` to compute the predicted values.
+
+```{r}
+# Convert test sf dataframe into SpatialDataPointFrame
+test_data_sp <- as_Spatial(test_data)
+
+# Check output
+test_data_sp
+```
+
+Next, I'll compute the adaptive bandwidth for the test data.
+
+```{r}
+#| eval: false
+# Compute test data adaptive bandwidth
+gwr_bw_test_adaptive <- bw.gwr(resale_price ~ floor_area_sqm +
+                  storey_order + remaining_lease_mths +
+                  PROX_CBD + PROX_ELDERLYCARE + PROX_HAWKER +
+                  PROX_MRT + PROX_PARK + PROX_MALL + 
+                  PROX_SUPERMARKET + WITHIN_350M_KINDERGARTEN +
+                  WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+                  WITHIN_1KM_PRISCH,
+                  data=test_data_sp,
+                  approach="CV",
+                  kernel="gaussian",
+                  adaptive=TRUE,
+                  longlat=FALSE)
+```
+
+The output will be saved again for easy retrieval.
+
+```{r}
+#| eval: false
+# Save test adaptive bandwidth
+write_rds(gwr_bw_test_adaptive, "data/model/gwr_bw_test_adaptive.rds")
+```
+
+I'll load it again and print it to check the model output
+
+```{r}
+# Load calibrated model
+gwr_bw_test_adaptive <- read_rds("data/model/gwr_bw_test_adaptive.rds")
+```
+
+Finally, I can compute the predicted values.
+
+```{r}
+#| eval: false
+# Compute predicted values
+gwr_pred <- gwr.predict(formula = resale_price ~
+                          floor_area_sqm + storey_order +
+                          remaining_lease_mths + PROX_CBD + 
+                          PROX_ELDERLYCARE + PROX_HAWKER + 
+                          PROX_MRT + PROX_PARK + PROX_MALL + 
+                          PROX_SUPERMARKET + WITHIN_350M_KINDERGARTEN +
+                          WITHIN_350M_CHILDCARE + WITHIN_350M_BUS + 
+                          WITHIN_1KM_PRISCH, 
+                        data=train_data_sp, 
+                        predictdata = test_data_sp, 
+                        bw = 36, # bw = 40, 
+                        kernel = 'gaussian', 
+                        adaptive=TRUE, 
+                        longlat = FALSE)
+```
+
+## 14.5 Prepare Coordinates Data
+
+Before proceeding to calibrate other models, I will need to prepare the coordinates data. This can be extracted using `st_coordinates()`.
+
+```{r}
+# Get coordinates from full, training and test data
+coords <- st_coordinates(mdata)
+coords_train <- st_coordinates(train_data)
+coords_test <- st_coordinates(test_data)
+```
+
+As with previous, these will be saved for easy retrieval
+
+```{r}
+coords_train <- write_rds(coords_train, "data/processed/coords_train.rds")
+coords_test <- write_rds(coords_test, "data/processed/coords_test.rds")
+```
+
+Other than that, I will also need to remove the geometry column of the training data as I proceed to the next section. This will be done using the `st_drop_geometry()` from `sf` package.
+
+```{r}
+# Drop geometry
+train_data <- train_data %>% 
+  st_drop_geometry()
+```
+
+## 14.6 Calibrating Random Forest Model
+
+Using the random forest function of the `ranger` package, I will be able to calibrate a model to predict HDB resale prices.
+
+```{r}
+#| eval: false
+# Set seed
+set.seed(1234)
+
+# Calibrate random forest model
+rf <- ranger(resale_price ~ floor_area_sqm + storey_order + 
+               remaining_lease_mths + PROX_CBD + PROX_ELDERLYCARE + 
+               PROX_HAWKER + PROX_MRT + PROX_PARK + PROX_MALL + 
+               PROX_SUPERMARKET + WITHIN_350M_KINDERGARTEN +
+               WITHIN_350M_CHILDCARE + WITHIN_350M_BUS + 
+               WITHIN_1KM_PRISCH,
+             data=train_data)
 
 
+```
 
+Again, I will save the output for easy retrieval.
 
+```{r}
+#| eval: false
+# Save ranger output
+write_rds(rf, "data/model/rf.rds")
+```
 
-## 
+Now, I will load in the ranger model and check the output
+
+```{r}
+# Load ranger output
+rf <- read_rds("data/model/rf.rds")
+
+# Check output
+rf
+```
+
+## 14.7 Calibrate Geographical Random Forest Model
+
+Now, I will calibrate a model to do the same task using `grf()` from the `SpatialML` package.
+
+```{r}
+#| eval: false
+# Set seed
+set.seed(42)
+
+# Calibrate geographic random forest model
+gwRF_adaptive <- grf(formula = resale_price ~ floor_area_sqm + storey_order +
+                       remaining_lease_mths + PROX_CBD + PROX_ELDERLYCARE +
+                       PROX_HAWKER + PROX_MRT + PROX_PARK + PROX_MALL +
+                       PROX_SUPERMARKET + WITHIN_350M_KINDERGARTEN +
+                       WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+                       WITHIN_1KM_PRISCH,
+                     dframe=train_data, 
+                     bw=55,
+                     ntree = 100, # default - 500
+                     mtry = 2, # default - p/3 ~ 4
+                     kernel="adaptive",
+                     coords=coords_train)
+```
+
+I will save this output for easy retrieval
+
+```{r}
+#| eval: false
+# Save model output
+write_rds(gwRF_adaptive, "data/model/gwRF_adaptive.rds")
+```
+
+Now, I will load it in.
+
+:::note
+Do not check the output by printing it. It is *very* huge
+:::
+
+```{r}
+#| eval: false
+# Load model output
+gwRF_adaptive <- read_rds("data/model/gwRF_adaptive.rds")
+```
+
+### 14.7.1 Predicting with Test Data
+
+To predict with the test data, I will need to first combine the test data with the coordinates data. As with the training data, `st_drop_geometry()` will be used to drop the geometry column.
+
+```{r}
+# Combine test data with coordinates
+test_data <- cbind(test_data, coords_test) %>%
+  st_drop_geometry()
+```
+
+Next, `predict.grf()` from `SpatialML` package will be used to predict the resale value.
+
+```{r}
+#| eval: false
+# Compute predicted values
+gwRF_pred <- predict.grf(gwRF_adaptive, 
+                         test_data, 
+                         x.var.name="X",
+                         y.var.name="Y", 
+                         local.w=1,
+                         global.w=0,
+                         nthreads = 4)
+```
+
+I will save this into rds for easy retrieval
+
+```{r}
+#| eval: false
+# Save output
+GRF_pred <- write_rds(gwRF_pred, "data/model/GRF_pred.rds")
+```
+
+I will load this in and do further data processing. To facilitate visualization and analysis, I will convert it into a dataframe.
+
+```{r}
+# Load output
+GRF_pred <- read_rds("data/model/GRF_pred.rds")
+GRF_pred_df <- as.data.frame(GRF_pred)
+```
+
+This will be combined with the test data to be saved as a version of the test data containing the predicted values.
+
+```{r}
+# Combine predicted values with test data
+test_data_p <- cbind(test_data, GRF_pred_df)
+
+# Save output
+write_rds(test_data_p, "data/model/test_data_p.rds")
+```
+
+### 14.7.2 Calculate Root Mean Square Error
+
+Root mean square error (RMSE) is a common metric for regression that allows us to measure the gap between the predicted values from observed values. `rmse()` from `Metrics` package is used to compute this metric.
+
+```{r}
+# Compute rmse
+rmse(test_data_p$resale_price, 
+     test_data_p$GRF_pred)
+```
+
+Another way of checking the gap between actual resale prices and predicted resale prices is by plotting a scatterplot.
+
+```{r}
+# Plot scatterplot
+ggplot(data = test_data_p,
+       aes(x = GRF_pred,
+           y = resale_price)) +
+  geom_point()
+```
+
+::: note
+A better predictive model should have the scatter point close to the diagonal line. The scatter plot can be also used to detect if any outliers in the model.
+:::
