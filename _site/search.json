@@ -354,7 +354,7 @@
     "href": "Hands-On_Ex/Hands-On_Ex_09/Hands-On_Ex09.html",
     "title": "Hands-On Exercise 09",
     "section": "",
-    "text": "TBC"
+    "text": "(saved under ‘data’ folder)\nFour data sets will be used in this hands-on exercise, they are:\n\nMP14_SUBZONE_NO_SEA_PL: URA Master Plan 2014 subzone boundary GIS data. This data set is downloaded from data.gov.sg.\nhexagons: A 250m radius hexagons GIS data. This data set was created by using st_make_grid() of sf package. It is in ESRI shapefile format.\nELDERCARE: GIS data showing location of eldercare service. This data is downloaded from data.gov.sg. There are two versions. One in ESRI shapefile format. The other one in Google kml file format. For the purpose of this hands-on exercise, ESRI shapefile format is provided.\nOD_Matrix: a distance matrix in csv format. There are six fields in the data file. They are:\n\norigin_id: the unique id values of the origin (i.e. fid of hexagon data set.),\ndestination_id: the unique id values of the destination (i.e. fid of ELDERCARE data set.),\nentry_cost: the perpendicular distance between the origins and the nearest road),\nnetwork_cost: the actual network distance from the origin and destination,\nexit_cost: the perpendicular distance between the destination and the nearest road), and\ntotal_cost: the summation of entry_cost, network_cost and exit_cost."
   },
   {
     "objectID": "Hands-On_Ex/Hands-On_Ex_07/Hands-On_Ex07.html",
@@ -1237,5 +1237,12 @@
     "title": "GeospatialWebsite",
     "section": "",
     "text": "&lt;!DOCTYPE qgis PUBLIC ‘http://mrcc.com/qgis.dtd’ ‘SYSTEM’&gt;  ELDERCARE  ENG dataset\n\nELDERCARE\n\n                 0 0     false"
+  },
+  {
+    "objectID": "Hands-On_Ex/Hands-On_Ex_09/Hands-On_Ex09.html#setting-up",
+    "href": "Hands-On_Ex/Hands-On_Ex_09/Hands-On_Ex09.html#setting-up",
+    "title": "Hands-On Exercise 09",
+    "section": "17.1 Setting Up",
+    "text": "17.1 Setting Up\nThe goal of this exercise is to:\n\nto import GIS polygon data into R and save them as simple feature data frame by using appropriate functions of sf package of R;\nto import aspatial data into R and save them as simple feature data frame by using appropriate functions of sf package of R;\nto computer accessibility measure by using Hansen’s potential model and Spatial Accessibility Measure (SAM); and\nto visualise the accessibility measures by using tmap and ggplot2 packages.\n\n\n17.1.1 Loading the R packages\n-sf package to perform geospatial wrangling tasks \n-SpatialAcc package to model geographical accessibility tasks \n- ggstatsplot package for statistical analysis \n- tmap and ggplot2 package for plotting tasks \n-tidyverse and reshape2 package for reading csv files, dataframe processing tasks \n\npacman::p_load(tmap, SpatialAcc, sf, \n               ggstatsplot, reshape2,\n               tidyverse)\n\nWarning: unable to access index for repository http://www.stats.ox.ac.uk/pub/RWin/bin/windows/contrib/4.4:\n  cannot open URL 'http://www.stats.ox.ac.uk/pub/RWin/bin/windows/contrib/4.4/PACKAGES'\n\n\npackage 'SpatialAcc' successfully unpacked and MD5 sums checked\n\nThe downloaded binary packages are in\n    C:\\Users\\Henry\\AppData\\Local\\Temp\\RtmpYDnlEy\\downloaded_packages\n\n\n\nSpatialAcc installed"
   }
 ]
