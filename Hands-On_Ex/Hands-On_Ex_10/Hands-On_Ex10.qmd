@@ -1,7 +1,7 @@
 ---
 title: "Hands-On Exercise 10"
 author: "Henry Low"
-date: "Sep 1 2024"
+date: "Oct 18 2024"
 date-modified: "last-modified"
 execute:
   evalu: true
@@ -12,4 +12,6 @@ format: html
 editor: visual
 ---
 
-TBC
+```{r}
+pacman::p_load(tmap, sf, DT, stplanr, tidyverse)
+```
