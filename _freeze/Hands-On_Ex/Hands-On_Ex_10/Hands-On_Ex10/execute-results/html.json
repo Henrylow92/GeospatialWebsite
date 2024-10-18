@@ -1,0 +1,15 @@
+{
+  "hash": "424188467c266277a8027457b68c5517",
+  "result": {
+    "engine": "knitr",
+    "markdown": "---\ntitle: \"Hands-On Exercise 10\"\nauthor: \"Henry Low\"\ndate: \"Oct 18 2024\"\ndate-modified: \"last-modified\"\nexecute:\n  evalu: true\n  echo: true\n  message: false\n  freeze: true\nformat: html\neditor: visual\n---\n\n::: {.cell}\n\n```{.r .cell-code}\npacman::p_load(tmap, sf, DT, stplanr, tidyverse)\n```\n:::\n",
+    "supporting": [],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}

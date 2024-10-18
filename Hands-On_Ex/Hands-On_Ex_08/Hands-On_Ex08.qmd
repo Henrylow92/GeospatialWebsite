@@ -102,7 +102,6 @@ train_data <- training(resale_split)
 test_data <- testing(resale_split)
 ```
 
-
 Once done, those should be saved as RDS files.
 
 ```{r}
@@ -130,7 +129,7 @@ corrplot::corrplot(cor(mdata_nogeo[, 2:17]),
                    type = "upper")
 ```
 
-Since the correlation matrix shows that all values are below 0.8, there should not be any sign of multicolinearity. 
+Since the correlation matrix shows that all values are below 0.8, there should not be any sign of multicolinearity.
 
 ```{r}
 # Load data
@@ -418,7 +417,7 @@ write_rds(gwRF_adaptive, "data/model/gwRF_adaptive.rds")
 
 Now, I will load it in.
 
-:::note
+::: {.callout-note}
 Do not check the output by printing it. It is *very* huge
 :::
 
@@ -498,6 +497,6 @@ ggplot(data = test_data_p,
   geom_point()
 ```
 
-::: note
+::: {.callout-note}
 A better predictive model should have the scatter point close to the diagonal line. The scatter plot can be also used to detect if any outliers in the model.
 :::

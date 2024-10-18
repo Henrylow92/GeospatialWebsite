@@ -29,7 +29,7 @@ Four data sets will be used in this hands-on exercise, they are:
     -   `exit_cost`: the perpendicular distance between the destination and the nearest road), and
     -   `total_cost`: the summation of `entry_cost`, `network_cost` and `exit_cost`.
 
-::: note
+::: {.callout-note}
 All the values of the cost related fields are in metres.
 :::
 
@@ -99,7 +99,7 @@ hexagons <- hexagons %>%
   mutate(demand = 100)
 ```
 
-::: note
+::: {.callout-note}
 While a constant value of 100 is used, in actual practice actual demand of the hexagon and eldercare centre capacity should be used instead.
 :::
 
