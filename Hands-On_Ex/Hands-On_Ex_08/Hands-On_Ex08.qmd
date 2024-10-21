@@ -417,7 +417,7 @@ write_rds(gwRF_adaptive, "data/model/gwRF_adaptive.rds")
 
 Now, I will load it in.
 
-::: {.callout-note}
+::: callout-note
 Do not check the output by printing it. It is *very* huge
 :::
 
@@ -497,6 +497,6 @@ ggplot(data = test_data_p,
   geom_point()
 ```
 
-::: {.callout-note}
+::: callout-note
 A better predictive model should have the scatter point close to the diagonal line. The scatter plot can be also used to detect if any outliers in the model.
 :::

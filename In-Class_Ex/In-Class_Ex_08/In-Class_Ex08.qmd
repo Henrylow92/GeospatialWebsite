@@ -1,7 +1,7 @@
 ---
-title: "In Class Exercise 03"
+title: "In Class Exercise 08"
 author: "Henry Low"
-date: "Aug 26 2024"
+date: "Oct 21 2024"
 date-modified: "last-modified"
 execute:
   evalu: true
@@ -12,4 +12,338 @@ format: html
 editor: visual
 ---
 
-TBC
+# Data Sources
+
+*(saved under 'data' folder)*\
+A data file `mdata.rds` that consists of the following information:
+
+-   **Aspatial dataset**:
+    -   HDB Resale data: a list of HDB resale transacted prices in Singapore from Jan 2017 onwards. It is in csv format which can be downloaded from Data.gov.sg.
+-   **Geospatial dataset**:
+    -   *MP14_SUBZONE_WEB_PL*: a polygon feature data providing information of URA 2014 Master Plan Planning Subzone boundary data. It is in ESRI shapefile format. This data set was also downloaded from Data.gov.sg
+-   **Locational factors with geographic coordinates**:
+    -   Downloaded from **Data.gov.sg**.
+
+        -   **Eldercare** data is a list of eldercare in Singapore. It is in shapefile format.
+
+        -   **Hawker Centre** data is a list of hawker centres in Singapore. It is in geojson format.
+
+        -   **Parks** data is a list of parks in Singapore. It is in geojson format.
+
+        -   **Supermarket** data is a list of supermarkets in Singapore. It is in geojson format.
+
+        -   **CHAS clinics** data is a list of CHAS clinics in Singapore. It is in geojson format.
+
+        -   **Childcare service** data is a list of childcare services in Singapore. It is in geojson format.
+
+        -   **Kindergartens** data is a list of kindergartens in Singapore. It is in geojson format.
+
+    -   Downloaded from **Datamall.lta.gov.sg**.
+
+        -   **MRT** data is a list of MRT/LRT stations in Singapore with the station names and codes. It is in shapefile format.
+
+        -   **Bus stops** data is a list of bus stops in Singapore. It is in shapefile format.
+-   **Locational factors without geographic coordinates**:
+    -   Downloaded from **Data.gov.sg**.
+
+        -   **Primary school** data is extracted from the list on General information of schools from data.gov portal. It is in csv format.
+
+    -   Retrieved/Scraped from **other sources**
+
+        -   **CBD** coordinates obtained from Google.
+        -   **Shopping malls** data is a list of Shopping malls in Singapore obtained from [Wikipedia](https://en.wikipedia.org/wiki/List_of_shopping_malls_in_Singapore).
+        -   **Good primary schools** is a list of primary schools that are ordered in ranking in terms of popularity and this can be found at [Local Salary Forum](https://www.salary.sg/2021/best-primary-schools-2021-by-popularity).
+
+# Setting Up
+
+## Load Packages
+
+\-`sf` package to perform geospatial wrangling tasks \
+-`spdep` package to calculate spatial weights tasks \
+- `GWModel` package for calibrating geographical weighted family of models \
+- `SpatialML` package for calibrating geographical random forest model \
+- `tmap` package for plotting tasks \
+- `rsample` package to split the data into training and test sets \
+- `Metrics`package for computing RMSE \
+-`tidyverse` package for reading csv files, dataframe processing tasks 
+
+```{r}
+pacman::p_load(sf, spdep, GWmodel, SpatialML, tmap, rsample, Metrics, tidyverse, knitr, kableExtra)
+```
+
+## Importing Data
+
+First, I will import the data
+
+```{r}
+# Import input datasets 
+mdata <- read_rds("data/mdata.rds")
+```
+
+### Data Sampling
+
+```{r}
+# Set seed
+set.seed(1234)
+
+# Train test split
+resale_split <- initial_split(mdata, 
+                              prop = 6.5/10,)
+
+# Create train test datasets
+train_data <- training(resale_split)
+test_data <- testing(resale_split)
+```
+
+Once done, those should be saved as RDS files.
+
+```{r}
+# Save data to rds
+write_rds(train_data, "data/processed/train_data.rds")
+write_rds(test_data, "data/processed/test_data.rds")
+```
+
+### Multicolinearity Check
+
+```{r, fig.height = 10, fig.width=12}
+mdata_nogeo <- mdata %>%
+  st_drop_geometry()
+
+ggstatsplot::ggcorrmat(mdata_nogeo[, 2:17])
+```
+
+## Building Non-Spatial Multiple Linear Regression
+
+When building predictive model, do not load all variables (do that for explanatory model). Also, I need to use train_data.
+
+```{r}
+# Build model
+price_mlr <- lm(resale_price ~ floor_area_sqm +
+                  storey_order + remaining_lease_mths +
+                  PROX_CBD + PROX_ELDERLYCARE + PROX_HAWKER +
+                  PROX_MRT + PROX_PARK + PROX_MALL + 
+                  PROX_SUPERMARKET + WITHIN_350M_KINDERGARTEN +
+                  WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+                  WITHIN_1KM_PRISCH,
+                data=train_data)
+
+# Check model with olsrr
+olsrr::ols_regress(price_mlr)
+```
+
+### Multicolinearity Check with VIF
+
+```{r, fig.height = 10, fig.width=12}
+vif <- performance::check_collinearity(price_mlr)
+
+kable(vif,
+      caption = "Variance Inflation Factor (VIF) Results") %>%
+  kable_styling(font_size = 18)
+```
+
+```{r, fig.height = 10, fig.width=12}
+plot(vif) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Predictive Modelling with MLR
+
+### Computing Adaptive Bandwidth
+
+```{r}
+#| eval: false
+# Compute adaptive bandwidth
+bw_adaptive <- bw.gwr(resale_price ~ floor_area_sqm +
+                  storey_order + remaining_lease_mths +
+                  PROX_CBD + PROX_ELDERLYCARE + PROX_HAWKER +
+                  PROX_MRT + PROX_PARK + PROX_MALL + 
+                  PROX_SUPERMARKET + WITHIN_350M_KINDERGARTEN +
+                  WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+                  WITHIN_1KM_PRISCH,
+                  data=train_data,
+                  approach="CV",
+                  kernel="gaussian",
+                  adaptive=TRUE,
+                  longlat=FALSE)
+```
+
+```{r}
+#| eval: false
+# Save adaptive bandwidth
+write_rds(bw_adaptive, "data/model/bw_adaptive.rds")
+```
+
+```{r}
+#| eval: false
+# Calibrate gwr-based hedonic pricing model
+gwr_adaptive <- gwr.basic(formula = resale_price ~
+                            floor_area_sqm + storey_order +
+                            remaining_lease_mths + PROX_CBD + 
+                            PROX_ELDERLYCARE + PROX_HAWKER +
+                            PROX_MRT + PROX_PARK + PROX_MALL + 
+                            PROX_SUPERMARKET + WITHIN_350M_KINDERGARTEN +
+                            WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+                            WITHIN_1KM_PRISCH,
+                          data=train_data,
+                          bw = bw_adaptive, 
+                          kernel = 'gaussian', 
+                          adaptive=TRUE,
+                          longlat = FALSE)
+```
+
+```{r}
+#| eval: false
+# Save calibrated model
+write_rds(gwr_adaptive, "data/model/gwr_adaptive.rds")
+```
+
+```{r}
+#| eval: false
+# Compute test data adaptive bandwidth
+gwr_bw_test_adaptive <- bw.gwr(resale_price ~ floor_area_sqm +
+                  storey_order + remaining_lease_mths +
+                  PROX_CBD + PROX_ELDERLYCARE + PROX_HAWKER +
+                  PROX_MRT + PROX_PARK + PROX_MALL + 
+                  PROX_SUPERMARKET + WITHIN_350M_KINDERGARTEN +
+                  WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+                  WITHIN_1KM_PRISCH,
+                  data=test_data_sp,
+                  approach="CV",
+                  kernel="gaussian",
+                  adaptive=TRUE,
+                  longlat=FALSE)
+```
+
+```{r}
+#| eval: false
+# Compute predicted values
+gwr_pred <- gwr.predict(formula = resale_price ~
+                          floor_area_sqm + storey_order +
+                          remaining_lease_mths + PROX_CBD + 
+                          PROX_ELDERLYCARE + PROX_HAWKER + 
+                          PROX_MRT + PROX_PARK + PROX_MALL + 
+                          PROX_SUPERMARKET + WITHIN_350M_KINDERGARTEN +
+                          WITHIN_350M_CHILDCARE + WITHIN_350M_BUS + 
+                          WITHIN_1KM_PRISCH, 
+                        data=train_data_sp, 
+                        predictdata = test_data_sp, 
+                        bw = bw_adaptive,
+                        kernel = 'gaussian', 
+                        adaptive=TRUE, 
+                        longlat = FALSE)
+```
+
+## Predictive Modelling with SpatialML
+
+Since I'm using `SpatialML` (based on `ranger` package), I will need to prepare the coordinates data
+
+```{r}
+# Get coordinates from full, training and test data
+coords <- st_coordinates(mdata)
+coords_train <- st_coordinates(train_data)
+coords_test <- st_coordinates(test_data)
+```
+
+Also, i need to drop the geometry field.
+
+```{r}
+# Drop geometry
+train_data_nogeom <- train_data %>% 
+  st_drop_geometry()
+```
+
+### Calibrating RF Model
+
+```{r}
+#| eval: false
+# Set seed
+set.seed(1234)
+
+# Calibrate random forest model
+rf <- ranger(resale_price ~ floor_area_sqm + storey_order + 
+               remaining_lease_mths + PROX_CBD + PROX_ELDERLYCARE + 
+               PROX_HAWKER + PROX_MRT + PROX_PARK + PROX_MALL + 
+               PROX_SUPERMARKET + WITHIN_350M_KINDERGARTEN +
+               WITHIN_350M_CHILDCARE + WITHIN_350M_BUS + 
+               WITHIN_1KM_PRISCH,
+             data=train_data_nogeom)
+
+# Check result
+rf
+```
+
+### Calibrating GRF Model
+
+```{r}
+#| eval: false
+# Set seed
+set.seed(42)
+
+# Calibrate geographic random forest model
+gwRF_adaptive <- grf(formula = resale_price ~ floor_area_sqm + storey_order +
+                       remaining_lease_mths + PROX_CBD + PROX_ELDERLYCARE +
+                       PROX_HAWKER + PROX_MRT + PROX_PARK + PROX_MALL +
+                       PROX_SUPERMARKET + WITHIN_350M_KINDERGARTEN +
+                       WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+                       WITHIN_1KM_PRISCH,
+                     dframe=train_data_nogeom, 
+                     bw=55,
+                     ntree = 100, # default - 500
+                     mtry = 2, # default - p/3 ~ 4
+                     kernel="adaptive",
+                     coords=coords_train)
+```
+
+```{r}
+#| eval: false
+# Save model output
+write_rds(gwRF_adaptive, "data/model/gwRF_adaptive.rds")
+```
+
+```{r}
+#| eval: false
+# Load model output
+gwRF_adaptive <- read_rds("data/model/gwRF_adaptive.rds")
+```
+
+Global.model is using ranger object.
+
+-   Local.Variable.Importance - importance calculated for every data
+-   LGofFit - For each data point, calculates a model to measure local goodness of fit
+-   Forests - Each forest contains various metrics (i.e. sample size).
+
+### Predict with Test Data
+
+Since the grf needs the coordinates data as part of the input parameters, I will need to bind the coordinates data on top of dropping the geometry data.
+
+```{r}
+#| eval: false
+test_data_nogeom <- cbind(
+  test_data, coords_test) %>%
+  st_drop_geometry() 
+```
+
+```{r}
+#| eval: false
+gwRF_pred <- predict.grf(gwRF_adaptive, 
+                         test_data_nogeom, 
+                         x.var.name="X",
+                         y.var.name="Y", 
+                         local.w=1,
+                         global.w=0,
+                         nthreads = 4)
+```
+
+```{r}
+#| eval: false
+GRF_pred <- read_rds("data/model/GRF_pred.rds")
+GRF_pred_df <- as.data.frame(GRF_pred)
+
+
+# Combine predicted values with test data
+test_data_pred <- cbind(test_data, GRF_pred_df)
+```
+
+## Plot as Map Form
+
+Which properties tend to overestimate, which properties tend to underestimate
