@@ -14,7 +14,10 @@ editor: visual
 
 # Data Sources
 
-*(saved under 'data' folder)*\
+*(saved under 'data' folder)*
+
+`resale.csv` containing HDB resale information
+
 A data file `mdata.rds` that consists of the following information:
 
 -   **Aspatial dataset**:
@@ -65,10 +68,12 @@ A data file `mdata.rds` that consists of the following information:
 - `tmap` package for plotting tasks \
 - `rsample` package to split the data into training and test sets \
 - `Metrics`package for computing RMSE \
+- `httr`, `jsonlite` and `rvest` package for getting lat lon data for Take Home Ex 03 \
 -`tidyverse` package for reading csv files, dataframe processing tasks 
 
 ```{r}
-pacman::p_load(sf, spdep, GWmodel, SpatialML, tmap, rsample, Metrics, tidyverse, knitr, kableExtra)
+pacman::p_load(sf, spdep, GWmodel, SpatialML, tmap, rsample, Metrics, tidyverse, knitr, kableExtra,
+               httr, jsonlite, rvest)
 ```
 
 ## Importing Data
@@ -76,11 +81,123 @@ pacman::p_load(sf, spdep, GWmodel, SpatialML, tmap, rsample, Metrics, tidyverse,
 First, I will import the data
 
 ```{r}
+# Import dataset for take home ex 03
+resale <- read_csv("data/aspatial/resale.csv") %>%
+  filter(month >= "2023-01" & month <= "2024-09")
+```
+
+```{r}
 # Import input datasets 
 mdata <- read_rds("data/mdata.rds")
 ```
 
+### Getting Lat Lon with API
+
+First, i will need to do some minor preprocessing. `sort()` and `unique()` are done to ensure that the data is ordered and only for unique addresses.
+
+```{r}
+# Preprocess resale data
+resale_tidy <- resale %>%
+  mutate(address = paste(block,street_name)) %>%
+  mutate(remaining_lease_yr = as.integer(
+    str_sub(remaining_lease, 0, 2)))%>%
+  mutate(remaining_lease_mth = as.integer(
+    str_sub(remaining_lease, 9, 11)))
+
+# Order data
+add_list <- sort(unique(resale_tidy$address))
+```
+
+#### Function to retrieve lat lon (Using OneMap API)
+
+Using a function, I can retrieve latitude and longitude data for each unique HDB address. 
+
+```{r}
+#| eval: false
+get_coords <- function(add_list){
+  
+  # Create a data frame to store all retrieved coordinates
+  postal_coords <- data.frame()
+    
+  for (i in add_list){
+    #print(i)
+
+    r <- GET('https://www.onemap.gov.sg/api/common/elastic/search?',
+           query=list(searchVal=i,
+                     returnGeom='Y',
+                     getAddrDetails='Y'))
+    data <- fromJSON(rawToChar(r$content))
+    found <- data$found
+    res <- data$results
+    
+    # Create a new data frame for each address
+    new_row <- data.frame()
+    
+    # If single result, append 
+    if (found == 1){
+      postal <- res$POSTAL 
+      lat <- res$LATITUDE
+      lng <- res$LONGITUDE
+      new_row <- data.frame(address= i, 
+                            postal = postal, 
+                            latitude = lat, 
+                            longitude = lng)
+    }
+    
+    # If multiple results, drop NIL and append top 1
+    else if (found > 1){
+      # Remove those with NIL as postal
+      res_sub <- res[res$POSTAL != "NIL", ]
+      
+      # Set as NA first if no Postal
+      if (nrow(res_sub) == 0) {
+          new_row <- data.frame(address= i, 
+                                postal = NA, 
+                                latitude = NA, 
+                                longitude = NA)
+      }
+      
+      else{
+        top1 <- head(res_sub, n = 1)
+        postal <- top1$POSTAL 
+        lat <- top1$LATITUDE
+        lng <- top1$LONGITUDE
+        new_row <- data.frame(address= i, 
+                              postal = postal, 
+                              latitude = lat, 
+                              longitude = lng)
+      }
+    }
+
+    else {
+      new_row <- data.frame(address= i, 
+                            postal = NA, 
+                            latitude = NA, 
+                            longitude = NA)
+    }
+    
+    # Add the row
+    postal_coords <- rbind(postal_coords, new_row)
+  }
+  return(postal_coords)
+}
+```
+
+
+
+```{r}
+#| eval: false
+# Get each coordindates
+coords <- get_coords(add_list)
+
+# Save coordinates to rds file
+write_rds(coords, "data/processed/coords_full.rds")
+```
+
+
 ### Data Sampling
+
+Note that there is no stratification here. There should be, possibly by town.
 
 ```{r}
 # Set seed
@@ -134,6 +251,7 @@ olsrr::ols_regress(price_mlr)
 ### Multicolinearity Check with VIF
 
 ```{r, fig.height = 10, fig.width=12}
+# Check multicolinearity
 vif <- performance::check_collinearity(price_mlr)
 
 kable(vif,
@@ -207,7 +325,7 @@ gwr_bw_test_adaptive <- bw.gwr(resale_price ~ floor_area_sqm +
                   PROX_SUPERMARKET + WITHIN_350M_KINDERGARTEN +
                   WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
                   WITHIN_1KM_PRISCH,
-                  data=test_data_sp,
+                  data=test_data,
                   approach="CV",
                   kernel="gaussian",
                   adaptive=TRUE,
@@ -226,7 +344,7 @@ gwr_pred <- gwr.predict(formula = resale_price ~
                           WITHIN_350M_CHILDCARE + WITHIN_350M_BUS + 
                           WITHIN_1KM_PRISCH, 
                         data=train_data_sp, 
-                        predictdata = test_data_sp, 
+                        predictdata = test_data, 
                         bw = bw_adaptive,
                         kernel = 'gaussian', 
                         adaptive=TRUE, 
@@ -273,6 +391,8 @@ rf
 ```
 
 ### Calibrating GRF Model
+
+Note that it may not be wise to run the model with default parameters - i.e. ntree = 500 due to complexity issues. 
 
 ```{r}
 #| eval: false
@@ -335,7 +455,6 @@ gwRF_pred <- predict.grf(gwRF_adaptive,
 ```
 
 ```{r}
-#| eval: false
 GRF_pred <- read_rds("data/model/GRF_pred.rds")
 GRF_pred_df <- as.data.frame(GRF_pred)
 
@@ -346,4 +465,32 @@ test_data_pred <- cbind(test_data, GRF_pred_df)
 
 ## Plot as Map Form
 
-Which properties tend to overestimate, which properties tend to underestimate
+A common question is which properties tend to overestimate/underestimate with the modelling. I would need to get the residual values from comparing the actual resale prices to the predicted prices.
+
+```{r}
+# Calculate overestimation/underestimation
+test_data_pred <- test_data_pred %>%
+  mutate(residual = resale_price - GRF_pred)
+```
+
+The `mpsz` geospatial data is loaded in to provide the geographical boundaries for Singapore.
+
+```{r}
+# Import geospatial data
+mpsz = st_read(dsn = "data/geospatial", layer = "MP14_SUBZONE_WEB_PL") %>%
+  st_transform(3414)
+```
+The plot can be visualised as follows, with blue showing overestimation and red showing underestimation.
+
+```{r, fig.height=10, fig.width=12}
+# Visualize residuals
+tm_shape(mpsz)+
+  tm_polygons(alpha = 0.1) +
+tm_shape(test_data_pred) +
+  tm_dots("residual",
+          palette = "-RdBu",
+          title = "Residual (Over/Underestimation)",
+          size = 0.2) +  # Adjust size as needed
+  tm_layout(legend.position = c("right", "top"))
+```
+
