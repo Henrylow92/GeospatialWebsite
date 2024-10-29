@@ -1,0 +1,15 @@
+{
+  "hash": "9f71564fbecbc613f77e5c0a523c1b41",
+  "result": {
+    "engine": "knitr",
+    "markdown": "---\ntitle: \"Take Home Exercise 03\"\nauthor: \"Henry Low\"\ndate: \"Sep 6 2024\"\ndate-modified: \"last-modified\"\nexecute:\n  evalu: true\n  echo: true\n  message: false\n  freeze: true\nformat: html\neditor: visual\ndate-format: \"DD MM YYYY\"\n---\n\n::: {.cell}\n\n```{.r .cell-code}\npacman::p_load(sf, spdep, GWmodel, SpatialML, tmap, rsample, Metrics, tidyverse, knitr, kableExtra,\n               httr, jsonlite, rvest)\n```\n:::\n\n::: {.cell}\n\n```{.r .cell-code}\n# Load SG Buildings  from Openstreet Map\n# sg_buildings <- st_read(dsn = \"data/geospatial/hotosm_sgp_buildings_polygons_shp/\", layer = \"hotosm_sgp_buildings_polygons_shp\") \n# sg_points <- st_read(dsn = \"data/geospatial/hotosm_sgp_points_of_interest_points_shp/\", \n#                         layer = \"hotosm_sgp_points_of_interest_points_shp\") %>%\n#   filter(shop == \"mall\")\n```\n:::\n",
+    "supporting": [],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}
