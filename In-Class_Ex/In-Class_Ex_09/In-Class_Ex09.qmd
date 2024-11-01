@@ -12,26 +12,19 @@ format: html
 editor: visual
 ---
 
-
 # Setting Up
 
 ## Load Packages
 
 \-`sf` package to perform geospatial wrangling tasks \
--`spdep` package to calculate spatial weights tasks \
-- `GWModel` package for calibrating geographical weighted family of models \
-- `SpatialML` package for calibrating geographical random forest model \
+-`SpatialAcc` package to model geographical accessibility tasks \
 - `tmap` package for plotting tasks \
-- `rsample` package to split the data into training and test sets \
-- `Metrics`package for computing RMSE \
-- `httr`, `jsonlite` and `rvest` package for getting lat lon data for Take Home Ex 03 \
+- `ggstatsplot` package for statistical analysis \
 -`tidyverse` package for reading csv files, dataframe processing tasks 
-
 
 ```{r}
 pacman::p_load(sf, SpatialAcc, tmap, tidyverse, ggstatsplot)
 ```
-
 
 ### Importing Data (Take Home Exercise)
 
@@ -45,10 +38,15 @@ eldercare <- st_read(dsn = "data/geospatial", layer = "ELDERCARE") %>%
 CHAS <- st_read("data/geospatial/CHASClinics.kml") %>%
   st_transform(3414)
 ```
+
+Now `st_buffer()` will be used to create a buffer of 1km around each eldercare point.
+
 ```{r}
 # Get buffer of eldercare
 buffer_1km <- st_buffer(eldercare, dist = 1000)
 ```
+
+We can see the buffers and CHAS clinics with tmap.
 
 ```{r}
 tmap_mode("view")
@@ -59,8 +57,7 @@ tm_shape(CHAS) +
   tm_dots()
 ```
 
-
-
+`length()` and `st_intersects()` are then used to count the number of points within each buffer.  
 
 ```{r}
 # Count number of points within a distance
@@ -69,12 +66,9 @@ buffer_1km$pts_count <- length(
 )
 ```
 
+### Importing Data (Piazza)
 
-
-### Importing Data (Piazza) 
-
-`st_jitter()` can be used to make sure that points do not overlap. Use amount to ensure that the input is reference correctly.
-Avoid using decimals (although small might be good), as the points might be rounded, voiding the attempts to change the points. should be used.
+`st_jitter()` can be used to make sure that points do not overlap. Use amount to ensure that the input is reference correctly. Avoid using decimals (although small might be good), as the points might be rounded, voiding the attempts to change the points. should be used.
 
 ```{r}
 mdata <- read_rds("data/mdata.rds") %>%
@@ -82,8 +76,6 @@ mdata <- read_rds("data/mdata.rds") %>%
 ```
 
 2-5 meters is recommended to be used as the distance to jitter - too much may cause the points to fall outside the building.
-
-
 
 ### Importing Data (In Class Exercise)
 
@@ -103,53 +95,53 @@ eldercare <- st_read(dsn = "data/geospatial/old", layer = "ELDERCARE") %>%
   st_transform(3414)
 ```
 
+Typically, generating ODMatrix is resource intensive. However, I will just load from a csv file.
+
 ```{r}
 ODMatrix <- read_csv("data/aspatial/OD_Matrix.csv", skip = 0)
 ```
+
 ODMatrix data structure follows the typical r5r output: First column - origin, next column destination. Algorithm finds perpendicular distance between origin point and road segment, which is entry cost. From destination to nearest road segment (perpendicular distance), that is exit cost.
 
 #### Data Cleaning and Updating Attribitues
 
 ```{r}
-# Artifically create capacity column
+# Artificially create capacity column
 eldercare <- eldercare %>%
   select(fid, ADDRESSPOS) %>%
   mutate(capacity = 100)
 ```
 
-Normally, capacity is something to be researched (survey, web-crawling).
+Normally, capacity is something to be researched (survey, web-crawling). However, I will just set it to 100 for simplicity.
 
 ```{r}
+# Select only fid and create a demand
 hexagons <- hexagons %>%
   select(fid) %>%
   mutate(demand = 100)
 ```
 
-While not ideal, 100 is set to be demand. In practical casees, we can estimate the demand (number of floors * flats * proportion of elderly). 
+While not ideal, 100 is set to be demand. In practical casees, we can estimate the demand (number of floors \* flats \* proportion of elderly). Next, I will transofrm the ODMatrix (long format) to wide format.
 
 ```{r}
+# Transform distmat
 distmat <- ODMatrix %>%
   select(origin_id, destination_id, total_cost) %>%
   pivot_wider(names_from = destination_id, values_from = total_cost) %>%  # spread has been discontinued
   select(c(-c("origin_id")))
-
-# distmat <- ODMatrix %>%
-#   select(origin_id, destination_id, total_cost) %>%
-#   # spread(destination_id, total_cost) %>%
-#   pivot_wider(names_from = destination_id, values_from = total_cost) %>% # Use pivot_wider() instead
-#   select(c(-c("origin_id")))
 ```
 
-Each variable in distmat corresponds to 1 elderly care.
+Each variable in distmat corresponds to 1 elderly care. Now, I will rescale the distmat to be in kilometers.
 
 ```{r}
+# Rescale distmat
 distmat_km <- as.matrix(distmat/1000)
 ```
-
 
 ## Computing Hansen's Accessibility
 
 ```{r}
+# Compute Hansen's accessibility
 acc_Hansen <- data.frame(ac(hexagons$demand,
                             eldercare$capacity,
                             distmat_km,
@@ -158,15 +150,13 @@ acc_Hansen <- data.frame(ac(hexagons$demand,
                             family = "Hansen")
                          )
 
-```
-
-
-```{r}
 # Tidy output
 colnames(acc_Hansen) <- "accHansen"
 acc_hansen <- as_tibble(acc_Hansen)
 hexagon_Hansen <- bind_cols(hexagons, acc_Hansen)
+
 ```
+
 
 mapex is used to ensure that every plot will have the same map extent.
 
@@ -201,12 +191,13 @@ tm_shape(eldercare) +
   tm_grid(lwd = 0.1, alpha = 0.5)
 ```
 
-Show test statistics (Annova). Confirmation data analysis along with EDA in a nice framework.
+`ggsbetweenstats()` is very useful to show test statistics (Annova) - confirmation data analysis along with EDA in a nice framework.
 
 ```{r}
+# Join hexagon hansen to mpsz data
 hexagon_Hansen <- st_join(hexagon_Hansen, mpsz, join = st_intersects)
 
-
+# CDA & EDA visualization
 ggbetweenstats(
   data = hexagon_Hansen,
   x = REGION_N,
@@ -214,14 +205,3 @@ ggbetweenstats(
   type = "p"
 )
 ```
-
-
-
-
-
-
-
-
-
-
-

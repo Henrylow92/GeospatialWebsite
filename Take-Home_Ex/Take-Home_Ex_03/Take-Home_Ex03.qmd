@@ -13,18 +13,15 @@ editor: visual
 date-format: "DD MM YYYY"
 ---
 
-
 ```{r}
 pacman::p_load(sf, spdep, GWmodel, SpatialML, tmap, rsample, Metrics, tidyverse, knitr, kableExtra,
                httr, jsonlite, rvest)
 ```
 
-
 ```{r}
 # Load SG Buildings  from Openstreet Map
 # sg_buildings <- st_read(dsn = "data/geospatial/hotosm_sgp_buildings_polygons_shp/", layer = "hotosm_sgp_buildings_polygons_shp") 
-# sg_points <- st_read(dsn = "data/geospatial/hotosm_sgp_points_of_interest_points_shp/", 
-#                         layer = "hotosm_sgp_points_of_interest_points_shp") %>%
-#   filter(shop == "mall")
+sg_points <- st_read(dsn = "data/geospatial/hotosm_sgp_points_of_interest_points_shp/",
+                        layer = "hotosm_sgp_points_of_interest_points_shp") %>%
+  filter(shop == "mall")
 ```
-
