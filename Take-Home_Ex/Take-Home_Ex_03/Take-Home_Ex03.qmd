@@ -1,7 +1,7 @@
 ---
 title: "Take Home Exercise 03"
 author: "Henry Low"
-date: "Sep 6 2024"
+date: "Nov 2 2024"
 date-modified: "last-modified"
 execute:
   evalu: true
@@ -13,15 +13,296 @@ editor: visual
 date-format: "DD MM YYYY"
 ---
 
+# **3b: Predicting HDB Resale Prices with Geographically Weighted Machine Learning Methods**
+
+# Background
+
+Housing in Singapore has always been a hot topic, with purposes of investment to accommodation. There are many factors affecting the price, mainly divded into structural and location factors. Structural factors are variables related to the property themselves such as the size, fitting, and tenure of the property. Locational factors are variables related to the neighbourhood of the properties such as proximity to childcare centre, public transport service and shopping centre.
+
+However, we also need to consider that spatial autocorrelation and spatial heterogeneity exist in geographic data sets such as housing transactions. With the existence of spatial autocorrelation, the OLS estimation of predictive housing resale pricing models could lead to biased, inconsistent, or inefficient results (Anselin 1998)
+
+# Objectives
+
+Using multiple linear regression and geographical weighted models, I would like to:\
+- Predict housing prices based on structural and locational factors.\
+- Incorporate geographical factors to enhance the predictive model.\
+- Compare the created models
+
+# Data Sources
+
+*(saved under 'data' folder)*
+
+Master Plan 2019 Subzone Boundary (from In-Class Ex01)\
+[Resale flat prices based on registration date from Jan-2017 onwards](https://data.gov.sg/datasets?query=HDB+Resale+Flat+Prices+&page=1&resultId=d_8b84c4ee58e3cfc0ece0d773c8ca6abc) from data.gov.sg
+
+# 1 Setting Up
+
+## 1.1 Loading R Packages
+
+I will be using the following R packages:\
+-`sf` package to perform geospatial wrangling tasks \
+- `sfdep` package to perform spatial autocorrelation analysis and emerging hotspot analysis \
+- `tidyverse` package for reading csv files, dataframe processing tasks \
+- `ggplot2` and `ggpubr` package for plotting statistical graphics \
+- `DT`, `crosstalk` and `htmltools`, package for visualizing results in a table format \
+- `Kendall` package for performing and visualizing Mann-Kendall Test \
+- `tmap` package for plotting tasks 
+
 ```{r}
-pacman::p_load(sf, spdep, GWmodel, SpatialML, tmap, rsample, Metrics, tidyverse, knitr, kableExtra,
-               httr, jsonlite, rvest)
+pacman::p_load(sf, spdep, GWmodel, SpatialML, tmap, rsample, Metrics, tidyverse, knitr, kableExtra, httr, jsonlite, rvest)
+```
+
+# 2 Procuring Dataset
+
+::: callout-note
+Steps used in this sections is largely adapted from the Take-home_Ex3b-HDBDataPrep provided by Prof Kam and other data preprocessing steps by [Hao Xian, Wen Yang and Pierre Jean Michel](https://is415-geospatial-project-g1t3.netlify.app/gwrproj/datapreprocessing).
+:::
+
+The goal of this section is to supplement the resale flat price data from data.gov.sg with other geospatial and locational factors. While my seniors have provided useful links as to where those information can be obtained, I'll cross verify it with other updated sources where possible.
+
+| Factor                                | Type       | Source                                                                                                                       |
+|-----------------------------|----------------------------|---------------|
+| Proximity to CBD                      | Location   | \-                                                                                                                           |
+| Proximity to Eldercare                | Location   | OneMap API, [data.gov.sg](https://data.gov.sg/datasets?query=eldercare&page=1&resultId=d_3545b068e3f3506c56b2cb6b6117b884)   |
+| Proximity to Foodcourt/Hawker Centres | Location   | OneMap API, [data.gov.sg](https://data.gov.sg/datasets?query=hawker&page=1&resultId=d_ccca3606c337a5c386b9c88dc0dd08b6)      |
+| Proximity to MRT                      | Location   | [LTA Data Mall](https://datamall.lta.gov.sg/content/datamall/en/search_datasets.html?searchText=train)                       |
+| Proximity to Park                     | Location   | OneMap API,                                                                                                                  |
+| Proximity to Good Primary School      | Location   | OneMap API (list from [MOE Website](https://www.moe.gov.sg/about-us/organisation-structure/sd/school-clusters))              |
+| Proximity to Shopping Mall            | Location   | OneMap API ([Wikipedia](https://en.wikipedia.org/wiki/List_of_shopping_malls_in_Singapore))                                  |
+| Proximity to Supermarket              | Location   | OneMap API, [data.gov.sg](https://data.gov.sg/datasets?query=supermarket&page=1&resultId=d_8a77ee0446716b2ce475a587004afc73) |
+| No. of Kindergartens within 350m      | Location   | OneMap API                                                                                                                   |
+| No. of Childcare Centres within 350m  | Location   | OneMap API                                                                                                                   |
+| No. of Bus Stop within 350m           | Location   | [LTA Data Mall](https://datamall.lta.gov.sg/content/datamall/en/search_datasets.html?searchText=bus%20stop)                  |
+| No. of Primary Schools within 1km     | Location   | OneMap API (list from [MOE Website](https://www.moe.gov.sg/about-us/organisation-structure/sd/school-clusters))              |
+| Main Upgrading Program                | Structural | [HDB Website](https://services2.hdb.gov.sg/webapp/BB33RESLSTATUS/BB33SEnquiry)                                               |
+
+## 2.1 Geospatial Data
+
+Before proceeding to get the various locational and structural data, I will first get the geospatial data for the relevant resale flats of interest. This process makes use of the OneMap API, making calls to retrieve latitude and longitude information given a specific address.
+
+To do so, I will need to filter the dataset to be within Jan 2023 and Sep 2024 after loading it in with `read_csv()` from `tidyr` package. Additional pre-processing steps are also done to create the address field, the remaining lease year and month fields.
+
+```{r}
+# Load resale data
+resale <- read_csv("data/aspatial/resale.csv") %>%
+  filter(month >= "2023-01" & month <= "2024-09")
+
+# Preprocess data
+resale_tidy <- resale %>%
+  mutate(address = paste(block,street_name)) %>%
+  mutate(remaining_lease_yr = as.integer(
+    str_sub(remaining_lease, 0, 2)))%>%
+  mutate(remaining_lease_mth = as.integer(
+    str_sub(remaining_lease, 9, 11)))
+```
+
+A unique list of the address is obtained to minimize making duplicate API calls to the same address
+
+```{r}
+#| eval: false 
+add_list <- sort(unique(resale_tidy$address))
+
+unique_address <- resale_tidy %>%
+  distinct(town, street_name, block)
+write_csv(unique_address,"data/aspatial/unique_address.csv")
+```
+
+The function to retrieve the coordinates of the location given a specific address is as follows:
+
+```{r}
+#| eval: false
+get_coords <- function(add_list){
+  
+  # Create a data frame to store all retrieved coordinates
+  postal_coords <- data.frame()
+    
+  for (i in add_list){
+    #print(i)
+
+    r <- GET('https://www.onemap.gov.sg/api/common/elastic/search?',
+           query=list(searchVal=i,
+                     returnGeom='Y',
+                     getAddrDetails='Y'))
+    data <- fromJSON(rawToChar(r$content))
+    found <- data$found
+    res <- data$results
+    
+    # Create a new data frame for each address
+    new_row <- data.frame()
+    
+    # If single result, append 
+    if (found == 1){
+      postal <- res$POSTAL 
+      lat <- res$LATITUDE
+      lng <- res$LONGITUDE
+      new_row <- data.frame(address= i, 
+                            postal = postal, 
+                            latitude = lat, 
+                            longitude = lng)
+    }
+    
+    # If multiple results, drop NIL and append top 1
+    else if (found > 1){
+      # Remove those with NIL as postal
+      res_sub <- res[res$POSTAL != "NIL", ]
+      
+      # Set as NA first if no Postal
+      if (nrow(res_sub) == 0) {
+          new_row <- data.frame(address= i, 
+                                postal = NA, 
+                                latitude = NA, 
+                                longitude = NA)
+      }
+      
+      else{
+        top1 <- head(res_sub, n = 1)
+        postal <- top1$POSTAL 
+        lat <- top1$LATITUDE
+        lng <- top1$LONGITUDE
+        new_row <- data.frame(address= i, 
+                              postal = postal, 
+                              latitude = lat, 
+                              longitude = lng)
+      }
+    }
+
+    else {
+      new_row <- data.frame(address= i, 
+                            postal = NA, 
+                            latitude = NA, 
+                            longitude = NA)
+    }
+    
+    # Add the row
+    postal_coords <- rbind(postal_coords, new_row)
+  }
+  return(postal_coords)
+}
+```
+
+After getting the coordinates, they are then saved as rds format for easy retrieval.
+
+```{r}
+#| eval: false
+coords <- get_coords(add_list)
+
+write_rds(coords, "data/processed/coords_full.rds")
+```
+
+The coordinates will be joined together with the resale_tidy dataset
+
+```{r}
+# Load coordinates data
+coords <- read_rds("data/processed/coords_full.rds")
+
+# Join coordinates to resale_tidy dataset
+resale_sf <- left_join(resale_tidy, coords, by = c('address' = 'address'))
+```
+
+## 2.2 Locational Data
+
+### 2.2.1 CBD
+
+The central business district (CBD), is an important region in Singapore since it is where many businesses reside. This is important particularly to working adults as staying at a HDB that is located closer to the CBD could mean the shorter travelling time between their workplace and home. While in recent years there are various other business districts (East - Changi Business Park, Tampines, Paya Lebar; West - One North Business Park), this exercise will only consider the Central Business District.
+
+CBD is defined by Google to have the following coordinates: latitude: 1.287953, longitude 103.851784. I will save this as a sf dataframe with `st_as_sf()` from `sf` package. I will then save this in rds.
+
+```{r}
+#| eval: false
+# Cbd lat lon data
+cbd_lat <- 1.287953
+cbd_lon <- 103.851784
+
+# Create cbd_sf dataframe
+cbd_sf <- data.frame(cbd_lat, cbd_lon) %>%
+  st_as_sf(coords = c("cbd_lon", "cbd_lat"), crs = 4326) %>%
+  st_transform(crs=3414)
+
+# Save as rds
+write_rds(cbd_sf, "data/processed/cbd.rds")
+```
+
+### 2.2.2 Eldercare
+
+Using `httr` and `jsonlite`, I will first get the full list of available themes in OneMap API. The token can be requested from the OneMap [website](https://www.onemap.gov.sg/apidocs/register).
+
+```{r}
+token <- 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1YzVmZDVmNjAzMDJmNTM2M2I3MGYwYjFiYzQxZGFlYiIsImlzcyI6Imh0dHA6Ly9pbnRlcm5hbC1hbGItb20tcHJkZXppdC1pdC1uZXctMTYzMzc5OTU0Mi5hcC1zb3V0aGVhc3QtMS5lbGIuYW1hem9uYXdzLmNvbS9hcGkvdjIvdXNlci9wYXNzd29yZCIsImlhdCI6MTczMDY1MDA3OCwiZXhwIjoxNzMwOTA5Mjc4LCJuYmYiOjE3MzA2NTAwNzgsImp0aSI6ImJtdnFFSG9Dc3pvRjdEQW0iLCJ1c2VyX2lkIjo0OTUyLCJmb3JldmVyIjpmYWxzZX0.xh1WyGBp6fA6-B6X_TKpmof4XIfD_Qd-9PDooi_WOpM'
+
+# token <- 'your_token_here'
 ```
 
 ```{r}
-# Load SG Buildings  from Openstreet Map
-# sg_buildings <- st_read(dsn = "data/geospatial/hotosm_sgp_buildings_polygons_shp/", layer = "hotosm_sgp_buildings_polygons_shp") 
-sg_points <- st_read(dsn = "data/geospatial/hotosm_sgp_points_of_interest_points_shp/",
-                        layer = "hotosm_sgp_points_of_interest_points_shp") %>%
-  filter(shop == "mall")
+#| eval: false
+# Url to get Theme Info
+url <- "https://www.onemap.gov.sg/api/public/themesvc/getAllThemesInfo?moreInfo=Y"
+
+# Update query params and header
+headers <- httr::add_headers(
+  Authorization = token
+)
+
+# Make the GET request
+response <- httr::GET(url, headers)
+
+# Extract the information
+content <- content(response, "text")
+theme_df <- as.data.frame(fromJSON(content))
+
+# Save theme as rds
+write_rds(theme_df, "data/processed/theme.rds")
 ```
+
+From this, I can see that the query
+
+```{r}
+
+```
+
+### 2.2.3 Foodcourt/Hawker Centres
+
+### 2.2.4 MRT
+
+### 2.2.5 Park
+
+### 2.2.6 Primary School
+
+### 2.2.7 Shopping Mall
+
+### 2.2.8 Supermarket
+
+### 2.2.9 Kindergarten
+
+### 2.2.10 Childcare Centres
+
+### 2.2.11 Bus Stop
+
+## 2.3 Structural Data
+
+To get the structural data, I have to manually crawl the HDB website for Main Upgrading Program (MUP) and Home Improvement Program (HIP). The HIP is the successor of the MUP, introduced in 2007. This is done for the unique_addresses created in 2.1. The completed data is then saved as hdb_mup_hip.csv, which will be loaded to be combined with the resale dataset.
+
+```{r}
+# Load mup_hip dataset
+mup_hip <- read_csv("data/aspatial/hdb_mup_hip.csv")
+```
+
+With reference to Manuel Lehner (2011), I will be exploring creating the following binary variables:
+
+-   MUP_completed - if the HDB has been through the main upgrading program
+-   HIP_announced - if the HDB has been announced for the home improvement program.
+-   HIP_progress - if the HDB is currently undergoing the home improvement program
+-   HIP_completed - if the HDB has been through the home improvement program
+
+## 2.4 Proximity Calculation
+
+# 3 Exploratory Data Analysis
+
+# 4 Multiple Linear Regression
+
+# 5 Geographically Weighted Linear Regression
+
+# 6 Conclusion
+
+# References
+
+Manuel Lehner (2011). Modelling housing prices in Singapore applying spatial hedonic regression. Retrieved from <https://archiv.ivt.ethz.ch/docs/students/sa307.pdf>
