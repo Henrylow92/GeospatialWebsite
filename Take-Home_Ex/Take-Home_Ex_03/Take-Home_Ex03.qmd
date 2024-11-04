@@ -60,21 +60,21 @@ Steps used in this sections is largely adapted from the Take-home_Ex3b-HDBDataPr
 
 The goal of this section is to supplement the resale flat price data from data.gov.sg with other geospatial and locational factors. While my seniors have provided useful links as to where those information can be obtained, I'll cross verify it with other updated sources where possible.
 
-| Factor                                | Type       | Source                                                                                                                       |
-|-----------------------------|----------------------------|---------------|
-| Proximity to CBD                      | Location   | \-                                                                                                                           |
-| Proximity to Eldercare                | Location   | OneMap API, [data.gov.sg](https://data.gov.sg/datasets?query=eldercare&page=1&resultId=d_3545b068e3f3506c56b2cb6b6117b884)   |
-| Proximity to Foodcourt/Hawker Centres | Location   | OneMap API, [data.gov.sg](https://data.gov.sg/datasets?query=hawker&page=1&resultId=d_ccca3606c337a5c386b9c88dc0dd08b6)      |
-| Proximity to MRT                      | Location   | [LTA Data Mall](https://datamall.lta.gov.sg/content/datamall/en/search_datasets.html?searchText=train)                       |
-| Proximity to Park                     | Location   | OneMap API,                                                                                                                  |
-| Proximity to Good Primary School      | Location   | OneMap API (list from [MOE Website](https://www.moe.gov.sg/about-us/organisation-structure/sd/school-clusters))              |
-| Proximity to Shopping Mall            | Location   | OneMap API ([Wikipedia](https://en.wikipedia.org/wiki/List_of_shopping_malls_in_Singapore))                                  |
-| Proximity to Supermarket              | Location   | OneMap API, [data.gov.sg](https://data.gov.sg/datasets?query=supermarket&page=1&resultId=d_8a77ee0446716b2ce475a587004afc73) |
-| No. of Kindergartens within 350m      | Location   | OneMap API                                                                                                                   |
-| No. of Childcare Centres within 350m  | Location   | OneMap API                                                                                                                   |
-| No. of Bus Stop within 350m           | Location   | [LTA Data Mall](https://datamall.lta.gov.sg/content/datamall/en/search_datasets.html?searchText=bus%20stop)                  |
-| No. of Primary Schools within 1km     | Location   | OneMap API (list from [MOE Website](https://www.moe.gov.sg/about-us/organisation-structure/sd/school-clusters))              |
-| Main Upgrading Program                | Structural | [HDB Website](https://services2.hdb.gov.sg/webapp/BB33RESLSTATUS/BB33SEnquiry)                                               |
+| Factor                                | Type       | Source                                                                                                                                    |
+|----------------|----------------|-----------------------------------------|
+| Proximity to CBD                      | Location   | \-                                                                                                                                        |
+| Proximity to Eldercare                | Location   | OneMap API, [data.gov.sg](https://data.gov.sg/datasets?query=eldercare&page=1&resultId=d_3545b068e3f3506c56b2cb6b6117b884)                |
+| Proximity to Foodcourt/Hawker Centres | Location   | ~~OneMap API~~, [data.gov.sg](https://data.gov.sg/datasets?query=hawker&page=1&resultId=d_ccca3606c337a5c386b9c88dc0dd08b6)               |
+| Proximity to MRT                      | Location   | [LTA Data Mall](https://datamall.lta.gov.sg/content/datamall/en/search_datasets.html?searchText=train)                                    |
+| Proximity to Park                     | Location   | OneMap API, [data.gov.sg](https://data.gov.sg/datasets?query=parks&page=1&resultId=d_e7289d9a50e45bf1174590e184e6631c)                    |
+| Proximity to Good Primary School      | Location   | OneMap API (list from [MOE Website](https://www.moe.gov.sg/about-us/organisation-structure/sd/school-clusters))                           |
+| Proximity to Shopping Mall            | Location   | [OpenStreetMap](https://overpass-turbo.eu/#), OneMap API ([Wikipedia](https://en.wikipedia.org/wiki/List_of_shopping_malls_in_Singapore)) |
+| Proximity to Supermarket              | Location   | ~~OneMap API~~, [data.gov.sg](https://data.gov.sg/datasets?query=supermarket&page=1&resultId=d_8a77ee0446716b2ce475a587004afc73)          |
+| No. of Kindergartens within 350m      | Location   | OneMap API, [data.gov.sg](https://data.gov.sg/datasets?query=kindergarten&page=1&resultId=d_95aa63998d7de94dd4cb3e8e43a5f6d5)             |
+| No. of Childcare Centres within 350m  | Location   | OneMap API                                                                                                                                |
+| No. of Bus Stop within 350m           | Location   | [LTA Data Mall](https://datamall.lta.gov.sg/content/datamall/en/search_datasets.html?searchText=bus%20stop)                               |
+| No. of Primary Schools within 1km     | Location   | OneMap API (list from [MOE Website](https://www.moe.gov.sg/about-us/organisation-structure/sd/school-clusters))                           |
+| Main Upgrading Program                | Structural | [HDB Website](https://services2.hdb.gov.sg/webapp/BB33RESLSTATUS/BB33SEnquiry)                                                            |
 
 ## 2.1 Geospatial Data
 
@@ -189,11 +189,15 @@ coords <- get_coords(add_list)
 write_rds(coords, "data/processed/coords_full.rds")
 ```
 
-The coordinates will be joined together with the resale_tidy dataset
+The coordinates will be joined together with the resale_tidy dataset.
 
 ```{r}
 # Load coordinates data
 coords <- read_rds("data/processed/coords_full.rds")
+
+# Check coordinates data 
+coords[(is.na(coords$postal) | is.na(coords$latitude) | is.na(coords$longitude) | coords$postal=="NIL"), ]
+
 
 # Join coordinates to resale_tidy dataset
 resale_sf <- left_join(resale_tidy, coords, by = c('address' = 'address'))
@@ -227,6 +231,7 @@ write_rds(cbd_sf, "data/processed/cbd.rds")
 Using `httr` and `jsonlite`, I will first get the full list of available themes in OneMap API. The token can be requested from the OneMap [website](https://www.onemap.gov.sg/apidocs/register).
 
 ```{r}
+#| eval: false
 token <- 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1YzVmZDVmNjAzMDJmNTM2M2I3MGYwYjFiYzQxZGFlYiIsImlzcyI6Imh0dHA6Ly9pbnRlcm5hbC1hbGItb20tcHJkZXppdC1pdC1uZXctMTYzMzc5OTU0Mi5hcC1zb3V0aGVhc3QtMS5lbGIuYW1hem9uYXdzLmNvbS9hcGkvdjIvdXNlci9wYXNzd29yZCIsImlhdCI6MTczMDY1MDA3OCwiZXhwIjoxNzMwOTA5Mjc4LCJuYmYiOjE3MzA2NTAwNzgsImp0aSI6ImJtdnFFSG9Dc3pvRjdEQW0iLCJ1c2VyX2lkIjo0OTUyLCJmb3JldmVyIjpmYWxzZX0.xh1WyGBp6fA6-B6X_TKpmof4XIfD_Qd-9PDooi_WOpM'
 
 # token <- 'your_token_here'
@@ -253,29 +258,647 @@ theme_df <- as.data.frame(fromJSON(content))
 write_rds(theme_df, "data/processed/theme.rds")
 ```
 
-From this, I can see that the query
+From this, I can see that the query parameter for Eldercare is "eldercare".
 
 ```{r}
+#| eval: false
+base_url <- "https://www.onemap.gov.sg/api/public/themesvc/retrieveTheme?queryName="
+parameter <- "eldercare"
 
+url <- paste0(base_url,parameter)
+
+# Make the GET request
+response <- httr::GET(url, headers)
+
+# Extract the information
+content <- content(response, "text")
+eldercare_df <- as.data.frame(fromJSON(content))
+```
+
+The eldercare df will be processed into a sf dataframe
+
+```{r}
+#| eval: false
+# Rename colnames
+colnames(eldercare_df) <- gsub("^SrchResults\\.", "", colnames(eldercare_df))
+
+# Process sf dataframe
+eldercare_sf <- eldercare_df %>%
+  separate(LatLng, into = c("lat", "lon"), sep = ",") %>%
+  select(NAME, ADDRESSPOSTALCODE, ADDRESSSTREETNAME, Type, lat, lon) %>%
+  filter(!is.na(NAME)) %>%
+  st_as_sf(coords = c("lon", "lat"), crs = 4326) %>%
+  st_transform(crs=3414)
+
+
+# Save sf dataframe
+write_rds(eldercare_sf, "data/processed/eldercare_sf.rds")
+```
+
+```{r}
+mpsz19_shp <- st_read(dsn = "data/geospatial/MPSZ-2019/", layer = "MPSZ-2019") %>% 
+  st_transform(crs = 3414)
+```
+
+```{r}
+# Load Data.gov
+eldercare_dg_sf <- st_read("data/geospatial/EldercareServicesSHP", layer = "ELDERCARE") %>%
+  st_transform(crs = 3414)
+
+# Load Saved OneMap API data
+eldercare_sf <- read_rds("data/processed/eldercare_sf.rds")
+```
+
+```{r, fig.height=10, fig.width=12}
+tmap_mode("plot")
+
+tmap_options(check.and.fix = TRUE)
+
+map_onemap <- tm_shape(mpsz19_shp) +
+  tm_polygons() +
+  tm_shape(eldercare_sf) +
+  tm_dots(col='red', size = 0.5) +
+  tm_layout(main.title = "Eldercare (OneMap API)", 
+            main.title.position = ("center"))
+
+
+# Visualize eldercare
+map_data_gov <- tm_shape(mpsz19_shp) +
+  tm_polygons() +
+  tm_shape(eldercare_sf) +
+  tm_dots(col='red', size = 0.5) +
+  tm_layout(main.title = "Eldercare (Data Gov)", 
+            main.title.position = ("center"))
+
+
+tmap_arrange(map_onemap, map_data_gov, ncol = 2, nrow = 1)
 ```
 
 ### 2.2.3 Foodcourt/Hawker Centres
 
+```{r}
+foodcourt <- st_read("data/geospatial/HawkerCentresKML.kml") %>%
+  st_transform(crs = 3414)
+```
+
+```{r, fig.width=12, fig.height=10}
+tmap_mode("plot")
+
+tmap_options(check.and.fix = TRUE)
+
+tm_shape(mpsz19_shp) +
+  tm_polygons() + 
+tm_shape(foodcourt) +
+  tm_dots(col='red', size = 0.5) +
+  tm_layout(main.title = "Hawker Centre (Data Gov)", 
+            main.title.position = ("center"))
+```
+
 ### 2.2.4 MRT
+
+```{r}
+# test_sf <- st_read(dsn = "data/geospatial/TrainStation_Jul2024", layer = "RapidTransitSystemStation") %>%
+#   st_transform(crs = 3414)
+
+# test_sf <- st_read("data/geospatial/TrainStation_Jul2024/RapidTransitSystemStation.shp") %>%
+#   st_transform(crs = 3414)
+```
+
+```{r}
+# Load train station exit data
+train_sf <- st_read(dsn = "data/geospatial/TrainStationExit", layer = "Train_Station_Exit_Layer") %>%
+  st_transform(crs = 3414)
+```
+
+```{r, fig.width=12, fig.height=10}
+tmap_mode("plot")
+
+tmap_options(check.and.fix = TRUE)
+
+tm_shape(mpsz19_shp) +
+  tm_polygons() + 
+tm_shape(train_sf) +
+  tm_dots(col='red', size = 0.5) +
+  tm_layout(main.title = "Train Station Exits (LTA DataMall)", 
+            main.title.position = ("center"))
+```
 
 ### 2.2.5 Park
 
+```{r}
+#| eval: false
+base_url <- "https://www.onemap.gov.sg/api/public/themesvc/retrieveTheme?queryName="
+parameter <- "nationalparks"
+
+url <- paste0(base_url,parameter)
+
+# Make the GET request
+response <- httr::GET(url, headers)
+
+# Extract the information
+content <- content(response, "text")
+parks_df <- as.data.frame(fromJSON(content))
+```
+
+```{r}
+#| eval: false
+# Rename colnames
+colnames(parks_df) <- gsub("^SrchResults\\.", "", colnames(parks_df))
+
+parks_df <- parks_df %>%
+  filter(!is.na(NAME)) %>%
+  distinct()
+
+# Process sf dataframe
+parks_sf <- parks_df %>%
+  separate(LatLng, into = c("lat", "lon"), sep = ",") %>%
+  select(NAME, Type, lat, lon) %>%
+  filter(!is.na(NAME)) %>%
+  st_as_sf(coords = c("lon", "lat"), crs = 4326) %>%
+  st_transform(crs=3414)
+
+# Save sf dataframe
+write_rds(parks_sf, "data/processed/parks_sf.rds")
+```
+
+```{r}
+# Load data.gov.sg parks data
+parks_dg_sf <- st_read("data/geospatial/Parks.kml") %>%
+  st_transform(crs = 3414)
+
+# Load Saved OneMap API data
+parks_sf <- read_rds("data/processed/parks_sf.rds")
+```
+
+```{r, fig.height=10, fig.width=12}
+tmap_mode("plot")
+
+tmap_options(check.and.fix = TRUE)
+
+map_onemap <- tm_shape(mpsz19_shp) +
+  tm_polygons() +
+  tm_shape(parks_sf) +
+  tm_dots(col='red', size = 0.2) +
+  tm_layout(main.title = "Parks (OneMap API)", 
+            main.title.position = ("center"))
+
+
+# Visualize eldercare
+map_data_gov <- tm_shape(mpsz19_shp) +
+  tm_polygons() +
+  tm_shape(parks_dg_sf) +
+  tm_dots(col='red', size = 0.2) +
+  tm_layout(main.title = "Parks (Data Gov)", 
+            main.title.position = ("center"))
+
+
+tmap_arrange(map_onemap, map_data_gov, ncol = 2, nrow = 1)
+```
+
 ### 2.2.6 Primary School
+
+```{r}
+primary_school_list <- c("Admiralty Primary School","Ahmad Ibrahim Primary School","Ai Tong School","Alexandra Primary School",
+                         "Anchor Green Primary School","Anderson Primary School","Ang Mo Kio Primary School","Anglo-Chinese School (Junior)",
+                         "Anglo-Chinese School (Primary)","Angsana Primary School","Beacon Primary School","Bedok Green Primary School",
+                         "Bendemeer Primary School","Blangah Rise Primary School","Boon Lay Garden Primary School","Bukit Panjang Primary School",
+                         "Bukit Timah Primary School","Bukit View Primary School","Canberra Primary School","Canossa Catholic Primary School",
+                         "Cantonment Primary School","Casuarina Primary School","Catholic High School (Primary)","Cedar Primary School",
+                         "Changkat Primary School","CHIJ (Katong) Primary","CHIJ (Kellock)","CHIJ Our Lady of Good Counsel",
+                         "CHIJ Our Lady of the Nativity","CHIJ Our Lady Queen of Peace","CHIJ Primary (Toa Payoh)",
+                         "CHIJ St. Nicholas Girls' School (Primary Section)","Chongfu School","Chongzheng Primary School",
+                         "Chua Chu Kang Primary School","Clementi Primary School","Compassvale Primary School","Concord Primary School",
+                         "Corporation Primary School","Damai Primary School","Dazhong Primary School","De La Salle School",
+                         "East Spring Primary School","Edgefield Primary School","Elias Park Primary School","Endeavour Primary School",
+                         "Evergreen Primary School","Fairfield Methodist School (Primary)","Farrer Park Primary School",
+                         "Fengshan Primary School","Fern Green Primary School","Fernvale Primary School","First Toa Payoh Primary School",
+                         "Frontier Primary School","Fuchun Primary School","Fuhua Primary School","Gan Eng Seng Primary School",
+                         "Geylang Methodist School (Primary)","Gongshang Primary School","Greendale Primary School","Greenridge Primary School",
+                         "Greenwood Primary School","Haig Girls' School","Henry Park Primary School","Holy Innocents' Primary School",
+                         "Hong Wen School","Horizon Primary School","Hougang Primary School","Huamin Primary School","Innova Primary School",
+                         "Jiemin Primary School","Jing Shan Primary School [zh]","Junyuan Primary School","Jurong Primary School",
+                         "Jurong West Primary School","Keming Primary School","Kheng Cheng School","Kong Hwa School","Kranji Primary School",
+                         "Kuo Chuan Presbyterian Primary School","Lakeside Primary School","Lianhua Primary School","Maha Bodhi School",
+                         "Maris Stella High School (Primary Section)","Marsiling Primary School","Marymount Convent School",
+                         "Mayflower Primary School","Mee Toh School","Meridian Primary School","Methodist Girls' School (Primary)",
+                         "Montfort Junior School","Nan Chiau Primary School","Nan Hua Primary School","Nanyang Primary School",
+                         "Naval Base Primary School","New Town Primary School","Ngee Ann Primary School","North Spring Primary School",
+                         "North View Primary School","North Vista Primary School","Northland Primary School","Northoaks Primary School",
+                         "Northshore Primary School","Oasis Primary School","Opera Estate Primary School","Palm View Primary School",
+                         "Park View Primary School","Pasir Ris Primary School","Paya Lebar Methodist Girls' School (Primary)",
+                         "Pei Chun Public School","Pei Hwa Presbyterian Primary School","Pei Tong Primary School","Peiying Primary School",
+                         "Pioneer Primary School","Poi Ching School","Princess Elizabeth Primary School","Punggol Cove Primary School",
+                         "Punggol Green Primary School","Punggol Primary School","Punggol View Primary School","Qifa Primary School",
+                         "Qihua Primary School","Queenstown Primary School","Radin Mas Primary School","Raffles Girls' Primary School",
+                         "Red Swastika School","River Valley Primary School","Riverside Primary School","Rivervale Primary School",
+                         "Rosyth School","Rulang Primary School","Sembawang Primary School","Seng Kang Primary School",
+                         "Sengkang Green Primary School","Shuqun Primary School","Si Ling Primary School",
+                         "Singapore Chinese Girls’ School (Primary)","South View Primary School","Springdale Primary School",
+                         "St. Andrew's Junior School","St. Anthony's Canossian Primary School","St. Anthony's Primary School",
+                         "St. Gabriel's Primary School","St. Hilda's Primary School","St. Joseph's Institution Junior",
+                         "St. Margaret's Primary School","St. Stephen's School","Tampines North Primary School","Tampines Primary School",
+                         "Tanjong Katong Primary School","Tao Nan School","Teck Ghee Primary School","Teck Whye Primary School",
+                         "Telok Kurau Primary School","Temasek Primary School","Townsville Primary School","Unity Primary School",
+                         "Valour Primary School","Waterway Primary School","Wellington Primary School","West Grove Primary School",
+                         "West Spring Primary School","West View Primary School","Westwood Primary School","White Sands Primary School",
+                         "Woodgrove Primary School","Woodlands Primary School","Woodlands Ring Primary School","Xinghua Primary School",
+                         "Xingnan Primary School","Xinmin Primary School","Xishan Primary School","Yangzheng Primary School",
+                         "Yew Tee Primary School","Yio Chu Kang Primary School","Yishun Primary School","Yu Neng Primary School",
+                         "Yuhua Primary School","Yumin Primary School","Zhangde Primary School","Zhenghua Primary School","Zhonghua Primary School"
+                         )
+
+```
+
+```{r}
+#| eval: false
+# Get coordinates of primary schools
+primary_school_coords <- get_coords(primary_school_list)
+
+# Check coordinates data 
+primary_school_coords[(is.na(primary_school_coords$postal) | is.na(primary_school_coords$latitude) | is.na(primary_school_coords$longitude) | primary_school_coords$postal=="NIL"), ]
+```
+
+```{r}
+#| eval: false
+# Convert primary_school_coords to sf
+primary_sch_sf <- primary_school_coords %>%
+  st_as_sf(coords = c("longitude", "latitude"), crs = 4326) %>%
+  st_transform(crs=3414) 
+
+
+# Save primary_sch_sf as rds
+write_rds(primary_sch_sf, "data/processed/primary_sch_sf.rds")
+```
+
+```{r}
+# Load prmary school rds
+primary_sch_sf <- read_rds("data/processed/primary_sch_sf.rds")
+```
+
+```{r, fig.width=12, fig.height=10}
+tmap_mode("plot")
+
+tmap_options(check.and.fix = TRUE)
+
+tm_shape(mpsz19_shp) +
+  tm_polygons() + 
+tm_shape(primary_sch_sf) +
+  tm_dots(col='red', size = 0.5) +
+  tm_layout(main.title = "Train Station Exits (LTA DataMall)", 
+            main.title.position = ("center"))
+```
 
 ### 2.2.7 Shopping Mall
 
+Crawl/verify?
+
+```{r}
+# Mall List from Google
+mall_wiki_list <- c("100 AM","313@Somerset","Aperia","Balestier Hill Shopping Centre","Bugis Cube","Bugis Junction",
+                      "Bugis+","Capitol Piazza","Cathay Cineleisure Orchard","Clarke Quay Central","The Centrepoint",
+                      "City Square Mall","City Gate Mall","CityLink Mall","Duo","Far East Plaza","Funan","Great World City",
+                      "HDB Hub","Holland Village Shopping Mall","ION Orchard","Junction 8","Knightsbridge","Liat Towers",
+                      "Lucky Plaza","Marina Bay Sands","The Shoppes at Marina Bay Sands","Marina Bay Link Mall",
+                      "Marina Square","Millenia Walk","Mustafa Shopping Centre","Ngee Ann City","One Holland Village",
+                      "Orchard Central","Orchard Gateway","Orchard Plaza","Midpoint Orchard","Palais Renaissance",
+                      "People's Park Centre","People's Park Complex","Plaza Singapura","GRiD(pomo)","Raffles City",
+                      "Scotts Square","Shaw House and Centre","Sim Lim Square","Singapore Shopping Centre","The South Beach",
+                      "Square 2","Sunshine Plaza","Suntec City","Tanglin Mall","Tanjong Pagar Centre","Tekka Centre",
+                      "The Adelphi","The Paragon","Tiong Bahru Plaza","The Poiz","Thomson Plaza","United Square","Thomson V",
+                      "Velocity@Novena Square","Wheelock Place","Wisma Atria","Zhongshan Mall","Bedok Mall","Century Square",
+                      "City Plaza","Changi City Point","Downtown East","Djitsun Mall Bedok","Eastpoint Mall","Jewel Changi Airport",
+                      "KINEX (formerly OneKM)","Katong Shopping Centre","Katong Square","Kallang Wave Mall","Leisure Park Kallang",
+                      "i12 Katong","Our Tampines Hub","Parkway Parade","Pasir Ris Mall","Pasir Ris West Plaza","Paya Lebar Square",
+                      "Paya Lebar Quarter (PLQ)","Roxy Square","Singpost Centre","Tampines 1","Tampines Mall","White Sands",
+                      "Elias Mall","Loyang Point","888 Plaza","Admiralty Place","AMK Hub","Canberra Plaza","Causeway Point",
+                      "Broadway Plaza","Jubilee Square","Junction Nine","Marsiling Mall","Northpoint City","Sembawang Shopping Centre",
+                      "Sun Plaza","Vista Point","Wisteria Mall","Woodlands Civic Centre","Woodlands Mart","Woodlands North Plaza",
+                      "Anchorvale Village","Buangkok Square","Compass One","Greenwich V","Heartland Mall","Hougang 1",
+                      "Hougang Green Shopping Mall","Hougang Mall","NEX","Northshore Plaza","Oasis Terraces","Punggol Coast Mall",
+                      "Punggol Plaza","Rivervale Mall","Rivervale Plaza","Sengkang Grand Mall","The Seletar Mall",
+                      "Upper Serangoon Shopping Centre","Waterway Point","myVillage At Serangoon Garden","Beauty World Centre",
+                      "Beauty World Plaza","Bukit Panjang Plaza","Bukit Timah Plaza","Fajar Shopping Centre",
+                      "Greenridge Shopping Centre","Hillion Mall","HillV2","Junction 10","Keat Hong Shopping Centre",
+                      "Limbang Shopping Centre","Lot One","Rail Mall","Sunshine Place","Teck Whye Shopping Centre","West Mall",
+                      "Yew Tee Point","Yew Tee Square","VivoCity","HarbourFront Centre","Alexandra Retail Centre","321 Clementi",
+                      "The Clementi Mall","IMM","Jem","Westgate","Jurong Point","Pioneer Mall","The Star Vista","Alexandra Central",
+                      "Anchorpoint","OD Mall","Boon Lay Shopping Centre","Grantral Mall","Fairprice Hub","Gek Poh Shopping Centre",
+                      "Rochester Mall","Taman Jurong Shopping Centre","West Coast Plaza","Plantation Plaza","Queensway Shopping Centre","The Rail Mall"
+                      )
+```
+
+```{r}
+shoppingmall_sf <- st_read("data/geospatial/Shopping Mall.kml") %>%
+  st_transform(crs = 3414) %>%
+  filter(Name != "" & !is.na(Name)) %>%
+  st_point_on_surface()
+```
+
+```{r, fig.width=12, fig.height=10}
+tmap_mode("view")
+
+tmap_options(check.and.fix = TRUE)
+
+# tm_shape(mpsz19_shp) +
+#   tm_polygons() + 
+tm_shape(shoppingmall_sf) +
+  tm_dots(col='red', size = 0.1) +
+  tm_layout(main.title = "Shopping Malls (OpenStreetMap)", 
+            main.title.position = ("center"))
+```
+
+```{r}
+# Only in wiki
+only_in_wiki <- setdiff(mall_wiki_list, shoppingmall_sf$Name)
+sort(only_in_wiki)
+```
+
+```{r}
+# Only in osm
+only_in_osm <- setdiff(shoppingmall_sf$Name, mall_wiki_list)
+sort(only_in_osm)
+```
+
+```{r}
+#| eval: false
+# Compile list of missing malls
+missing_malls <- c("Balestier Hill Shopping Centre", "Bugis Cube", "Capitol Piazza", "City Gate Mall", "HarbourFront Centre", "Holland Road Shopping Centre", "Oasis Terraces", 
+                   "Pasir Ris West Plaza", "Paya Lebar Quarter", "People's Park Centre", "People's Park Complex", "Singapore Shopping Centre", "Teck Whye Shopping Centre",
+                   "The Adelphi", "Woodlands Civic Centre", "Woodlands Mart", "Woodlands North Plaza")
+
+anothers <- c("OD Mall", # Removed
+            "Our Tampines Hub", # Not a mall 
+            "Punggol Coast Mall",  # Still under construction
+            "Anchorvale Village", # Too new?
+            "Rail Mall", 
+            "Thomson V"  # Not a mall
+            )
+```
+
+```{r}
+#| eval: false
+# Get coordinates of missing malls
+missing_malls_coords <- get_coords(missing_malls)
+
+# Check coordinates data 
+missing_malls_coords[(is.na(missing_malls_coords$postal) | is.na(missing_malls_coords$latitude) | is.na(missing_malls_coords$longitude) | missing_malls_coords$postal=="NIL"), ]
+```
+
+```{r}
+#| eval: false
+# Convert missing_malls_coords to sf
+missing_malls_sf <- missing_malls_coords %>%
+  st_as_sf(coords = c("longitude", "latitude"), crs = 4326) %>%
+  st_transform(crs=3414) 
+
+# Process column names to prepare for rbind
+colnames(missing_malls_sf)[colnames(missing_malls_sf) == "address"] <- "Name"
+colnames(missing_malls_sf)[colnames(missing_malls_sf) == "postal"] <- "Description"
+
+# Merge both datasets
+shopping_mall_full_sf <- rbind(shoppingmall_sf, missing_malls_sf) 
+
+# Save shopping_mall_full
+write_rds(shopping_mall_full_sf, "data/processed/shopping_mall_sf.rds")
+```
+
+```{r}
+# Load shopping mall sf
+shoppingmall_sf <- read_rds("data/processed/shopping_mall_sf.rds")
+```
+
+```{r, fig.width=12, fig.height=10}
+tmap_mode("plot")
+
+tmap_options(check.and.fix = TRUE)
+
+tm_shape(mpsz19_shp) +
+  tm_polygons() +
+tm_shape(shoppingmall_sf) +
+  tm_dots(col='red', size = 0.1) +
+  tm_layout(main.title = "Shopping Malls (OpenStreetMap + OpenMap API)", 
+            main.title.position = ("center"))
+```
+
+```         
+```
+
+```{r}
+# # Define the bounding box for Singapore
+# bbox_singapore <- getbb("Singapore")
+
+# # Query for shopping malls
+# shopping_malls <- opq(bbox = bbox_singapore) %>%
+#   add_osm_feature(key = "shop", value = "mall") %>%
+#   osmdata_sf()
+
+
+# shopping_malls <- opq('Singapore') %>%
+#   add_osm_feature(key = "shop", value = "mall") %>%
+#   osmdata_sf()
+```
+
+```{r}
+# singapore_boundary_query <- opq(bbox = getbb("Singapore")) %>%
+#   add_osm_feature(key = "boundary", value = "administrative") %>%
+#   add_osm_feature(key = "name", value = "Singapore") %>%
+#   osmdata_sf()
+# 
+# # Extract the boundary as an sf object
+# singapore_boundary <- singapore_boundary_query$osm_multipolygons
+# 
+# # Ensure the boundary exists and is non-empty
+# if (nrow(singapore_boundary) > 0) {
+#   # Run a refined query for shopping malls within the Singapore administrative boundary
+#   shopping_malls <- opq(bbox = st_bbox(singapore_boundary)) %>%
+#     add_osm_feature(key = "shop", value = "mall") %>%
+#     osmdata_sf()
+# 
+#   # Filter shopping malls to only include those within the boundary
+#   malls_points <- shopping_malls$osm_points %>%
+#     st_intersection(singapore_boundary) %>%
+#     filter(!is.na(name))
+# 
+#   malls_polygons <- shopping_malls$osm_polygons %>%
+#     st_intersection(singapore_boundary) %>%
+#     filter(!is.na(name))
+# }
+```
+
+```{r}
+# malls_points <- shopping_malls$osm_points %>%
+#   filter(!is.na(name))
+# malls_polygons <- shopping_malls$osm_polygons  %>%
+#   filter(!is.na(name))
+```
+
 ### 2.2.8 Supermarket
+
+```{r}
+supermarket_sf <- st_read("data/geospatial/SupermarketsKML.kml") %>%
+  st_transform(crs = 3414)
+```
+
+```{r, fig.width=12, fig.height=10}
+tmap_mode("plot")
+
+tmap_options(check.and.fix = TRUE)
+
+tm_shape(mpsz19_shp) +
+  tm_polygons() + 
+tm_shape(supermarket_sf) +
+  tm_dots(col='red', size = 0.5) +
+  tm_layout(main.title = "Supermarkets (Data Gov)", 
+            main.title.position = ("center"))
+```
 
 ### 2.2.9 Kindergarten
 
+```{r}
+#| eval: false
+base_url <- "https://www.onemap.gov.sg/api/public/themesvc/retrieveTheme?queryName="
+parameter <- "kindergartens"
+
+url <- paste0(base_url,parameter)
+
+# Make the GET request
+response <- httr::GET(url, headers)
+
+# Extract the information
+content <- content(response, "text")
+kindergarten_df <- as.data.frame(fromJSON(content))
+```
+
+```{r}
+#| eval: false
+# Rename colnames
+colnames(kindergarten_df) <- gsub("^SrchResults\\.", "", colnames(kindergarten_df))
+
+kindergarten_df <- kindergarten_df %>%
+  filter(!is.na(NAME)) %>%
+  distinct()
+
+# Process sf dataframe
+kindergarten_sf <- kindergarten_df %>%
+  separate(LatLng, into = c("lat", "lon"), sep = ",") %>%
+  select(NAME, Type, ADDRESSPOSTALCODE, ADDRESSSTREETNAME, lat, lon) %>%
+  filter(!is.na(NAME)) %>%
+  st_as_sf(coords = c("lon", "lat"), crs = 4326) %>%
+  st_transform(crs=3414)
+
+# Save sf dataframe
+write_rds(kindergarten_sf, "data/processed/kindergarten_sf.rds")
+```
+
+```{r}
+# Load data.gov.sg kindergarten data
+kindergarten_dg_sf <- st_read("data/geospatial/Kindergartens.kml") %>%
+  st_transform(crs = 3414)
+
+# Load Saved OneMap API data
+kindergarten_sf <- read_rds("data/processed/kindergarten_sf.rds")
+```
+
+```{r, fig.height=10, fig.width=12}
+tmap_mode("plot")
+
+tmap_options(check.and.fix = TRUE)
+
+map_onemap <- tm_shape(mpsz19_shp) +
+  tm_polygons() +
+  tm_shape(kindergarten_sf) +
+  tm_dots(col='red', size = 0.2) +
+  tm_layout(main.title = "Kindergartens (OneMap API)", 
+            main.title.position = ("center"))
+
+
+# Visualize eldercare
+map_data_gov <- tm_shape(mpsz19_shp) +
+  tm_polygons() +
+  tm_shape(kindergarten_dg_sf) +
+  tm_dots(col='red', size = 0.2) +
+  tm_layout(main.title = "Kindergartens (Data Gov)", 
+            main.title.position = ("center"))
+
+
+tmap_arrange(map_onemap, map_data_gov, ncol = 2, nrow = 1)
+```
+
 ### 2.2.10 Childcare Centres
 
+```{r}
+#| eval: false
+base_url <- "https://www.onemap.gov.sg/api/public/themesvc/retrieveTheme?queryName="
+parameter <- "childcare"
+
+url <- paste0(base_url,parameter)
+
+# Make the GET request
+response <- httr::GET(url, headers)
+
+# Extract the information
+content <- content(response, "text")
+childcare_df <- as.data.frame(fromJSON(content))
+```
+
+```{r}
+#| eval: false
+# Rename colnames
+colnames(childcare_df) <- gsub("^SrchResults\\.", "", colnames(childcare_df))
+
+childcare_df <- childcare_df %>%
+  filter(!is.na(NAME)) %>%
+  distinct()
+
+# Process sf dataframe
+childcare_sf <- childcare_df %>%
+  separate(LatLng, into = c("lat", "lon"), sep = ",") %>%
+  select(NAME, Type, ADDRESSPOSTALCODE, ADDRESSSTREETNAME, lat, lon) %>%
+  filter(!is.na(NAME)) %>%
+  st_as_sf(coords = c("lon", "lat"), crs = 4326) %>%
+  st_transform(crs=3414)
+
+# Save sf dataframe
+write_rds(childcare_sf, "data/processed/childcare_sf.rds")
+```
+
+```{r}
+# Load Saved OneMap API data
+childcare_sf <- read_rds("data/processed/childcare_sf.rds")
+```
+
+```{r, fig.width=12, fig.height=10}
+tmap_mode("plot")
+
+tmap_options(check.and.fix = TRUE)
+
+tm_shape(mpsz19_shp) +
+  tm_polygons() + 
+tm_shape(childcare_sf) +
+  tm_dots(col='red', size = 0.2) +
+  tm_layout(main.title = "Childcare (OneMap API)", 
+            main.title.position = ("center"))
+```
+
 ### 2.2.11 Bus Stop
+
+```{r}
+bus_sf <- st_read(dsn = "data/geospatial/BusStopLocation_Jul2024", layer = "BusStop") %>%
+  st_transform(crs = 3414)
+```
+
+```{r, fig.width=12, fig.height=10}
+tmap_mode("plot")
+
+tmap_options(check.and.fix = TRUE)
+
+tm_shape(mpsz19_shp) +
+  tm_polygons() + 
+tm_shape(bus_sf) +
+  tm_dots(col='red', size = 0.1) +
+  tm_layout(main.title = "Bus Stops (LTA DataMall)", 
+            main.title.position = ("center"))
+```
 
 ## 2.3 Structural Data
 

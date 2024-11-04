@@ -429,9 +429,9 @@
   {
     "objectID": "In-Class_Ex/In-Class_Ex_10/In-Class_Ex10.html",
     "href": "In-Class_Ex/In-Class_Ex_10/In-Class_Ex10.html",
-    "title": "In Class Exercise 03",
+    "title": "In Class Exercise 10",
     "section": "",
-    "text": "TBC"
+    "text": "-sf package to perform geospatial wrangling tasks \n-SpatialAcc package to model geographical accessibility tasks \n- tmap package for plotting tasks \n- ggstatsplot package for statistical analysis \n-tidyverse package for reading csv files, dataframe processing tasks \n\npacman::p_load(tidyverse, sf, tmap, httr, performance)\n\n\n\n\nThis will allow us to do the geocoding.\n\n# Load resale data\nresale &lt;- read_csv(\"data/aspatial/resale.csv\") %&gt;%\n  filter(month &gt;= \"2023-01\" & month &lt;= \"2024-09\")\n\nRows: 192234 Columns: 11\n── Column specification ────────────────────────────────────────────────────────\nDelimiter: \",\"\nchr (8): month, town, flat_type, block, street_name, storey_range, flat_mode...\ndbl (3): floor_area_sqm, lease_commence_date, resale_price\n\nℹ Use `spec()` to retrieve the full column specification for this data.\nℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.\n\n# Preprocess data\ncondo_resale &lt;- resale %&gt;%\n  mutate(address = paste(block,street_name)) %&gt;%\n  mutate(remaining_lease_yr = as.integer(\n    str_sub(remaining_lease, 0, 2)))%&gt;%\n  mutate(remaining_lease_mth = as.integer(\n    str_sub(remaining_lease, 9, 11)))\n\n\npostcode &lt;- unique(condo_resale$`Postal Code`)\n\n\nurl &lt;- \"https://onemap.gov.sg/api/common/elastic/search\"\nfound &lt;- data.frame()\nnot_found &lt;- data.frame()\n\nfor (postcode in postcode){\n  query &lt;- list('searchVal'=postcode, 'returnGeom'='Y', \n                'getAddrDetails'='Y', 'pageNum'='1')\n  res &lt;- GET(url, query=query)\n  if ((content(res)$found)!=0){\n    found &lt;- rbind(found, data.frame(content(res))[4:13])\n  } else {not_found = data.frame(postcode)\n  }\n}\n\n\n\n\n\n# Load in Thailand data\nprov_sf &lt;- st_read(dsn = \" \", layers = \"\") %&gt;%\n  st_transform()\n\nFirst, convert multipolygons into individual polygons. Area is also calculated for each polygons\n\nsf_polygon &lt;- prow_sf %&gt;%\n  st_cast(\"POLYGON\") %&gt;%\n  mutate(area = st_area(.))\n\nThe data is then grouped by unique name and the largest polygon by area is selected.\n\nprov_cleaned &lt;- sf_polygon %&gt;%\n  group_by(ADM1_EN) %&gt;%\n  filter(area == max(area)) %&gt;%\n  ungroup() %&gt;%\n  select(-area) %&gt;%\n  select(ADM1_EN)\n\n\ntm_shape(prov_cleaned) %&gt;%\n  tm_polygons()"
   },
   {
     "objectID": "In-Class_Ex/In-Class_Ex_02/In-Class_Ex02.html#piazza-issues",
@@ -1419,5 +1419,33 @@
     "title": "GeospatialWebsite",
     "section": "",
     "text": "&lt;!DOCTYPE qgis PUBLIC ‘http://mrcc.com/qgis.dtd’ ‘SYSTEM’&gt;  ELDERCARE  ENG dataset\n\nELDERCARE\n\n                 0 0     false"
+  },
+  {
+    "objectID": "In-Class_Ex/In-Class_Ex_10/In-Class_Ex10.html#load-packages",
+    "href": "In-Class_Ex/In-Class_Ex_10/In-Class_Ex10.html#load-packages",
+    "title": "In Class Exercise 10",
+    "section": "",
+    "text": "-sf package to perform geospatial wrangling tasks \n-SpatialAcc package to model geographical accessibility tasks \n- tmap package for plotting tasks \n- ggstatsplot package for statistical analysis \n-tidyverse package for reading csv files, dataframe processing tasks \n\npacman::p_load(tidyverse, sf, tmap, httr, performance)"
+  },
+  {
+    "objectID": "In-Class_Ex/In-Class_Ex_10/In-Class_Ex10.html#importing-data",
+    "href": "In-Class_Ex/In-Class_Ex_10/In-Class_Ex10.html#importing-data",
+    "title": "In Class Exercise 10",
+    "section": "",
+    "text": "This will allow us to do the geocoding.\n\n# Load resale data\nresale &lt;- read_csv(\"data/aspatial/resale.csv\") %&gt;%\n  filter(month &gt;= \"2023-01\" & month &lt;= \"2024-09\")\n\nRows: 192234 Columns: 11\n── Column specification ────────────────────────────────────────────────────────\nDelimiter: \",\"\nchr (8): month, town, flat_type, block, street_name, storey_range, flat_mode...\ndbl (3): floor_area_sqm, lease_commence_date, resale_price\n\nℹ Use `spec()` to retrieve the full column specification for this data.\nℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.\n\n# Preprocess data\ncondo_resale &lt;- resale %&gt;%\n  mutate(address = paste(block,street_name)) %&gt;%\n  mutate(remaining_lease_yr = as.integer(\n    str_sub(remaining_lease, 0, 2)))%&gt;%\n  mutate(remaining_lease_mth = as.integer(\n    str_sub(remaining_lease, 9, 11)))\n\n\npostcode &lt;- unique(condo_resale$`Postal Code`)\n\n\nurl &lt;- \"https://onemap.gov.sg/api/common/elastic/search\"\nfound &lt;- data.frame()\nnot_found &lt;- data.frame()\n\nfor (postcode in postcode){\n  query &lt;- list('searchVal'=postcode, 'returnGeom'='Y', \n                'getAddrDetails'='Y', 'pageNum'='1')\n  res &lt;- GET(url, query=query)\n  if ((content(res)$found)!=0){\n    found &lt;- rbind(found, data.frame(content(res))[4:13])\n  } else {not_found = data.frame(postcode)\n  }\n}"
+  },
+  {
+    "objectID": "In-Class_Ex/In-Class_Ex_10/In-Class_Ex10.html#other-tips",
+    "href": "In-Class_Ex/In-Class_Ex_10/In-Class_Ex10.html#other-tips",
+    "title": "In Class Exercise 10",
+    "section": "",
+    "text": "# Load in Thailand data\nprov_sf &lt;- st_read(dsn = \" \", layers = \"\") %&gt;%\n  st_transform()\n\nFirst, convert multipolygons into individual polygons. Area is also calculated for each polygons\n\nsf_polygon &lt;- prow_sf %&gt;%\n  st_cast(\"POLYGON\") %&gt;%\n  mutate(area = st_area(.))\n\nThe data is then grouped by unique name and the largest polygon by area is selected.\n\nprov_cleaned &lt;- sf_polygon %&gt;%\n  group_by(ADM1_EN) %&gt;%\n  filter(area == max(area)) %&gt;%\n  ungroup() %&gt;%\n  select(-area) %&gt;%\n  select(ADM1_EN)\n\n\ntm_shape(prov_cleaned) %&gt;%\n  tm_polygons()"
+  },
+  {
+    "objectID": "Take-Home_Ex/Take-Home_Ex_03/data/geospatial/MPSZ-2019/MPSZ-2019.html",
+    "href": "Take-Home_Ex/Take-Home_Ex_03/data/geospatial/MPSZ-2019/MPSZ-2019.html",
+    "title": "GeospatialWebsite",
+    "section": "",
+    "text": "&lt;!DOCTYPE qgis PUBLIC ‘http://mrcc.com/qgis.dtd’ ‘SYSTEM’&gt;     dataset\n\n\n        0 0     false"
   }
 ]

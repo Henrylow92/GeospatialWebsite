@@ -1,7 +1,7 @@
 ---
-title: "In Class Exercise 03"
+title: "In Class Exercise 10"
 author: "Henry Low"
-date: "Aug 26 2024"
+date: "Nov 4 2024"
 date-modified: "last-modified"
 execute:
   evalu: true
@@ -12,4 +12,92 @@ format: html
 editor: visual
 ---
 
-TBC
+# Setting Up
+
+## Load Packages
+
+\-`sf` package to perform geospatial wrangling tasks \
+-`SpatialAcc` package to model geographical accessibility tasks \
+- `tmap` package for plotting tasks \
+- `ggstatsplot` package for statistical analysis \
+-`tidyverse` package for reading csv files, dataframe processing tasks 
+
+```{r}
+pacman::p_load(tidyverse, sf, tmap, httr, performance)
+```
+
+## Importing Data
+
+This will allow us to do the geocoding.
+
+```{r}
+# Load resale data
+resale <- read_csv("data/aspatial/resale.csv") %>%
+  filter(month >= "2023-01" & month <= "2024-09")
+
+# Preprocess data
+condo_resale <- resale %>%
+  mutate(address = paste(block,street_name)) %>%
+  mutate(remaining_lease_yr = as.integer(
+    str_sub(remaining_lease, 0, 2)))%>%
+  mutate(remaining_lease_mth = as.integer(
+    str_sub(remaining_lease, 9, 11)))
+```
+
+```{r}
+#| eval: false
+postcode <- unique(condo_resale$`Postal Code`)
+```
+
+```{r}
+#| eval: false
+url <- "https://onemap.gov.sg/api/common/elastic/search"
+found <- data.frame()
+not_found <- data.frame()
+
+for (postcode in postcode){
+  query <- list('searchVal'=postcode, 'returnGeom'='Y', 
+                'getAddrDetails'='Y', 'pageNum'='1')
+  res <- GET(url, query=query)
+  if ((content(res)$found)!=0){
+    found <- rbind(found, data.frame(content(res))[4:13])
+  } else {not_found = data.frame(postcode)
+  }
+}
+```
+
+## Other Tips
+
+```{r}
+#| eval: false
+# Load in Thailand data
+prov_sf <- st_read(dsn = " ", layers = "") %>%
+  st_transform()
+```
+
+First, convert multipolygons into individual polygons. Area is also calculated for each polygons
+
+```{r}
+#| eval: false
+sf_polygon <- prow_sf %>%
+  st_cast("POLYGON") %>%
+  mutate(area = st_area(.))
+```
+
+The data is then grouped by unique name and the largest polygon by area is selected.
+
+```{r}
+#| eval: false
+prov_cleaned <- sf_polygon %>%
+  group_by(ADM1_EN) %>%
+  filter(area == max(area)) %>%
+  ungroup() %>%
+  select(-area) %>%
+  select(ADM1_EN)
+```
+
+```{r}
+#| eval: false
+tm_shape(prov_cleaned) %>%
+  tm_polygons()
+```
