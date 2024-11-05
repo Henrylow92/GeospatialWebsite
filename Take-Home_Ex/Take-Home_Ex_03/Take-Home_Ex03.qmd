@@ -41,7 +41,6 @@ Master Plan 2019 Subzone Boundary (from In-Class Ex01)\
 
 I will be using the following R packages:\
 -`sf` package to perform geospatial wrangling tasks \
-- `sfdep` package to perform spatial autocorrelation analysis and emerging hotspot analysis \
 - `tidyverse` package for reading csv files, dataframe processing tasks \
 - `ggplot2` and `ggpubr` package for plotting statistical graphics \
 - `DT`, `crosstalk` and `htmltools`, package for visualizing results in a table format \
@@ -49,7 +48,7 @@ I will be using the following R packages:\
 - `tmap` package for plotting tasks 
 
 ```{r}
-pacman::p_load(sf, spdep, GWmodel, SpatialML, tmap, rsample, Metrics, tidyverse, knitr, kableExtra, httr, jsonlite, rvest)
+pacman::p_load(sf, GWmodel, SpatialML, tmap, rsample, Metrics, tidyverse, knitr, kableExtra, httr, jsonlite, rvest)
 ```
 
 # 2 Procuring Dataset
@@ -61,7 +60,7 @@ Steps used in this sections is largely adapted from the Take-home_Ex3b-HDBDataPr
 The goal of this section is to supplement the resale flat price data from data.gov.sg with other geospatial and locational factors. While my seniors have provided useful links as to where those information can be obtained, I'll cross verify it with other updated sources where possible.
 
 | Factor                                | Type       | Source                                                                                                                                    |
-|----------------|----------------|-----------------------------------------|
+|------------------|------------------|-------------------------------------|
 | Proximity to CBD                      | Location   | \-                                                                                                                                        |
 | Proximity to Eldercare                | Location   | OneMap API, [data.gov.sg](https://data.gov.sg/datasets?query=eldercare&page=1&resultId=d_3545b068e3f3506c56b2cb6b6117b884)                |
 | Proximity to Foodcourt/Hawker Centres | Location   | ~~OneMap API~~, [data.gov.sg](https://data.gov.sg/datasets?query=hawker&page=1&resultId=d_ccca3606c337a5c386b9c88dc0dd08b6)               |
@@ -100,10 +99,14 @@ A unique list of the address is obtained to minimize making duplicate API calls 
 
 ```{r}
 #| eval: false 
+# Unique list 
 add_list <- sort(unique(resale_tidy$address))
 
+# Unique address by separate columns
 unique_address <- resale_tidy %>%
   distinct(town, street_name, block)
+
+# Save unique address
 write_csv(unique_address,"data/aspatial/unique_address.csv")
 ```
 
@@ -111,6 +114,7 @@ The function to retrieve the coordinates of the location given a specific addres
 
 ```{r}
 #| eval: false
+# Function to retrieve coordinates
 get_coords <- function(add_list){
   
   # Create a data frame to store all retrieved coordinates
@@ -184,12 +188,14 @@ After getting the coordinates, they are then saved as rds format for easy retrie
 
 ```{r}
 #| eval: false
+# Get coordinates of hdb addresses
 coords <- get_coords(add_list)
 
+# Save coordinates as rds
 write_rds(coords, "data/processed/coords_full.rds")
 ```
 
-The coordinates will be joined together with the resale_tidy dataset.
+The coordinates will be joined together with the resale_tidy dataset. A quick check is needed to ensure that all coordinates retrieved by this process have valid latitude and longitude. While there are a couple of addresses with no postal code, I can just proceed since there are still latitude and longitude coordinates for them.
 
 ```{r}
 # Load coordinates data
@@ -200,33 +206,12 @@ coords[(is.na(coords$postal) | is.na(coords$latitude) | is.na(coords$longitude) 
 
 
 # Join coordinates to resale_tidy dataset
-resale_sf <- left_join(resale_tidy, coords, by = c('address' = 'address'))
+resale_sf <- left_join(resale_tidy, coords, by = c('address' = 'address')) %>%
+  st_as_sf(coords = c("longitude", "latitude"), crs = 4326) %>%
+  st_transform(crs=3414)
 ```
 
 ## 2.2 Locational Data
-
-### 2.2.1 CBD
-
-The central business district (CBD), is an important region in Singapore since it is where many businesses reside. This is important particularly to working adults as staying at a HDB that is located closer to the CBD could mean the shorter travelling time between their workplace and home. While in recent years there are various other business districts (East - Changi Business Park, Tampines, Paya Lebar; West - One North Business Park), this exercise will only consider the Central Business District.
-
-CBD is defined by Google to have the following coordinates: latitude: 1.287953, longitude 103.851784. I will save this as a sf dataframe with `st_as_sf()` from `sf` package. I will then save this in rds.
-
-```{r}
-#| eval: false
-# Cbd lat lon data
-cbd_lat <- 1.287953
-cbd_lon <- 103.851784
-
-# Create cbd_sf dataframe
-cbd_sf <- data.frame(cbd_lat, cbd_lon) %>%
-  st_as_sf(coords = c("cbd_lon", "cbd_lat"), crs = 4326) %>%
-  st_transform(crs=3414)
-
-# Save as rds
-write_rds(cbd_sf, "data/processed/cbd.rds")
-```
-
-### 2.2.2 Eldercare
 
 Using `httr` and `jsonlite`, I will first get the full list of available themes in OneMap API. The token can be requested from the OneMap [website](https://www.onemap.gov.sg/apidocs/register).
 
@@ -258,7 +243,37 @@ theme_df <- as.data.frame(fromJSON(content))
 write_rds(theme_df, "data/processed/theme.rds")
 ```
 
-From this, I can see that the query parameter for Eldercare is "eldercare".
+The Master Plan Subzone boundary data (2019) is also loaded with `st_read()` from `sf` package and projected accordingly with `st_transform()` . This will be important for visualisation of different geospatial data in the subsequent steps.
+
+```{r}
+mpsz19_shp <- st_read(dsn = "data/geospatial/MPSZ-2019/", layer = "MPSZ-2019") %>% 
+  st_transform(crs = 3414)
+```
+
+### 2.2.1 CBD
+
+The central business district (CBD), is an important region in Singapore since it is where many businesses reside. This is important particularly to working adults as staying at a HDB that is located closer to the CBD could mean the shorter travelling time between their workplace and home. While in recent years there are various other business districts (East - Changi Business Park, Tampines, Paya Lebar; West - One North Business Park), this exercise will only consider the Central Business District.
+
+CBD is defined by Google to have the following coordinates: latitude: 1.287953, longitude 103.851784. I will save this as a sf dataframe with `st_as_sf()` from `sf` package. I will then save this in rds.
+
+```{r}
+#| eval: false
+# Cbd lat lon data
+cbd_lat <- 1.287953
+cbd_lon <- 103.851784
+
+# Create cbd_sf dataframe
+cbd_sf <- data.frame(cbd_lat, cbd_lon) %>%
+  st_as_sf(coords = c("cbd_lon", "cbd_lat"), crs = 4326) %>%
+  st_transform(crs=3414)
+
+# Save as rds
+write_rds(cbd_sf, "data/processed/cbd.rds")
+```
+
+### 2.2.2 Eldercare
+
+From the themes, I can see that the query parameter for Eldercare is "eldercare". After retrieving the data with a GET request, I will save it as a rds file for easy retrieval.
 
 ```{r}
 #| eval: false
@@ -273,9 +288,32 @@ response <- httr::GET(url, headers)
 # Extract the information
 content <- content(response, "text")
 eldercare_df <- as.data.frame(fromJSON(content))
+
+# Save eldercare_df
+write_rds(eldercare_df, "data/processed/eldercare_df.rds")
 ```
 
-The eldercare df will be processed into a sf dataframe
+Now, I can load the data and check it.
+
+```{r}
+# Load eldercare_df
+eldercare_df <- read_rds("data/processed/eldercare_df.rds")
+
+# Check output
+head(eldercare_df)
+```
+
+::: callout-note
+:::
+
+After looking at the eldercare dataframe, it is clear that i will need to do some additional processing
+
+1.  Separate the LatLng column (single column of into lat and lon)
+2.  Select only the columns i need, removing the first column with a filter condition
+3.  Now i can proceed to use `st_as_sf()` from `sf` package to convert it into a sf dataframe
+4.  `st_transform()` is then used to do the appropriate projection
+
+Once done, I will save this as an rds file.
 
 ```{r}
 #| eval: false
@@ -295,13 +333,10 @@ eldercare_sf <- eldercare_df %>%
 write_rds(eldercare_sf, "data/processed/eldercare_sf.rds")
 ```
 
-```{r}
-mpsz19_shp <- st_read(dsn = "data/geospatial/MPSZ-2019/", layer = "MPSZ-2019") %>% 
-  st_transform(crs = 3414)
-```
+Since there is also an eldercare dataset at data.gov.sg, I will load that in along with the previously saved eldercare sf dataframe.
 
 ```{r}
-# Load Data.gov
+# Load Eldercare Data.gov.sg dataset 
 eldercare_dg_sf <- st_read("data/geospatial/EldercareServicesSHP", layer = "ELDERCARE") %>%
   st_transform(crs = 3414)
 
@@ -309,60 +344,74 @@ eldercare_dg_sf <- st_read("data/geospatial/EldercareServicesSHP", layer = "ELDE
 eldercare_sf <- read_rds("data/processed/eldercare_sf.rds")
 ```
 
+By visualising both datasets side by side with `tmap_arrange()` from `tmap` package, I can better see if there are any discrepancies to decide which datasets to use and if any additional processing is required.
+
 ```{r, fig.height=10, fig.width=12}
+# Set tmap mode to plot
 tmap_mode("plot")
+
+# Calculate row counts
+num_eldercare_sf <- nrow(eldercare_sf)
+num_eldercare_dg_sf <- nrow(eldercare_dg_sf)
+
 
 tmap_options(check.and.fix = TRUE)
 
+# Visualize eldercare from OneMap API
 map_onemap <- tm_shape(mpsz19_shp) +
   tm_polygons() +
   tm_shape(eldercare_sf) +
-  tm_dots(col='red', size = 0.5) +
-  tm_layout(main.title = "Eldercare (OneMap API)", 
+  tm_dots(col='red', size = 0.2) +
+  tm_layout(main.title = paste("Eldercare (OneMap API) - Count:", num_eldercare_sf),
             main.title.position = ("center"))
 
 
-# Visualize eldercare
+# Visualize eldercare from Data.gov.sg
 map_data_gov <- tm_shape(mpsz19_shp) +
   tm_polygons() +
-  tm_shape(eldercare_sf) +
-  tm_dots(col='red', size = 0.5) +
-  tm_layout(main.title = "Eldercare (Data Gov)", 
+  tm_shape(eldercare_dg_sf) +
+  tm_dots(col='red', size = 0.2) +
+  tm_layout(main.title = paste("Eldercare (Data Gov) - Count:", num_eldercare_dg_sf),
             main.title.position = ("center"))
 
-
+# Visualize both side by side
 tmap_arrange(map_onemap, map_data_gov, ncol = 2, nrow = 1)
 ```
 
+Since the counts for both are the same and there does not seem to be any noticeable discrepancies between either, I can just proceed to use any of them in the subsequent steps.
+
 ### 2.2.3 Foodcourt/Hawker Centres
 
+The hawker centre dataset from data.gov.sg will be loaded in with `st_read()` and projected with `st_transform()` from the `sf` package.
+
 ```{r}
-foodcourt <- st_read("data/geospatial/HawkerCentresKML.kml") %>%
+# Load Hawker Data.gov.sg dataset
+hawker <- st_read("data/geospatial/HawkerCentresKML.kml") %>%
   st_transform(crs = 3414)
 ```
 
+As with other datasets, I will visualize it with `tmap` to ensure that it is fine to use.
+
 ```{r, fig.width=12, fig.height=10}
+# Set tmap mode to plot
 tmap_mode("plot")
 
 tmap_options(check.and.fix = TRUE)
 
+# Visualize hawker centres
 tm_shape(mpsz19_shp) +
   tm_polygons() + 
 tm_shape(foodcourt) +
-  tm_dots(col='red', size = 0.5) +
+  tm_dots(col='red', size = 0.2) +
   tm_layout(main.title = "Hawker Centre (Data Gov)", 
             main.title.position = ("center"))
 ```
 
+Looking at the map, there does not seem to be any anomaly with the points, so I can proceed to use this dataset in the subsequent steps.
+
 ### 2.2.4 MRT
 
-```{r}
-# test_sf <- st_read(dsn = "data/geospatial/TrainStation_Jul2024", layer = "RapidTransitSystemStation") %>%
-#   st_transform(crs = 3414)
-
-# test_sf <- st_read("data/geospatial/TrainStation_Jul2024/RapidTransitSystemStation.shp") %>%
-#   st_transform(crs = 3414)
-```
+The MRT dataset will be loaded in from the TrainStationExit dataset in LTA Datamall with `st_read()` and projected with `st_transform()` from the `sf` package.
 
 ```{r}
 # Load train station exit data
@@ -370,20 +419,28 @@ train_sf <- st_read(dsn = "data/geospatial/TrainStationExit", layer = "Train_Sta
   st_transform(crs = 3414)
 ```
 
+As with other datasets, I will visualize it with `tmap` to ensure that it is fine to use.
+
 ```{r, fig.width=12, fig.height=10}
+# Set tmap mode to plot
 tmap_mode("plot")
 
 tmap_options(check.and.fix = TRUE)
 
+# Visualize train station exits
 tm_shape(mpsz19_shp) +
   tm_polygons() + 
 tm_shape(train_sf) +
-  tm_dots(col='red', size = 0.5) +
+  tm_dots(col='red', size = 0.2) +
   tm_layout(main.title = "Train Station Exits (LTA DataMall)", 
             main.title.position = ("center"))
 ```
 
+Looking at the map, there does not seem to be any anomaly with the points, so I can proceed to use this dataset in the subsequent steps.
+
 ### 2.2.5 Park
+
+From the themes, I noticed that there are a few candidates for the query parameter for parks: "nationalparks", "nparks_parks", "nr_gaz_2005". After some trial and error, I decided to go with "nationalparks" and retrieved the data with a GET request. Following which, I will save it as a rds file for easy retrieval.
 
 ```{r}
 #| eval: false
@@ -398,7 +455,29 @@ response <- httr::GET(url, headers)
 # Extract the information
 content <- content(response, "text")
 parks_df <- as.data.frame(fromJSON(content))
+
+# Save parks_df
+write_rds(parks_df, "data/processed/parks_df.rds")
 ```
+
+Now, I can load the data and check it.
+
+```{r}
+# Load parks_df
+parks_df <- read_rds("data/processed/parks_df.rds")
+
+# Check output
+head(parks_df)
+```
+
+After looking at the eldercare dataframe, it is clear that i will need to do some additional processing similar with eldercare
+
+1.  Separate the LatLng column (single column of into lat and lon)
+2.  Select only the columns i need, removing the first column with a filter condition
+3.  Now i can proceed to use `st_as_sf()` from `sf` package to convert it into a sf dataframe
+4.  `st_transform()` is then used to do the appropriate projection
+
+Once done, I will save this as an rds file.
 
 ```{r}
 #| eval: false
@@ -421,6 +500,8 @@ parks_sf <- parks_df %>%
 write_rds(parks_sf, "data/processed/parks_sf.rds")
 ```
 
+Since there is also an parks dataset at data.gov.sg, I will load that in along with the previously saved parks sf dataframe.
+
 ```{r}
 # Load data.gov.sg parks data
 parks_dg_sf <- st_read("data/geospatial/Parks.kml") %>%
@@ -430,34 +511,82 @@ parks_dg_sf <- st_read("data/geospatial/Parks.kml") %>%
 parks_sf <- read_rds("data/processed/parks_sf.rds")
 ```
 
+Similar with eldercare, I will visualise both datasets side by side with `tmap_arrange()` from `tmap` package, to better see if there are any discrepancies to decide which datasets to use and if any additional processing is required.
+
 ```{r, fig.height=10, fig.width=12}
+# Set tmap mode to view
+tmap_mode("plot")
+
+# Calculate row counts
+num_parks_sf <- nrow(parks_sf)
+num_parks_dg_sf <- nrow(parks_dg_sf)
+
+tmap_options(check.and.fix = TRUE)
+
+# Visualize parks from OneMap API
+map_onemap <- tm_shape(mpsz19_shp) +
+  tm_polygons() +
+  tm_shape(parks_sf) +
+  tm_dots(col='red', size = 0.1) +
+  tm_layout(main.title = paste("Parks (OneMap API) - Count:", num_parks_sf), 
+            main.title.position = ("center"))
+
+
+# Visualize parks from Data.gov.sg
+map_data_gov <- tm_shape(mpsz19_shp) +
+  tm_polygons() +
+  tm_shape(parks_dg_sf) +
+  tm_dots(col='red', size = 0.1) +
+  tm_layout(main.title = paste("Parks (Data Gov) - Count:", num_parks_dg_sf), 
+            main.title.position = ("center"))
+
+# Visualize both side by side
+tmap_arrange(map_onemap, map_data_gov, ncol = 2, nrow = 1)
+```
+
+Parks from OneMap API are greater than that from Data.gov. Also, Data.gov has 1 park suspiciously south of Singapore in the middle of 2 islands. Therefore, moving forward I will use the OneMap API dataset for Parks instead. Nevertheless, parks from the North-Eastern Islands" will be removed as I dont think they are relevant in consideration for proximity to HDBs. Once done, I will save this as an updated rds file.
+
+```{r}
+# Remove North-Eastern Islands parks
+mpsz19_shp_filtered <- mpsz19_shp %>%
+  filter(SUBZONE_N != "NORTH-EASTERN ISLANDS")
+
+# Filter parks that are within filtered mpsz19
+parks_updated_sf <- parks_sf[
+  apply(st_within(parks_sf, mpsz19_shp_filtered, sparse = FALSE), 1, any), 
+]
+```
+
+Now I will visualize it again to confirm
+
+```{r, fig.width=12, fig.height=10}
+# Set tmap mode to plot
 tmap_mode("plot")
 
 tmap_options(check.and.fix = TRUE)
 
-map_onemap <- tm_shape(mpsz19_shp) +
-  tm_polygons() +
-  tm_shape(parks_sf) +
+# Visualize train station exits
+tm_shape(mpsz19_shp) +
+  tm_polygons() + 
+tm_shape(parks_updated_sf) +
   tm_dots(col='red', size = 0.2) +
-  tm_layout(main.title = "Parks (OneMap API)", 
+  tm_layout(main.title = "Parks (OneMap API) Updated", 
             main.title.position = ("center"))
+```
 
+Now, I can save them to be used in the subseqent steps.
 
-# Visualize eldercare
-map_data_gov <- tm_shape(mpsz19_shp) +
-  tm_polygons() +
-  tm_shape(parks_dg_sf) +
-  tm_dots(col='red', size = 0.2) +
-  tm_layout(main.title = "Parks (Data Gov)", 
-            main.title.position = ("center"))
-
-
-tmap_arrange(map_onemap, map_data_gov, ncol = 2, nrow = 1)
+```{r}
+# Save updated park sf dataframe as rds
+write_rds(parks_updated_sf, "data/processed/parks_updated_sf.rds")
 ```
 
 ### 2.2.6 Primary School
 
+The list of primary schools is obtained from the MOE website.
+
 ```{r}
+#| eval: false
 primary_school_list <- c("Admiralty Primary School","Ahmad Ibrahim Primary School","Ai Tong School","Alexandra Primary School",
                          "Anchor Green Primary School","Anderson Primary School","Ang Mo Kio Primary School","Anglo-Chinese School (Junior)",
                          "Anglo-Chinese School (Primary)","Angsana Primary School","Beacon Primary School","Bedok Green Primary School",
@@ -509,6 +638,8 @@ primary_school_list <- c("Admiralty Primary School","Ahmad Ibrahim Primary Schoo
 
 ```
 
+For each of the
+
 ```{r}
 #| eval: false
 # Get coordinates of primary schools
@@ -550,7 +681,7 @@ tm_shape(primary_sch_sf) +
 
 ### 2.2.7 Shopping Mall
 
-Crawl/verify?
+adsadsasd
 
 ```{r}
 # Mall List from Google
@@ -678,58 +809,6 @@ tm_shape(shoppingmall_sf) +
   tm_dots(col='red', size = 0.1) +
   tm_layout(main.title = "Shopping Malls (OpenStreetMap + OpenMap API)", 
             main.title.position = ("center"))
-```
-
-```         
-```
-
-```{r}
-# # Define the bounding box for Singapore
-# bbox_singapore <- getbb("Singapore")
-
-# # Query for shopping malls
-# shopping_malls <- opq(bbox = bbox_singapore) %>%
-#   add_osm_feature(key = "shop", value = "mall") %>%
-#   osmdata_sf()
-
-
-# shopping_malls <- opq('Singapore') %>%
-#   add_osm_feature(key = "shop", value = "mall") %>%
-#   osmdata_sf()
-```
-
-```{r}
-# singapore_boundary_query <- opq(bbox = getbb("Singapore")) %>%
-#   add_osm_feature(key = "boundary", value = "administrative") %>%
-#   add_osm_feature(key = "name", value = "Singapore") %>%
-#   osmdata_sf()
-# 
-# # Extract the boundary as an sf object
-# singapore_boundary <- singapore_boundary_query$osm_multipolygons
-# 
-# # Ensure the boundary exists and is non-empty
-# if (nrow(singapore_boundary) > 0) {
-#   # Run a refined query for shopping malls within the Singapore administrative boundary
-#   shopping_malls <- opq(bbox = st_bbox(singapore_boundary)) %>%
-#     add_osm_feature(key = "shop", value = "mall") %>%
-#     osmdata_sf()
-# 
-#   # Filter shopping malls to only include those within the boundary
-#   malls_points <- shopping_malls$osm_points %>%
-#     st_intersection(singapore_boundary) %>%
-#     filter(!is.na(name))
-# 
-#   malls_polygons <- shopping_malls$osm_polygons %>%
-#     st_intersection(singapore_boundary) %>%
-#     filter(!is.na(name))
-# }
-```
-
-```{r}
-# malls_points <- shopping_malls$osm_points %>%
-#   filter(!is.na(name))
-# malls_polygons <- shopping_malls$osm_polygons  %>%
-#   filter(!is.na(name))
 ```
 
 ### 2.2.8 Supermarket
