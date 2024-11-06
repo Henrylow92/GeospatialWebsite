@@ -801,8 +801,8 @@ mall_wiki_list <- c("100 AM","313@Somerset","Aperia","Balestier Hill Shopping Ce
 It is always good to visualize the data to check for anomaly.
 
 ```{r, fig.width=12, fig.height=10}
-# Set tmap mode to view
-tmap_mode("view")
+# Set tmap mode to plot
+tmap_mode("plot")
 
 tmap_options(check.and.fix = TRUE)
 
