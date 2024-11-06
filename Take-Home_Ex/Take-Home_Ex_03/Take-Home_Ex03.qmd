@@ -42,13 +42,16 @@ Master Plan 2019 Subzone Boundary (from In-Class Ex01)\
 I will be using the following R packages:\
 -`sf` package to perform geospatial wrangling tasks \
 - `tidyverse` package for reading csv files, dataframe processing tasks \
-- `ggplot2` and `ggpubr` package for plotting statistical graphics \
+- `matrixStats` package for matrix processing \
+- `ggplot2`, `ggpubr` and `ggstatsplot` package for plotting statistical graphics \
+- `heatmaply` package for attribute standardisation \
 - `DT`, `crosstalk` and `htmltools`, package for visualizing results in a table format \
 - `Kendall` package for performing and visualizing Mann-Kendall Test \
 - `tmap` package for plotting tasks 
 
 ```{r}
-pacman::p_load(sf, GWmodel, SpatialML, tmap, rsample, Metrics, tidyverse, knitr, kableExtra, httr, jsonlite, rvest)
+pacman::p_load(sf, tidyverse, matrixStats, ggplot2, ggpubr, ggstatsplot, heatmaply, 
+               GWmodel, SpatialML, tmap, rsample, Metrics, knitr, kableExtra, httr, jsonlite, rvest)
 ```
 
 # 2 Procuring Dataset
@@ -60,7 +63,7 @@ Steps used in this sections is largely adapted from the Take-home_Ex3b-HDBDataPr
 The goal of this section is to supplement the resale flat price data from data.gov.sg with other geospatial and locational factors. While my seniors have provided useful links as to where those information can be obtained, I'll cross verify it with other updated sources where possible.
 
 | Factor                                | Type       | Source                                                                                                                                    |
-|------------------|------------------|-------------------------------------|
+|-------------|-------------|----------------------------------------------|
 | Proximity to CBD                      | Location   | \-                                                                                                                                        |
 | Proximity to Eldercare                | Location   | OneMap API, [data.gov.sg](https://data.gov.sg/datasets?query=eldercare&page=1&resultId=d_3545b068e3f3506c56b2cb6b6117b884)                |
 | Proximity to Foodcourt/Hawker Centres | Location   | ~~OneMap API~~, [data.gov.sg](https://data.gov.sg/datasets?query=hawker&page=1&resultId=d_ccca3606c337a5c386b9c88dc0dd08b6)               |
@@ -217,9 +220,7 @@ Using `httr` and `jsonlite`, I will first get the full list of available themes 
 
 ```{r}
 #| eval: false
-token <- 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1YzVmZDVmNjAzMDJmNTM2M2I3MGYwYjFiYzQxZGFlYiIsImlzcyI6Imh0dHA6Ly9pbnRlcm5hbC1hbGItb20tcHJkZXppdC1pdC1uZXctMTYzMzc5OTU0Mi5hcC1zb3V0aGVhc3QtMS5lbGIuYW1hem9uYXdzLmNvbS9hcGkvdjIvdXNlci9wYXNzd29yZCIsImlhdCI6MTczMDY1MDA3OCwiZXhwIjoxNzMwOTA5Mjc4LCJuYmYiOjE3MzA2NTAwNzgsImp0aSI6ImJtdnFFSG9Dc3pvRjdEQW0iLCJ1c2VyX2lkIjo0OTUyLCJmb3JldmVyIjpmYWxzZX0.xh1WyGBp6fA6-B6X_TKpmof4XIfD_Qd-9PDooi_WOpM'
-
-# token <- 'your_token_here'
+token <- 'your_token_here'
 ```
 
 ```{r}
@@ -280,6 +281,11 @@ From the themes, I can see that the query parameter for Eldercare is "eldercare"
 base_url <- "https://www.onemap.gov.sg/api/public/themesvc/retrieveTheme?queryName="
 parameter <- "eldercare"
 
+# Update query params and header
+headers <- httr::add_headers(
+  Authorization = token
+)
+
 url <- paste0(base_url,parameter)
 
 # Make the GET request
@@ -302,9 +308,6 @@ eldercare_df <- read_rds("data/processed/eldercare_df.rds")
 # Check output
 head(eldercare_df)
 ```
-
-::: callout-note
-:::
 
 After looking at the eldercare dataframe, it is clear that i will need to do some additional processing
 
@@ -386,7 +389,7 @@ The hawker centre dataset from data.gov.sg will be loaded in with `st_read()` an
 
 ```{r}
 # Load Hawker Data.gov.sg dataset
-hawker <- st_read("data/geospatial/HawkerCentresKML.kml") %>%
+hawker_sf <- st_read("data/geospatial/HawkerCentresKML.kml") %>%
   st_transform(crs = 3414)
 ```
 
@@ -401,7 +404,7 @@ tmap_options(check.and.fix = TRUE)
 # Visualize hawker centres
 tm_shape(mpsz19_shp) +
   tm_polygons() + 
-tm_shape(foodcourt) +
+tm_shape(hawker_sf) +
   tm_dots(col='red', size = 0.2) +
   tm_layout(main.title = "Hawker Centre (Data Gov)", 
             main.title.position = ("center"))
@@ -447,6 +450,11 @@ From the themes, I noticed that there are a few candidates for the query paramet
 base_url <- "https://www.onemap.gov.sg/api/public/themesvc/retrieveTheme?queryName="
 parameter <- "nationalparks"
 
+# Update query params and header
+headers <- httr::add_headers(
+  Authorization = token
+)
+
 url <- paste0(base_url,parameter)
 
 # Make the GET request
@@ -470,7 +478,7 @@ parks_df <- read_rds("data/processed/parks_df.rds")
 head(parks_df)
 ```
 
-After looking at the eldercare dataframe, it is clear that i will need to do some additional processing similar with eldercare
+After looking at the parks dataframe, it is clear that i will need to do some additional processing similar with eldercare
 
 1.  Separate the LatLng column (single column of into lat and lon)
 2.  Select only the columns i need, removing the first column with a filter condition
@@ -483,10 +491,6 @@ Once done, I will save this as an rds file.
 #| eval: false
 # Rename colnames
 colnames(parks_df) <- gsub("^SrchResults\\.", "", colnames(parks_df))
-
-parks_df <- parks_df %>%
-  filter(!is.na(NAME)) %>%
-  distinct()
 
 # Process sf dataframe
 parks_sf <- parks_df %>%
@@ -638,16 +642,28 @@ primary_school_list <- c("Admiralty Primary School","Ahmad Ibrahim Primary Schoo
 
 ```
 
-For each of the
+For each of the primary schools, I will reuse the get_coords function to retrieve the coordinates. These will then be saved as rds for easy retrieval.
 
 ```{r}
 #| eval: false
 # Get coordinates of primary schools
 primary_school_coords <- get_coords(primary_school_list)
 
+# Save coordinates as rds
+write_rds(primary_school_coords, "data/processed/primary_school_coords.rds")
+```
+
+Now i can load in the primary school coordinates and check if there are any missing data.
+
+```{r}
+# Load primary school coordinates
+primary_school_coords <- read_rds("data/processed/primary_school_coords.rds")
+  
 # Check coordinates data 
 primary_school_coords[(is.na(primary_school_coords$postal) | is.na(primary_school_coords$latitude) | is.na(primary_school_coords$longitude) | primary_school_coords$postal=="NIL"), ]
 ```
+
+Now that the coordinates are fine, I can proceed to convert them into a sf dataframe with `st_as_sf()` and do the appropriate projection with `st_transform()`. It will then be saved as a rds file.
 
 ```{r}
 #| eval: false
@@ -661,30 +677,94 @@ primary_sch_sf <- primary_school_coords %>%
 write_rds(primary_sch_sf, "data/processed/primary_sch_sf.rds")
 ```
 
+Now i can load the rds file back.
+
 ```{r}
 # Load prmary school rds
 primary_sch_sf <- read_rds("data/processed/primary_sch_sf.rds")
 ```
 
+As with other datasets, I will visualize it with `tmap` to ensure that it is fine to use.
+
 ```{r, fig.width=12, fig.height=10}
+# Set tmap mode to plot
 tmap_mode("plot")
 
 tmap_options(check.and.fix = TRUE)
 
+# Visualize primary schools
 tm_shape(mpsz19_shp) +
   tm_polygons() + 
 tm_shape(primary_sch_sf) +
-  tm_dots(col='red', size = 0.5) +
-  tm_layout(main.title = "Train Station Exits (LTA DataMall)", 
+  tm_dots(col='red', size = 0.2) +
+  tm_layout(main.title = "Primary Schools (OpenMap API)", 
             main.title.position = ("center"))
+```
+
+Looking at the map, there does not seem to be any anomaly with the points, so I can proceed to use this dataset in the subsequent steps. However, 1 further step is required given that we want to identify "good" primary schools. Although my seniors used [schlah](https://schlah.com/primary-schools), I decided to go [outofbox](https://outofbox.com.sg/best-primary-schools-in-singapore/) after cross referencing its list with others (e.g. [propertyguru](https://www.propertyguru.com.sg/property-guides/popular-primary-school-singapore-properties-within-1km-45085), [asipretutor](https://www.aspirertutor.com/top-primary-schools-in-singapore/), etc.) While outofbox does not have a sophisticated model like schlah, I find that demand through oversubscription is the purest form of demand. For this list, I will use the top 20 which is about \~10% of the primary schools in Singapore.
+
+After filtering, this will be saved to be used in the later sections.
+
+```{r}
+# List of good primary schools
+good_primary_school_list <- c("Methodist Girls' School (Primary)", "Tao Nan School", "Ai Tong School", 
+                              "Holy Innocents' Primary School", "CHIJ St. Nicholas Girls' School (Primary Section)", 
+                              "Admiralty Primary School", "St. Joseph's Institution Junior", "Catholic High School (Primary)",
+                              "Anglo-Chinese School (Junior)", "Chongfu School", "Kong Hwa School", "St. Hilda's Primary School", 
+                              "Anglo-Chinese School (Primary)", "Nan Chiau Primary School", "Nan Hua Primary School", 
+                              "Nanyang Primary School", "Pei Hwa Presbyterian Primary School", "Kuo Chuan Presbyterian Primary School",
+                              "Rulang Primary School", "Singapore Chinese Girls’ School (Primary)")
+
+# Filter primary school
+gd_primary_sch_sf <- primary_sch_sf %>%
+  filter(address %in% good_primary_school_list)
+
+# Save to rds
+write_rds(gd_primary_sch_sf, "data/processed/gd_primary_sch_sf.rds")
 ```
 
 ### 2.2.7 Shopping Mall
 
-adsadsasd
+Shopping mall seems to be the most tricky out of all the other datasets. While there are many lists online, I chanced upon the OpenStreetMap API via the overpass-turbo. Since shopping malls on OpenStreetMap have the attribute "shop"= "mall", a query can be run to retrieve all shopping malls in Singapore.
+
+::: callout-note
+Besides this, I have explored the following:
+
+-   There is also a `osmdata` [package](https://cran.r-project.org/web/packages/osmdata/vignettes/osmdata.html). While it is also able to extract OpenStreetMap data, the resulting data is counter intuitive (i.e. containing data from Johor Bahru) and it has separate points and polygons output.
+-   OpenStreetMap data from [HDX](https://data.humdata.org/dataset/hotosm_sgp_buildings?) containing buildings from Singapore. After working with it, I found that filtering buildings by "shop" = "mall" does not give much results. This may be because shopping malls are not listed as buildings.
+:::
+
+::: columns
+::: {.column width="40%"}
+1.  Go to [overpass-turbo website](https://overpass-turbo.eu/#)
+2.  Run the following query:
+    -   \[out:json\]\[timeout:25\]; area\["name"="Singapore"\]-\>.searchArea; ( node["shop"="mall"](area.searchArea); way["shop"="mall"](area.searchArea); relation["shop"="mall"](area.searchArea); ); out body; \>; out skel qt;
+3.  After generating the results, they can be exported as KML and saved into the data folder.
+:::
+
+::: {.column width="60%"}
+![](images/overpass.png){width="588"}
+:::
+:::
+
+I will load in the shopping mall data from OpenStreetMap with `st_read()` and do some basic processing:
+
+-   Projection with `st_transform()` from `sf` package
+-   Filter out data that have no name
+-   Use `st_point_on_surface()` to convert all "POLYGON" (if any) into "POINT".
 
 ```{r}
-# Mall List from Google
+# Load Osm shopping mall data
+shoppingmall_sf <- st_read("data/geospatial/Shopping Mall.kml") %>%
+  st_transform(crs = 3414) %>%
+  filter(Name != "" & !is.na(Name)) %>%
+  st_point_on_surface()
+```
+
+I will use the list of shopping malls from Wikipedia to cross reference the 2 lists of malls.
+
+```{r}
+# Mall List from Wiki
 mall_wiki_list <- c("100 AM","313@Somerset","Aperia","Balestier Hill Shopping Centre","Bugis Cube","Bugis Junction",
                       "Bugis+","Capitol Piazza","Cathay Cineleisure Orchard","Clarke Quay Central","The Centrepoint",
                       "City Square Mall","City Gate Mall","CityLink Mall","Duo","Far East Plaza","Funan","Great World City",
@@ -718,25 +798,22 @@ mall_wiki_list <- c("100 AM","313@Somerset","Aperia","Balestier Hill Shopping Ce
                       )
 ```
 
-```{r}
-shoppingmall_sf <- st_read("data/geospatial/Shopping Mall.kml") %>%
-  st_transform(crs = 3414) %>%
-  filter(Name != "" & !is.na(Name)) %>%
-  st_point_on_surface()
-```
+It is always good to visualize the data to check for anomaly.
 
 ```{r, fig.width=12, fig.height=10}
+# Set tmap mode to view
 tmap_mode("view")
 
 tmap_options(check.and.fix = TRUE)
 
-# tm_shape(mpsz19_shp) +
-#   tm_polygons() + 
+# Visualize shopping malls
 tm_shape(shoppingmall_sf) +
   tm_dots(col='red', size = 0.1) +
   tm_layout(main.title = "Shopping Malls (OpenStreetMap)", 
             main.title.position = ("center"))
 ```
+
+Using `setdiff()`, I will compare both lists, to see which malls are listed in one list but not the other.
 
 ```{r}
 # Only in wiki
@@ -750,30 +827,50 @@ only_in_osm <- setdiff(shoppingmall_sf$Name, mall_wiki_list)
 sort(only_in_osm)
 ```
 
+Comparing both lists, I found that there are a number of malls that are labelled different in both lists. This should not be an issue. However, there are some malls in the Wikipedia list that are not in the OpenStreetMap list.
+
+After further investigation, I compiled the list of missing malls. There are also malls that are listed in the Wikipedia but I found it to be not relevant for the current exercise:
+
+-   OD Mall: Removed
+-   Our Tampines Hub: Not a mall
+-   Punggol Coast Mall: Still under construction
+-   Rail Mall
+-   Thomson V: Not a mall
+
 ```{r}
 #| eval: false
 # Compile list of missing malls
-missing_malls <- c("Balestier Hill Shopping Centre", "Bugis Cube", "Capitol Piazza", "City Gate Mall", "HarbourFront Centre", "Holland Road Shopping Centre", "Oasis Terraces", 
-                   "Pasir Ris West Plaza", "Paya Lebar Quarter", "People's Park Centre", "People's Park Complex", "Singapore Shopping Centre", "Teck Whye Shopping Centre",
-                   "The Adelphi", "Woodlands Civic Centre", "Woodlands Mart", "Woodlands North Plaza")
-
-anothers <- c("OD Mall", # Removed
-            "Our Tampines Hub", # Not a mall 
-            "Punggol Coast Mall",  # Still under construction
-            "Anchorvale Village", # Too new?
-            "Rail Mall", 
-            "Thomson V"  # Not a mall
-            )
+missing_malls <- c("Anchorvale Village", "Balestier Hill Shopping Centre", "Bugis Cube", "Capitol Piazza", "City Gate Mall", 
+                   "HarbourFront Centre", "Holland Road Shopping Centre", "Oasis Terraces", "Pasir Ris West Plaza", 
+                   "Paya Lebar Quarter", "People's Park Centre", "People's Park Complex", "Singapore Shopping Centre", 
+                   "Teck Whye Shopping Centre", "The Adelphi", "The Rail Mall", "Woodlands Civic Centre", 
+                   "Woodlands Mart", "Woodlands North Plaza")
 ```
+
+Using the get_coords function, I can then retrieve the geospatial information for those malls. These will be saved as rds for easy retrieval.
 
 ```{r}
 #| eval: false
 # Get coordinates of missing malls
 missing_malls_coords <- get_coords(missing_malls)
 
+# Save coordinates as rds
+write_rds(missing_malls_coords, "data/processed/missing_malls_coords.rds")
+```
+
+Now, I will load it back in to check if there are any missing coordinates.
+
+```{r}
+# Load missing malls coordinates
+missing_malls_coords <- read_rds("data/processed/missing_malls_coords.rds")
+
 # Check coordinates data 
 missing_malls_coords[(is.na(missing_malls_coords$postal) | is.na(missing_malls_coords$latitude) | is.na(missing_malls_coords$longitude) | missing_malls_coords$postal=="NIL"), ]
 ```
+
+Now that the coordinates are fine, I can proceed to convert them into a sf dataframe with `st_as_sf()` and do the appropriate projection with `st_transform()`. Once done, a slight adjustment will be made to the column names so that it can be easily appended to the shopping mall sf dataframe with `rbind()`.
+
+The full shopping mall sf dataframe will then be saved as a rds file.
 
 ```{r}
 #| eval: false
@@ -793,10 +890,14 @@ shopping_mall_full_sf <- rbind(shoppingmall_sf, missing_malls_sf)
 write_rds(shopping_mall_full_sf, "data/processed/shopping_mall_sf.rds")
 ```
 
+This can then be loaded in for one final check.
+
 ```{r}
 # Load shopping mall sf
 shoppingmall_sf <- read_rds("data/processed/shopping_mall_sf.rds")
 ```
+
+`tmap` package will be used to visualize the updated shopping mall points.
 
 ```{r, fig.width=12, fig.height=10}
 tmap_mode("plot")
@@ -811,32 +912,50 @@ tm_shape(shoppingmall_sf) +
             main.title.position = ("center"))
 ```
 
+Looking at the map, there does not seem to be any anomaly with the points, so I can proceed to use this dataset in the subsequent steps.
+
 ### 2.2.8 Supermarket
 
+The supermarket dataset from data.gov.sg will be loaded in with `st_read()` and projected with `st_transform()` from the `sf` package.
+
 ```{r}
+# Load Supermarket Data.gov.sg dataset
 supermarket_sf <- st_read("data/geospatial/SupermarketsKML.kml") %>%
   st_transform(crs = 3414)
 ```
 
+As with other datasets, I will visualize it with `tmap` to ensure that it is fine to use.
+
 ```{r, fig.width=12, fig.height=10}
+# Set tmap mode to plot
 tmap_mode("plot")
 
 tmap_options(check.and.fix = TRUE)
 
+# Visualize supermarkets
 tm_shape(mpsz19_shp) +
-  tm_polygons() + 
+  tm_polygons() +
 tm_shape(supermarket_sf) +
-  tm_dots(col='red', size = 0.5) +
+  tm_dots(col='red', size = 0.2) +
   tm_layout(main.title = "Supermarkets (Data Gov)", 
             main.title.position = ("center"))
 ```
 
+Although the data point in Harborfront Centre seems to be suspiciously located, it is deemed that it is acceptable since Harborfront Centre has 2 supermarkets - "Cold Storage" and "Don Don Donki". Therefore, I will be using this dataset as well for subsequent analysis.
+
 ### 2.2.9 Kindergarten
+
+From the themes, I can see that the query parameter for Kindergarten is "kindergartens". After retrieving the data with a GET request, I will save it as a rds file for easy retrieval.
 
 ```{r}
 #| eval: false
 base_url <- "https://www.onemap.gov.sg/api/public/themesvc/retrieveTheme?queryName="
 parameter <- "kindergartens"
+
+# Update query params and header
+headers <- httr::add_headers(
+  Authorization = token
+)
 
 url <- paste0(base_url,parameter)
 
@@ -846,16 +965,34 @@ response <- httr::GET(url, headers)
 # Extract the information
 content <- content(response, "text")
 kindergarten_df <- as.data.frame(fromJSON(content))
+
+# Save as rds
+write_rds(kindergarten_df, "data/processed/kindergarten_df.rds")
 ```
+
+Now, I can load the data and check it
+
+```{r}
+# Load kindergarten_df
+kindergarten_df <- read_rds("data/processed/kindergarten_df.rds")
+
+# Check output
+head(kindergarten_df)
+```
+
+After looking at the kindergarten dataframe, it is clear that i will need to do some additional processing similar with eldercare
+
+1.  Separate the LatLng column (single column of into lat and lon)
+2.  Select only the columns i need, removing the first column with a filter condition
+3.  Now i can proceed to use `st_as_sf()` from `sf` package to convert it into a sf dataframe
+4.  `st_transform()` is then used to do the appropriate projection
+
+Once done, I will save this as an rds file.
 
 ```{r}
 #| eval: false
 # Rename colnames
 colnames(kindergarten_df) <- gsub("^SrchResults\\.", "", colnames(kindergarten_df))
-
-kindergarten_df <- kindergarten_df %>%
-  filter(!is.na(NAME)) %>%
-  distinct()
 
 # Process sf dataframe
 kindergarten_sf <- kindergarten_df %>%
@@ -869,6 +1006,8 @@ kindergarten_sf <- kindergarten_df %>%
 write_rds(kindergarten_sf, "data/processed/kindergarten_sf.rds")
 ```
 
+Since there is also a kindergarten dataset at data.gov.sg, I will load that in along with the previously saved kindergarten sf dataframe.
+
 ```{r}
 # Load data.gov.sg kindergarten data
 kindergarten_dg_sf <- st_read("data/geospatial/Kindergartens.kml") %>%
@@ -878,30 +1017,40 @@ kindergarten_dg_sf <- st_read("data/geospatial/Kindergartens.kml") %>%
 kindergarten_sf <- read_rds("data/processed/kindergarten_sf.rds")
 ```
 
+By visualising both datasets side by side with `tmap_arrange()` from `tmap` package, I can better see if there are any discrepancies to decide which datasets to use and if any additional processing is required.
+
 ```{r, fig.height=10, fig.width=12}
+# Set tmap mode to plot
 tmap_mode("plot")
+
+# Calculate row counts
+num_kindergarten_sf <- nrow(kindergarten_sf)
+num_kindergarten_dg_sf <- nrow(kindergarten_dg_sf)
 
 tmap_options(check.and.fix = TRUE)
 
+# Visualize kindergarten from OneMap API 
 map_onemap <- tm_shape(mpsz19_shp) +
   tm_polygons() +
   tm_shape(kindergarten_sf) +
   tm_dots(col='red', size = 0.2) +
-  tm_layout(main.title = "Kindergartens (OneMap API)", 
+  tm_layout(main.title = paste("Kindergartens (OneMap API) - Count:", num_kindergarten_sf), 
             main.title.position = ("center"))
 
 
-# Visualize eldercare
+# Visualize kindergarten from Data.gov.sg
 map_data_gov <- tm_shape(mpsz19_shp) +
   tm_polygons() +
   tm_shape(kindergarten_dg_sf) +
   tm_dots(col='red', size = 0.2) +
-  tm_layout(main.title = "Kindergartens (Data Gov)", 
+  tm_layout(main.title = paste("Kindergartens (Data Gov) - Count:", num_kindergarten_dg_sf), 
             main.title.position = ("center"))
 
 
 tmap_arrange(map_onemap, map_data_gov, ncol = 2, nrow = 1)
 ```
+
+Since the counts for both are the same and there does not seem to be any noticeable discrepancies between either, I can just proceed to use any of them in the subsequent steps.
 
 ### 2.2.10 Childcare Centres
 
@@ -909,6 +1058,11 @@ tmap_arrange(map_onemap, map_data_gov, ncol = 2, nrow = 1)
 #| eval: false
 base_url <- "https://www.onemap.gov.sg/api/public/themesvc/retrieveTheme?queryName="
 parameter <- "childcare"
+
+# Update query params and header
+headers <- httr::add_headers(
+  Authorization = token
+)
 
 url <- paste0(base_url,parameter)
 
@@ -918,16 +1072,35 @@ response <- httr::GET(url, headers)
 # Extract the information
 content <- content(response, "text")
 childcare_df <- as.data.frame(fromJSON(content))
+
+# Save childcare_df
+write_rds(childcare_df, "data/processed/childcare_df.rds")
 ```
+
+Now I can load the data and check it.
+
+```{r}
+# Load childcare_df
+childcare_df <- read_rds("data/processed/childcare_df.rds")
+
+# Check output
+head(childcare_df)
+```
+
+After looking at the childcare dataframe, I will need to do some additional processing similar with eldercare
+
+1.  Separate the LatLng column (single column of into lat and lon)
+2.  Select only the columns i need, removing the first column with a filter condition
+3.  Now i can proceed to use `st_as_sf()` from `sf` package to convert it into a sf dataframe
+4.  `st_transform()` is then used to do the appropriate projection
+
+Once done, I will save this as an rds file.
 
 ```{r}
 #| eval: false
 # Rename colnames
 colnames(childcare_df) <- gsub("^SrchResults\\.", "", colnames(childcare_df))
 
-childcare_df <- childcare_df %>%
-  filter(!is.na(NAME)) %>%
-  distinct()
 
 # Process sf dataframe
 childcare_sf <- childcare_df %>%
@@ -941,36 +1114,50 @@ childcare_sf <- childcare_df %>%
 write_rds(childcare_sf, "data/processed/childcare_sf.rds")
 ```
 
+Now I will load it back in.
+
 ```{r}
 # Load Saved OneMap API data
 childcare_sf <- read_rds("data/processed/childcare_sf.rds")
 ```
 
+As with other datasets, I will visualize it with `tmap` to ensure that it is fine to use.
+
 ```{r, fig.width=12, fig.height=10}
+# Set tmap mode to plot
 tmap_mode("plot")
 
 tmap_options(check.and.fix = TRUE)
 
+# Visualize childcare
 tm_shape(mpsz19_shp) +
-  tm_polygons() + 
+  tm_polygons() +
 tm_shape(childcare_sf) +
-  tm_dots(col='red', size = 0.2) +
+  tm_dots(col='red', size = 0.1) +
   tm_layout(main.title = "Childcare (OneMap API)", 
             main.title.position = ("center"))
 ```
 
+Looking at the map, there does not seem to be any anomaly with the points, so I can proceed to use this dataset in the subsequent steps.
+
 ### 2.2.11 Bus Stop
+
+The Bus Stop dataset will be loaded in from the Bus Stop Location dataset (Jul 2024) in LTA Datamall with `st_read()` and projected with `st_transform()` from the `sf` package.
 
 ```{r}
 bus_sf <- st_read(dsn = "data/geospatial/BusStopLocation_Jul2024", layer = "BusStop") %>%
   st_transform(crs = 3414)
 ```
 
+As with other datasets, I will visualize it with `tmap` to ensure that it is fine to use.
+
 ```{r, fig.width=12, fig.height=10}
+# Set tmap mode to plot
 tmap_mode("plot")
 
 tmap_options(check.and.fix = TRUE)
 
+# Visualize bus stops
 tm_shape(mpsz19_shp) +
   tm_polygons() + 
 tm_shape(bus_sf) +
@@ -979,31 +1166,571 @@ tm_shape(bus_sf) +
             main.title.position = ("center"))
 ```
 
+Looking at the map, there are some points that are outside of the Singapore boundaries. These are likely the bus stops in Johor Bahru and should be removed as only bus stops within Singapore should be considered.
+
+```{r}
+# Filter bus stops that are within mpsz19
+bus_updated_sf <- bus_sf[
+  apply(st_within(bus_sf, mpsz19_shp, sparse = FALSE), 1, any), 
+]
+```
+
+A final check with `tmap` will be used to confirm that there are no further anomalies.
+
+```{r, fig.width=12, fig.height=10}
+# Set tmap mode to plot
+tmap_mode("plot")
+
+tmap_options(check.and.fix = TRUE)
+
+# Visualize bus stops
+tm_shape(mpsz19_shp) +
+  tm_polygons() + 
+tm_shape(bus_updated_sf) +
+  tm_dots(col='red', size = 0.1) +
+  tm_layout(main.title = "Bus Stops Updated (LTA DataMall)", 
+            main.title.position = ("center"))
+```
+
+Now I can save it for use in subsequent steps.
+
+```{r}
+# Save updated park sf dataframe as rds
+write_rds(bus_updated_sf, "data/processed/bus_updated_sf.rds")
+```
+
 ## 2.3 Structural Data
 
-To get the structural data, I have to manually crawl the HDB website for Main Upgrading Program (MUP) and Home Improvement Program (HIP). The HIP is the successor of the MUP, introduced in 2007. This is done for the unique_addresses created in 2.1. The completed data is then saved as hdb_mup_hip.csv, which will be loaded to be combined with the resale dataset.
+While area of the unit has already been provided in the initial dataset, some data wrangling is required to generate the other structural factors.
+
+### 2.3.1 Floor Level
+
+The floor level information is current being represented in the storey_range attribute. Using `unique()`, I can check the different values
+
+```{r}
+# Check storey_range
+unique(resale_sf$storey_range)
+```
+
+Although I wont be able to get the exact floor level, I can represent it as an ordinal attribute with `mutate()` and lengthy `case_when()` statement. Once done, `summary()` will be used to check if there are any anomalies.
+
+```{r}
+# Create floor_ord 
+resale_sf <- resale_sf %>%
+  mutate(floor_ord = case_when(storey_range == "01 TO 03" ~ 1,
+                               storey_range == "04 TO 06" ~ 2,
+                               storey_range == "07 TO 09" ~ 3,
+                               storey_range == "10 TO 12" ~ 4,
+                               storey_range == "13 TO 15" ~ 5,
+                               storey_range == "16 TO 18" ~ 6,
+                               storey_range == "19 TO 21" ~ 7,
+                               storey_range == "22 TO 24" ~ 8,
+                               storey_range == "25 TO 27" ~ 9,
+                               storey_range == "28 TO 30" ~ 10,
+                               storey_range == "31 TO 33" ~ 11,
+                               storey_range == "34 TO 36" ~ 12,
+                               storey_range == "37 TO 39" ~ 13,
+                               storey_range == "40 TO 42" ~ 14,
+                               storey_range == "43 TO 45" ~ 15,
+                               storey_range == "46 TO 48" ~ 16,
+                               storey_range == "49 TO 51" ~ 17,
+                               TRUE ~ 99))
+
+# Check output
+summary(resale_sf$floor_ord)
+```
+
+### 2.3.2 Remaining Lease
+
+Since I already have the "remaining_lease_yr" and "remaining_lease_mth" from the previous step, I just need to combine them into a remaining_lease. This can be done by consolidating the "remaining_lease_yr" into "remaining_lease_mth". Since the columns may contain NA, i will use `coalesce()` from `dpylr` package to replace them to 0. `summary()` will be used to do a final check.
+
+```{r}
+# Create remaining_lease_val
+resale_sf <- resale_sf %>%
+  mutate(remaining_lease_val = coalesce(remaining_lease_yr, 0) * 12 + coalesce(remaining_lease_mth, 0))
+
+# Check output
+summary(resale_sf$remaining_lease_val)
+```
+
+### 2.3.3 Age of Unit
+
+Since this is not given, I will calculate it backwards from the amount of remaining lease. This is assuming that all HDBs in this resale dataset have 99-year leases at the time of purchase.
+
+```{r}
+# Create age of unit
+resale_sf <- resale_sf %>%
+  mutate(age_unit = 99 * 12 - remaining_lease_val)
+
+# Check outuput
+summary(resale_sf$age_unit)
+```
+
+### 2.3.4 Main Upgrading Program (MUP)
+
+To get this information, I have to manually crawl the HDB website for Main Upgrading Program (MUP) and Home Improvement Program (HIP). The HIP is the successor of the MUP, introduced in 2007. This is done for the unique_addresses created in 2.1. The completed data is then saved as hdb_mup_hip.csv, which will be loaded to be combined with the resale dataset.
 
 ```{r}
 # Load mup_hip dataset
 mup_hip <- read_csv("data/aspatial/hdb_mup_hip.csv")
 ```
 
-With reference to Manuel Lehner (2011), I will be exploring creating the following binary variables:
+With reference to Manuel Lehner (2011), I will be exploring creating the following binary attributes:
 
 -   MUP_completed - if the HDB has been through the main upgrading program
 -   HIP_announced - if the HDB has been announced for the home improvement program.
--   HIP_progress - if the HDB is currently undergoing the home improvement program
 -   HIP_completed - if the HDB has been through the home improvement program
+
+To facilitate the join, some slight data wrangling is required. `dmy()` from `lubridate` package is used to convert the values from character to date. Once done, I will join it to the resale data and create the necessary attributes. I will assume the resale dates to be on the first of the "month" date with `ym()` from `lubridate` package. Since the resale dates are in the year 2023 onwards, I can simply assume "mup_status" to be "mup_completed". HDBs will be coded positive for "hip_completed" if the resale date is later/equal to the hip_bill_date. HDBs will then be coded positive for "hip_announced" if the resale date is before the hip_bill_date but later/equal to the hip_announce_date.
+
+```{r}
+# Process 
+mup_hip_df <- mup_hip %>%
+  mutate(address = paste(block,street_name),
+         hip_announce_date = dmy(hip_announce_date),
+         hip_bill_date = dmy(hip_bill_date)) %>%
+  select(address, mup_status, hip_announce_date, hip_bill_date) 
+
+# Left join mup_hip_df to resale_sf and create status
+resale_merge_sf <- left_join(resale_sf, mup_hip_df, by = "address") %>%
+  mutate(sale_date = ym(month),
+         hip_completed = case_when(is.na(hip_bill_date) ~ 0,
+                                   sale_date >= hip_bill_date ~ 1,
+                                   TRUE ~ 0),
+         hip_announced = case_when(is.na(hip_announce_date) | hip_completed == 1 ~ 0,
+                                   sale_date >= hip_announce_date ~ 1,
+                                   TRUE ~ 0)
+  )
+  
+
+# Check output
+head(resale_merge_sf)
+```
 
 ## 2.4 Proximity Calculation
 
+::: callout-note
+Since my seniors have graciously provided with a function to calculate proximity (from [Megan](https://is415-msty.netlify.app/posts/2021-10-25-take-home-exercise-3/)), I will gratefully leverage it in the subsequent steps.
+:::
+
+This proximity function calculates a distance matrix with `st_distance()` from `sf` package, then finds the closest one with `rowMins()` from `matrixStats` package.
+
+```{r}
+# Proximity function
+fn_proximity <- function(df1, df2, varname) {
+  dist_matrix <- st_distance(df1, df2) %>%
+    units::drop_units()
+  df1[, varname] <- rowMins(dist_matrix)
+  return(df1)
+}
+```
+
+I will load all the relevant sf dataframe for the various locational factors.
+
+```{r}
+# Load cbd
+cbd_sf <- read_rds("data/processed/cbd.rds")
+
+# Load eldercare
+eldercare_sf <- read_rds("data/processed/eldercare_sf.rds")
+
+# Load foodcourt/hawker centre
+hawker_sf <- st_read("data/geospatial/HawkerCentresKML.kml") %>%
+  st_transform(crs = 3414)
+
+# Load mrt
+train_sf <- st_read(dsn = "data/geospatial/TrainStationExit", layer = "Train_Station_Exit_Layer") %>%
+  st_transform(crs = 3414)
+
+# Load park
+parks_sf <- read_rds("data/processed/parks_updated_sf.rds")
+
+# Load good primary schools
+gd_primary_sch_sf <- read_rds("data/processed/gd_primary_sch_sf.rds")
+
+# Load shopping mall
+shoppingmall_sf <- read_rds("data/processed/shopping_mall_sf.rds")
+
+# Load supermarket
+supermarket_sf <- st_read("data/geospatial/SupermarketsKML.kml") %>%
+  st_transform(crs = 3414)
+```
+
+The proximity function is then run for all the various datasets.
+
+```{r}
+#| eval: false
+# Compute proximity for all at once
+resale_merge_sf <- fn_proximity(resale_merge_sf, cbd_sf, "PROX_CBD") %>%
+  fn_proximity(., eldercare_sf, "PROX_ELDERCARE") %>%
+  fn_proximity(., hawker_sf, "PROX_HAWKER") %>%
+  fn_proximity(., train_sf, "PROX_MRT") %>%
+  fn_proximity(., parks_sf, "PROX_PARK") %>%
+  fn_proximity(., gd_primary_sch_sf, "PROX_GDPRISCH") %>%
+  fn_proximity(., shoppingmall_sf, "PROX_MALL") %>%
+  fn_proximity(., supermarket_sf, "PROX_SUPERMARKET")
+```
+
+## 2.5 Facility Count
+
+::: callout-note
+Similar to proximity, my seniors have graciously provided with a function to calculate proximity (also from [Megan](https://is415-msty.netlify.app/posts/2021-10-25-take-home-exercise-3/)).
+:::
+
+```{r}
+# Count within radius
+fn_num_radius <- function(df1, df2, varname, radius) {
+  dist_matrix <- st_distance(df1, df2) %>%
+    units::drop_units() %>%
+    as.data.frame()
+  df1[,varname] <- rowSums(dist_matrix <= radius)
+  return(df1)
+}
+```
+
+I will load all the remaining sf dataframe for the various locational factors.
+
+```{r}
+# Load kindergarten
+kindergarten_sf <- read_rds("data/processed/kindergarten_sf.rds")
+
+# Load childcare
+childcare_sf <- read_rds("data/processed/childcare_sf.rds")
+
+# Load bus stop
+bus_sf <- read_rds("data/processed/bus_updated_sf.rds")
+
+# Load primary school
+primary_sch_sf <- read_rds("data/processed/primary_sch_sf.rds")
+```
+
+```{r}
+#| eval: false
+# Calculate the count within different radius
+resale_merge_sf <- fn_num_radius(resale_merge_sf, kindergarten_sf, "WITHIN_350M_KINDERGARTEN", 350) %>%
+  fn_num_radius(., childcare_sf, "WITHIN_350M_CHILDCARE", 350) %>%
+  fn_num_radius(., bus_sf, "WITHIN_350M_BUS", 350) %>%
+  fn_num_radius(., primary_sch_sf, "WITHIN_1KM_PRISCH", 1000)
+```
+
+Now I will save this as a rds for easy retrieval.
+
+```{r}
+#| eval: false
+# Save output as rds 
+write_rds(resale_merge_sf, "data/processed/resale_full.sf")
+```
+
+Finally, I need to do some final preprocessing for the subsequent analysis
+
+-   Sales between 2024 January to 2024 June will be filtered out
+-   Filter to only 4-rooms flats.
+-   Select only required columns
+
+Once done, I will save this as an rds file for subsequent retrieval.
+
+```{r}
+# Load full resale data
+resale_full_sf <- read_rds("data/processed/resale_full.sf")
+
+# Filter resale data and select required columns 
+resale_flt_sf <- resale_full_sf %>%
+  filter(!(sale_date >= as.Date("2024-01-01") & sale_date <= as.Date("2024-06-30"))) %>%
+  filter(flat_type == "4 ROOM") %>%
+  select(sale_date, town, flat_type, address, resale_price, floor_area_sqm, floor_ord, remaining_lease_val, age_unit, mup_status, 
+         hip_announced, hip_completed, PROX_CBD, PROX_ELDERCARE, PROX_HAWKER, PROX_MRT, PROX_PARK, PROX_GDPRISCH, 
+         PROX_MALL, PROX_SUPERMARKET, WITHIN_350M_KINDERGARTEN, WITHIN_350M_CHILDCARE, WITHIN_350M_BUS, WITHIN_1KM_PRISCH)
+
+# Save output to rds
+write_rds(resale_flt_sf, "data/processed/resale_flt_sf.rds")
+```
+
 # 3 Exploratory Data Analysis
+
+Before proceeding to calibrate a predictive model, it is always good to do some exploratory data analysis to better understand the data. I'll clear the R console to save memory and load in the processed data.
+
+```{r}
+# Clear R console
+rm(list = ls(all.names = TRUE))
+
+# Load resale data
+resale_sf <- read_rds("data/processed/resale_flt_sf.rds")
+
+# Load mpsz data
+mpsz19_shp <- st_read(dsn = "data/geospatial/MPSZ-2019/", layer = "MPSZ-2019") %>% 
+  st_transform(crs = 3414)
+```
+### 3.1 Resale Price
+
+First, I'll look at the "resale_price", since it is the all important dependent attribute for the predictive model. `gglot2` package will be used to plot a histogram illustrating the distribution for the "resale_price".
+
+```{r}
+# Plot distribution of resale_price
+ggplot(data=resale_sf, aes(x=`resale_price`)) +
+  geom_histogram(bins=20, color="black", fill="light blue") + 
+  ggtitle("Distribution of Resale Prices") + 
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+Since it is skewed to the right, I can try to center the distribution with a log transformation. The result will be visualized again with `ggplot2` to check the distribution.
+
+```{r}
+# Create new log variable
+resale_sf <- resale_sf %>%
+  mutate(`log_resale_price` = log(resale_price))
+
+# Visualize results
+ggplot(data=resale_sf, aes(x=`log_resale_price`)) +
+  geom_histogram(bins=20, color="black", fill="light blue") + 
+  ggtitle("Distribution of Log Resale Prices") + 
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+The resale price can also be visualized with an interactive map.
+
+```{r, fig.height=10, fig.width=12}
+# Turn on interactive mode
+tmap_mode("view")
+
+tmap_options(check.and.fix = TRUE) 
+
+# Create interactive point symbol map
+tm_shape(mpsz19_shp)+
+  tm_polygons() +
+tm_shape(resale_sf) +  
+  tm_dots(col = "resale_price",
+          alpha = 0.6,
+          style="quantile") +
+  tm_view(set.zoom.limits = c(11,14))
+```
+
+::: callout-note
+Looking at the map, it seems that HDB flats tend to be much more expensive around the downtown area. Interestingly, units towards North-East and East are much noticeably more expensive than those towards the North or West.
+:::
+
+### 3.2 Locational Factors
+
+Now, I'll proceed to look at the distribution of the various locational factors.
+
+```{r, fig.height=10, fig.width=12}
+# Create 12 histograms
+PROX_CBD <- ggplot(data=resale_sf, aes(x= `PROX_CBD`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+PROX_ELDERLYCARE <- ggplot(data=resale_sf, aes(x= `PROX_ELDERCARE`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+PROX_HAWKER <- ggplot(data=resale_sf, aes(x= `PROX_HAWKER`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+PROX_MRT <- ggplot(data=resale_sf, aes(x= `PROX_MRT`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+PROX_PARK <- ggplot(data=resale_sf, aes(x= `PROX_PARK`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+PROX_GDPRISCH <- ggplot(data=resale_sf, aes(x= `PROX_GDPRISCH`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+PROX_MALL <- ggplot(data=resale_sf, aes(x= `PROX_MALL`)) + 
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+PROX_SUPERMARKET <- ggplot(data=resale_sf, aes(x= `PROX_SUPERMARKET`)) + 
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+
+WITHIN_350M_KINDERGARTEN <- ggplot(data=resale_sf, aes(x= `WITHIN_350M_KINDERGARTEN`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+WITHIN_350M_CHILDCARE <- ggplot(data=resale_sf, aes(x= `WITHIN_350M_CHILDCARE`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+WITHIN_350M_BUS <- ggplot(data=resale_sf, aes(x= `WITHIN_350M_BUS`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+WITHIN_1KM_PRISCH <- ggplot(data=resale_sf, aes(x= `WITHIN_1KM_PRISCH`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+
+# Arrange the 12 historgrams into 3 columns by 4 rows
+ggarrange(PROX_CBD, PROX_ELDERLYCARE, PROX_HAWKER, PROX_MRT, 
+          PROX_PARK, PROX_GDPRISCH, PROX_MALL, PROX_SUPERMARKET,
+          WITHIN_350M_KINDERGARTEN, WITHIN_350M_CHILDCARE, WITHIN_350M_BUS, WITHIN_1KM_PRISCH,
+          ncol = 3, nrow = 4)
+
+```
+
+Judging from the distributions, all proximity locational factors are right-skewed with the exception of "PROX_CBD" which is slightly left-skewed. For the other locational factors ("WITHIN..."), they seem to all have a somewhat normal distribution with the exception of "WITHIN_350M_KINDERGARTEN" which is right_skewed. However, since I dont know if all the attributes are from some normal distribution, I will instead use `normalise()` from `heatmaply` package to standardise the values. Following which, I'll plot the histograms again to verfiy this.
+
+```{r, fig.height=10, fig.width=12}
+# Normalize variables for proximity factors
+resale_sf <- resale_sf %>%
+  mutate(std_PROX_CBD = normalize(PROX_CBD),
+         std_PROX_ELDERCARE = normalize(PROX_ELDERCARE),
+         std_PROX_HAWKER = normalize(PROX_HAWKER),
+         std_PROX_MRT = normalize(PROX_MRT),
+         std_PROX_PARK = normalize(PROX_PARK),
+         std_PROX_GDPRISCH = normalize(PROX_GDPRISCH),
+         std_PROX_MALL = normalize(PROX_MALL),
+         std_PROX_SUPERMARKET = normalize(PROX_SUPERMARKET),
+         std_WITHIN_350M_KINDERGARTEN = normalize(WITHIN_350M_KINDERGARTEN),
+         std_WITHIN_350M_CHILDCARE = normalize(WITHIN_350M_CHILDCARE),
+         std_WITHIN_350M_BUS = normalize(WITHIN_350M_BUS), 
+         std_WITHIN_1KM_PRISCH = normalize(WITHIN_1KM_PRISCH))
+
+# Create 12 histograms
+PROX_CBD <- ggplot(data=resale_sf, aes(x= `std_PROX_CBD`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+PROX_ELDERLYCARE <- ggplot(data=resale_sf, aes(x= `std_PROX_ELDERCARE`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+PROX_HAWKER <- ggplot(data=resale_sf, aes(x= `std_PROX_HAWKER`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+PROX_MRT <- ggplot(data=resale_sf, aes(x= `std_PROX_MRT`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+PROX_PARK <- ggplot(data=resale_sf, aes(x= `std_PROX_PARK`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+PROX_GDPRISCH <- ggplot(data=resale_sf, aes(x= `std_PROX_GDPRISCH`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+PROX_MALL <- ggplot(data=resale_sf, aes(x= `std_PROX_MALL`)) + 
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+PROX_SUPERMARKET <- ggplot(data=resale_sf, aes(x= `std_PROX_SUPERMARKET`)) + 
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+WITHIN_350M_KINDERGARTEN <- ggplot(data=resale_sf, aes(x= `std_WITHIN_350M_KINDERGARTEN`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+WITHIN_350M_CHILDCARE <- ggplot(data=resale_sf, aes(x= `std_WITHIN_350M_CHILDCARE`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+WITHIN_350M_BUS <- ggplot(data=resale_sf, aes(x= `std_WITHIN_350M_BUS`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+WITHIN_1KM_PRISCH <- ggplot(data=resale_sf, aes(x= `std_WITHIN_1KM_PRISCH`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+# Arrange the 12 historgrams into 3 columns by 4 rows
+ggarrange(PROX_CBD, PROX_ELDERLYCARE, PROX_HAWKER, PROX_MRT, 
+          PROX_PARK, PROX_GDPRISCH, PROX_MALL, PROX_SUPERMARKET,
+          WITHIN_350M_KINDERGARTEN, WITHIN_350M_CHILDCARE, WITHIN_350M_BUS, WITHIN_1KM_PRISCH,
+          ncol = 3, nrow = 4)
+```
+
+### 3.2 Structural Factors
+
+Now I'll look at the structural factors.
+
+```{r, fig.height=10, fig.width=12}
+# Create 4 histograms
+UNIT_AREA <- ggplot(data=resale_sf, aes(x= `floor_area_sqm`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+UNIT_FLOOR <- ggplot(data=resale_sf, aes(x= `floor_ord`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+UNIT_LEASE <- ggplot(data=resale_sf, aes(x= `remaining_lease_val`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+UNIT_AGE <- ggplot(data=resale_sf, aes(x= `age_unit`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+# Arrange the 4 historgrams into 2 columns by 2 rows
+ggarrange(UNIT_AREA, UNIT_FLOOR, UNIT_LEASE, UNIT_AGE, 
+          ncol = 2, nrow = 2)
+```
+
+From the charts, I can tell that the unit area follows a somewhat normal distribution. The floor level is understandably right-skewed as there not many high-rise HDB buildings proportionately. Remaining lease and unit age then seem to have a uniform distribution. Regardless, I'll do the same standardization process for them with `normalize()` from `heatmaply` package.
+
+```{r, fig.height=10, fig.width=12}
+# Normalize variables for proximity factors
+resale_sf <- resale_sf %>%
+  mutate(std_UNIT_AREA = normalize(floor_area_sqm),
+         std_UNIT_FLOOR = normalize(floor_ord),
+         std_UNIT_LEASE = normalize(remaining_lease_val),
+         std_UNIT_AGE = normalize(age_unit))
+
+# Create 4 histograms
+UNIT_AREA <- ggplot(data=resale_sf, aes(x= `std_UNIT_AREA`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+UNIT_FLOOR <- ggplot(data=resale_sf, aes(x= `std_UNIT_FLOOR`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+UNIT_LEASE <- ggplot(data=resale_sf, aes(x= `std_UNIT_LEASE`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+UNIT_AGE <- ggplot(data=resale_sf, aes(x= `std_UNIT_AGE`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+# Arrange the 4 historgrams into 2 columns by 2 rows
+ggarrange(UNIT_AREA, UNIT_FLOOR, UNIT_LEASE, UNIT_AGE, 
+          ncol = 2, nrow = 2)
+```
+
+To analyse the MUP/HIP status, I'll create a categorical variable. `prop.table()` will then be used to display the proportions.
+
+```{r}
+# Combine MUP/HIP
+resale_sf <- resale_sf %>%
+  mutate(mup_hip_status = case_when(mup_status == 1 ~ 1,
+                                    hip_announced == 1 ~ 2,
+                                    hip_completed == 1 ~ 3,
+                                    TRUE ~ 0))
+
+# Show proportions
+prop.table(table(resale_sf$mup_hip_status))
+```
+::: callout-note
+From this, I can see that majority of the HDB flats (67%) have not undergone MUP/HIP. This could prove to be interesting if it does indeed have a significant impact on the resale price.
+:::
+
+### 3.4 Multicolinearity Analysis
+
+Finally, I will do a last check for multicolinearity through a correlation matrix. To do so, I would remove the geometry data with `st_drop_geometry()`. `ggcorrmat()` from `ggstatsplot` package will then be used to plot the matrix.
+
+```{r, fig.height=10, fig.width=12}
+# Drop geometry
+resale_nogeo <- resale_sf %>%
+  st_drop_geometry()
+
+# List of variables
+corr_list <- c("std_PROX_CBD", "std_PROX_ELDERCARE", "std_PROX_HAWKER", "std_PROX_MRT", 
+               "std_PROX_PARK", "std_PROX_GDPRISCH", "std_PROX_MALL", "std_PROX_SUPERMARKET",
+               "std_WITHIN_350M_KINDERGARTEN", "std_WITHIN_350M_CHILDCARE", "std_WITHIN_350M_BUS",
+               "std_WITHIN_1KM_PRISCH", "std_UNIT_AREA", "std_UNIT_FLOOR", "std_UNIT_LEASE", "std_UNIT_AGE",
+               "mup_status", "hip_announced", "hip_completed")
+  
+
+# Build correlation matrix
+ggcorrmat(resale_nogeo, corr_list)
+```
+::: callout-note
+Unsurprisingly, age of unit is correlated (-1) with remaining lease of unit since age is computed from remaining lease. 
+:::
+
 
 # 4 Multiple Linear Regression
 
+
+
+
+
 # 5 Geographically Weighted Linear Regression
 
+
+
+
+
 # 6 Conclusion
+
+
+
 
 # References
 

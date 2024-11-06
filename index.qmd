@@ -2,6 +2,8 @@
 title: "GeospatialWebsite"
 ---
 
+# Welcome!
+
 This is a website documenting the MITB module ISSS626 Geospatial Analytics and Applications.
 
 As a student in the field of geospatial analytics, I am embarking on an exciting learning journey where data, geography, and technology intersect to solve real-world problems. This website serves as a reflection of my growth and exploration within the module, covering the key concepts, tools, and techniques I've encountered.
@@ -23,11 +25,11 @@ From understanding spatial data to applying cutting-edge analytics, each page wi
 Check out my bespoke assignments!
 
 ---
-title: Take Home Exercises
 listing:
   contents:
   - "Take-Home_Ex/Take-Home_Ex_01/Take-Home_Ex01.qmd"
   - "Take-Home_Ex/Take-Home_Ex_02/Take-Home_Ex02.qmd"
+  - "Take-Home_Ex/Take-Home_Ex_03/Take-Home_Ex03.qmd"
   fields: [image, date, title, reading-time]
   type : grid
   sort:
