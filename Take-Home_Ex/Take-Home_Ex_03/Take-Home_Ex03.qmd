@@ -32,8 +32,9 @@ Using multiple linear regression and geographical weighted models, I would like 
 
 *(saved under 'data' folder)*
 
-Master Plan 2019 Subzone Boundary (from In-Class Ex01)\
-[Resale flat prices based on registration date from Jan-2017 onwards](https://data.gov.sg/datasets?query=HDB+Resale+Flat+Prices+&page=1&resultId=d_8b84c4ee58e3cfc0ece0d773c8ca6abc) from data.gov.sg
+-   Master Plan 2019 Subzone Boundary (from In-Class Ex01)
+-   [Resale flat prices based on registration date from Jan-2017 onwards](https://data.gov.sg/datasets?query=HDB+Resale+Flat+Prices+&page=1&resultId=d_8b84c4ee58e3cfc0ece0d773c8ca6abc) from data.gov.sg
+-   Others - Refer to Section 2 in procuring datasets
 
 # 1 Setting Up
 
@@ -45,13 +46,20 @@ I will be using the following R packages:\
 - `matrixStats` package for matrix processing \
 - `ggplot2`, `ggpubr` and `ggstatsplot` package for plotting statistical graphics \
 - `heatmaply` package for attribute standardisation \
-- `DT`, `crosstalk` and `htmltools`, package for visualizing results in a table format \
-- `Kendall` package for performing and visualizing Mann-Kendall Test \
+- `gtsummary` package to create regression reports \
+- `olsrr` package to perform diagnostic tests \
+- `Metrics` and `performance` package to evaluate model performance \
+- `DT` package for visualizing results in a table format \
+- `spdep` package for performing spatial autocorrelation on residuals \
+- `GWmodel` package to compute optimal adaptive bandwidth \
+- `SpatialML` package for calibrating geographical random forest model  \
+- `httr`, `jsonlite` and `rvest` package for getting latitude and longitude data  \
 - `tmap` package for plotting tasks 
 
 ```{r}
-pacman::p_load(sf, tidyverse, matrixStats, ggplot2, ggpubr, ggstatsplot, heatmaply, 
-               GWmodel, SpatialML, tmap, rsample, Metrics, knitr, kableExtra, httr, jsonlite, rvest)
+pacman::p_load(sf, tidyverse, matrixStats, ggplot2, ggpubr, ggstatsplot, heatmaply,
+               gtsummary, olsrr, Metrics, performance, DT, spdep,
+               GWmodel, SpatialML, httr, jsonlite, rvest, tmap)
 ```
 
 # 2 Procuring Dataset
@@ -60,18 +68,18 @@ pacman::p_load(sf, tidyverse, matrixStats, ggplot2, ggpubr, ggstatsplot, heatmap
 Steps used in this sections is largely adapted from the Take-home_Ex3b-HDBDataPrep provided by Prof Kam and other data preprocessing steps by [Hao Xian, Wen Yang and Pierre Jean Michel](https://is415-geospatial-project-g1t3.netlify.app/gwrproj/datapreprocessing).
 :::
 
-The goal of this section is to supplement the resale flat price data from data.gov.sg with other geospatial and locational factors. While my seniors have provided useful links as to where those information can be obtained, I'll cross verify it with other updated sources where possible.
+The goal of this section is to supplement the resale flat price data from data.gov.sg with other geospatial and locational factors. While my seniors have provided useful links as to where those information can be obtained, I'll cross verify it with other updated sources where possible. A quick check also showed that some sources are no longer available through OneMap API, therefore further effort is required to get those information.
 
 | Factor                                | Type       | Source                                                                                                                                    |
-|-------------|-------------|----------------------------------------------|
+|-------------------|-------------------|----------------------------------|
 | Proximity to CBD                      | Location   | \-                                                                                                                                        |
 | Proximity to Eldercare                | Location   | OneMap API, [data.gov.sg](https://data.gov.sg/datasets?query=eldercare&page=1&resultId=d_3545b068e3f3506c56b2cb6b6117b884)                |
-| Proximity to Foodcourt/Hawker Centres | Location   | ~~OneMap API~~, [data.gov.sg](https://data.gov.sg/datasets?query=hawker&page=1&resultId=d_ccca3606c337a5c386b9c88dc0dd08b6)               |
+| Proximity to Foodcourt/Hawker Centres | Location   | [data.gov.sg](https://data.gov.sg/datasets?query=hawker&page=1&resultId=d_ccca3606c337a5c386b9c88dc0dd08b6)                               |
 | Proximity to MRT                      | Location   | [LTA Data Mall](https://datamall.lta.gov.sg/content/datamall/en/search_datasets.html?searchText=train)                                    |
 | Proximity to Park                     | Location   | OneMap API, [data.gov.sg](https://data.gov.sg/datasets?query=parks&page=1&resultId=d_e7289d9a50e45bf1174590e184e6631c)                    |
 | Proximity to Good Primary School      | Location   | OneMap API (list from [MOE Website](https://www.moe.gov.sg/about-us/organisation-structure/sd/school-clusters))                           |
 | Proximity to Shopping Mall            | Location   | [OpenStreetMap](https://overpass-turbo.eu/#), OneMap API ([Wikipedia](https://en.wikipedia.org/wiki/List_of_shopping_malls_in_Singapore)) |
-| Proximity to Supermarket              | Location   | ~~OneMap API~~, [data.gov.sg](https://data.gov.sg/datasets?query=supermarket&page=1&resultId=d_8a77ee0446716b2ce475a587004afc73)          |
+| Proximity to Supermarket              | Location   | [data.gov.sg](https://data.gov.sg/datasets?query=supermarket&page=1&resultId=d_8a77ee0446716b2ce475a587004afc73)                          |
 | No. of Kindergartens within 350m      | Location   | OneMap API, [data.gov.sg](https://data.gov.sg/datasets?query=kindergarten&page=1&resultId=d_95aa63998d7de94dd4cb3e8e43a5f6d5)             |
 | No. of Childcare Centres within 350m  | Location   | OneMap API                                                                                                                                |
 | No. of Bus Stop within 350m           | Location   | [LTA Data Mall](https://datamall.lta.gov.sg/content/datamall/en/search_datasets.html?searchText=bus%20stop)                               |
@@ -301,12 +309,20 @@ write_rds(eldercare_df, "data/processed/eldercare_df.rds")
 
 Now, I can load the data and check it.
 
-```{r}
+```{r, fig.height = 10, fig.width = 12}
+#| df-print: paged
 # Load eldercare_df
 eldercare_df <- read_rds("data/processed/eldercare_df.rds")
 
 # Check output
-head(eldercare_df)
+datatable(head(eldercare_df), rownames=FALSE, width="100%",
+            options=list(scrollX = TRUE, 
+                         initComplete = JS(
+                           "function(settings, json) {",
+                           "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff', 'font-family': 'sans-serif', 'font-size': '12px'});",
+                           "$(this.api().table().body()).css({'font-family': 'sans-serif', 'font-size': '12px'});",
+                           "}"
+    )))
 ```
 
 After looking at the eldercare dataframe, it is clear that i will need to do some additional processing
@@ -475,7 +491,14 @@ Now, I can load the data and check it.
 parks_df <- read_rds("data/processed/parks_df.rds")
 
 # Check output
-head(parks_df)
+datatable(head(parks_df), rownames=FALSE, width="100%",
+            options=list(scrollX = TRUE, 
+                         initComplete = JS(
+                           "function(settings, json) {",
+                           "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff', 'font-family': 'sans-serif', 'font-size': '12px'});",
+                           "$(this.api().table().body()).css({'font-family': 'sans-serif', 'font-size': '12px'});",
+                           "}"
+    )))
 ```
 
 After looking at the parks dataframe, it is clear that i will need to do some additional processing similar with eldercare
@@ -807,6 +830,8 @@ tmap_mode("plot")
 tmap_options(check.and.fix = TRUE)
 
 # Visualize shopping malls
+tm_shape(mpsz19_shp) +
+  tm_polygons() + 
 tm_shape(shoppingmall_sf) +
   tm_dots(col='red', size = 0.1) +
   tm_layout(main.title = "Shopping Malls (OpenStreetMap)", 
@@ -834,7 +859,6 @@ After further investigation, I compiled the list of missing malls. There are als
 -   OD Mall: Removed
 -   Our Tampines Hub: Not a mall
 -   Punggol Coast Mall: Still under construction
--   Rail Mall
 -   Thomson V: Not a mall
 
 ```{r}
@@ -977,7 +1001,14 @@ Now, I can load the data and check it
 kindergarten_df <- read_rds("data/processed/kindergarten_df.rds")
 
 # Check output
-head(kindergarten_df)
+datatable(head(kindergarten_df), rownames=FALSE, width="100%",
+            options=list(scrollX = TRUE, 
+                         initComplete = JS(
+                           "function(settings, json) {",
+                           "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff', 'font-family': 'sans-serif', 'font-size': '12px'});",
+                           "$(this.api().table().body()).css({'font-family': 'sans-serif', 'font-size': '12px'});",
+                           "}"
+    )))
 ```
 
 After looking at the kindergarten dataframe, it is clear that i will need to do some additional processing similar with eldercare
@@ -1084,7 +1115,14 @@ Now I can load the data and check it.
 childcare_df <- read_rds("data/processed/childcare_df.rds")
 
 # Check output
-head(childcare_df)
+datatable(head(childcare_df), rownames=FALSE, width="100%",
+            options=list(scrollX = TRUE, 
+                         initComplete = JS(
+                           "function(settings, json) {",
+                           "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff', 'font-family': 'sans-serif', 'font-size': '12px'});",
+                           "$(this.api().table().body()).css({'font-family': 'sans-serif', 'font-size': '12px'});",
+                           "}"
+    )))
 ```
 
 After looking at the childcare dataframe, I will need to do some additional processing similar with eldercare
@@ -1304,13 +1342,20 @@ resale_merge_sf <- left_join(resale_sf, mup_hip_df, by = "address") %>%
   
 
 # Check output
-head(resale_merge_sf)
+datatable(head(resale_merge_sf), rownames=FALSE, width="100%",
+            options=list(scrollX = TRUE, 
+                         initComplete = JS(
+                           "function(settings, json) {",
+                           "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff', 'font-family': 'sans-serif', 'font-size': '12px'});",
+                           "$(this.api().table().body()).css({'font-family': 'sans-serif', 'font-size': '12px'});",
+                           "}"
+    )))
 ```
 
 ## 2.4 Proximity Calculation
 
 ::: callout-note
-Since my seniors have graciously provided with a function to calculate proximity (from [Megan](https://is415-msty.netlify.app/posts/2021-10-25-take-home-exercise-3/)), I will gratefully leverage it in the subsequent steps.
+Since my seniors have graciously provided with a function to calculate proximity (which they obtained from [Megan](https://is415-msty.netlify.app/posts/2021-10-25-take-home-exercise-3/)), I will gratefully leverage it in the subsequent steps.
 :::
 
 This proximity function calculates a distance matrix with `st_distance()` from `sf` package, then finds the closest one with `rowMins()` from `matrixStats` package.
@@ -1374,7 +1419,7 @@ resale_merge_sf <- fn_proximity(resale_merge_sf, cbd_sf, "PROX_CBD") %>%
 ## 2.5 Facility Count
 
 ::: callout-note
-Similar to proximity, my seniors have graciously provided with a function to calculate proximity (also from [Megan](https://is415-msty.netlify.app/posts/2021-10-25-take-home-exercise-3/)).
+Similar to proximity, my seniors have graciously provided with a function to calculate proximity (which they also obtained from [Megan](https://is415-msty.netlify.app/posts/2021-10-25-take-home-exercise-3/)).
 :::
 
 ```{r}
@@ -1424,7 +1469,7 @@ write_rds(resale_merge_sf, "data/processed/resale_full.sf")
 Finally, I need to do some final preprocessing for the subsequent analysis
 
 -   Sales between 2024 January to 2024 June will be filtered out
--   Filter to only 4-rooms flats.
+-   Filter to only 5-rooms flats.
 -   Select only required columns
 
 Once done, I will save this as an rds file for subsequent retrieval.
@@ -1436,7 +1481,7 @@ resale_full_sf <- read_rds("data/processed/resale_full.sf")
 # Filter resale data and select required columns 
 resale_flt_sf <- resale_full_sf %>%
   filter(!(sale_date >= as.Date("2024-01-01") & sale_date <= as.Date("2024-06-30"))) %>%
-  filter(flat_type == "4 ROOM") %>%
+  filter(flat_type == "5 ROOM") %>%
   select(sale_date, town, flat_type, address, resale_price, floor_area_sqm, floor_ord, remaining_lease_val, age_unit, mup_status, 
          hip_announced, hip_completed, PROX_CBD, PROX_ELDERCARE, PROX_HAWKER, PROX_MRT, PROX_PARK, PROX_GDPRISCH, 
          PROX_MALL, PROX_SUPERMARKET, WITHIN_350M_KINDERGARTEN, WITHIN_350M_CHILDCARE, WITHIN_350M_BUS, WITHIN_1KM_PRISCH)
@@ -1460,6 +1505,7 @@ resale_sf <- read_rds("data/processed/resale_flt_sf.rds")
 mpsz19_shp <- st_read(dsn = "data/geospatial/MPSZ-2019/", layer = "MPSZ-2019") %>% 
   st_transform(crs = 3414)
 ```
+
 ### 3.1 Resale Price
 
 First, I'll look at the "resale_price", since it is the all important dependent attribute for the predictive model. `gglot2` package will be used to plot a histogram illustrating the distribution for the "resale_price".
@@ -1501,7 +1547,7 @@ tm_shape(resale_sf) +
   tm_dots(col = "resale_price",
           alpha = 0.6,
           style="quantile") +
-  tm_view(set.zoom.limits = c(11,14))
+  tm_view(set.zoom.limits = c(11,12))
 ```
 
 ::: callout-note
@@ -1560,7 +1606,7 @@ ggarrange(PROX_CBD, PROX_ELDERLYCARE, PROX_HAWKER, PROX_MRT,
 
 ```
 
-Judging from the distributions, all proximity locational factors are right-skewed with the exception of "PROX_CBD" which is slightly left-skewed. For the other locational factors ("WITHIN..."), they seem to all have a somewhat normal distribution with the exception of "WITHIN_350M_KINDERGARTEN" which is right_skewed. However, since I dont know if all the attributes are from some normal distribution, I will instead use `normalise()` from `heatmaply` package to standardise the values. Following which, I'll plot the histograms again to verfiy this.
+Judging from the distributions, all proximity locational factors are somewhat right-skewed with the exception of "PROX_CBD" which is slightly left-skewed. For the other locational factors ("WITHIN..."), they seem to all have a somewhat normal distribution with the exception of "WITHIN_350M_KINDERGARTEN" which is more right-skewed. However, since I dont know if all the attributes are from some normal distribution, I will instead use `normalise()` from `heatmaply` package to standardise the values. Following which, I'll plot the histograms again to verfiy this.
 
 ```{r, fig.height=10, fig.width=12}
 # Normalize variables for proximity factors
@@ -1645,7 +1691,7 @@ ggarrange(UNIT_AREA, UNIT_FLOOR, UNIT_LEASE, UNIT_AGE,
           ncol = 2, nrow = 2)
 ```
 
-From the charts, I can tell that the unit area follows a somewhat normal distribution. The floor level is understandably right-skewed as there not many high-rise HDB buildings proportionately. Remaining lease and unit age then seem to have a uniform distribution. Regardless, I'll do the same standardization process for them with `normalize()` from `heatmaply` package.
+From the charts, I can tell that the unit area follows a somewhat normal distribution. The floor level is understandably right-skewed as there not many high-rise HDB buildings proportionately. Remaining lease and unit age then seem to have a slightly bimodal distribution. Regardless, I'll do the same standardization process for them with `normalize()` from `heatmaply` package.
 
 ```{r, fig.height=10, fig.width=12}
 # Normalize variables for proximity factors
@@ -1686,8 +1732,53 @@ resale_sf <- resale_sf %>%
 # Show proportions
 prop.table(table(resale_sf$mup_hip_status))
 ```
+
 ::: callout-note
-From this, I can see that majority of the HDB flats (67%) have not undergone MUP/HIP. This could prove to be interesting if it does indeed have a significant impact on the resale price.
+From this, I can see that majority of the 5 room HDB flats (74%) have not undergone MUP/HIP. This could prove to be interesting if it does indeed have a significant impact on the resale price.
+:::
+
+### 3.3 Compare Train and Test Datasets
+
+A common understanding is that resale prices are strongly tied to their location. Therefore, it would be important to check the location proportions of both training and test datasets are relatively similar. If there are major differences, this could cause model performance issues as models calibrated on the training dataset may be focused towards specific locations that are less represented in the test dataset.
+
+To do this, some data wrangling is required to get the proportion of towns in both datasets. This will then be visualized with `ggplot2` package.
+
+```{r, fig.height = 10, fig.width=12}
+# Create train data town statistics
+train_town <- resale_sf %>%
+  filter(year(sale_date) == 2023) %>%
+  group_by(town) %>%
+  summarise(count = n(),
+            proportion = round(n()/nrow(.)*100, 2)) %>%
+  mutate(source = "Train")
+
+# Create test data atown statistics
+test_town <- resale_sf %>%
+  filter(year(sale_date) != 2023) %>%
+  group_by(town) %>%
+  summarise(count = n(),
+            proportion = round(n()/nrow(.)*100, 2)) %>%
+  mutate(source = "Test")
+
+# Combine both statistics
+town_summary <- bind_rows(train_town, test_town)
+
+# Visualize statistics
+ggplot(town_summary, aes(x = reorder(town, -proportion), y = proportion, fill = source)) +
+  geom_bar(stat = "identity", position = "dodge") +  
+  labs(
+    title = "Proportion of Observations by Town (Comparison)",
+    x = "Town",
+    y = "Proportion (%)"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.title = element_text(hjust = 0.5)) +  # Rotate labels for readability
+  scale_fill_manual(values = c("skyblue", "salmon")) 
+```
+
+::: callout-note
+Although the test data has a much greater proportion of Sengkang and lesser proportion of Sembawang observations, the proportions for both train and test datasets are relatively similar. Therefore, I shouldn't worry too much about class imbalance issues.
 :::
 
 ### 3.4 Multicolinearity Analysis
@@ -1695,6 +1786,7 @@ From this, I can see that majority of the HDB flats (67%) have not undergone MUP
 Finally, I will do a last check for multicolinearity through a correlation matrix. To do so, I would remove the geometry data with `st_drop_geometry()`. `ggcorrmat()` from `ggstatsplot` package will then be used to plot the matrix.
 
 ```{r, fig.height=10, fig.width=12}
+#| warning: false
 # Drop geometry
 resale_nogeo <- resale_sf %>%
   st_drop_geometry()
@@ -1710,27 +1802,747 @@ corr_list <- c("std_PROX_CBD", "std_PROX_ELDERCARE", "std_PROX_HAWKER", "std_PRO
 # Build correlation matrix
 ggcorrmat(resale_nogeo, corr_list)
 ```
-::: callout-note
-Unsurprisingly, age of unit is correlated (-1) with remaining lease of unit since age is computed from remaining lease. 
-:::
 
+::: callout-note
+Unsurprisingly, age of unit is inversely correlated (-1) with remaining lease of unit since age is computed from remaining lease. Therefore, I will not use age of unit when building the model in the subsequent steps. Looking at the other values, they do not appear to have very strong correlation (\>0.5) and hence it should be fine to proceed to build the model with those values.
+:::
 
 # 4 Multiple Linear Regression
 
+Before proceeding, I will use `st_jitter()` to ensure that the points to not overlap. 2 meters is used in this case as this will ensure some jittering happens (with rounding) while still having the points remain within the building.
+
+```{r}
+# Jitter points
+resale_sf <- resale_sf %>%
+  st_jitter(amount = 2)
+```
+
+Also, I will split the data into train and test sets
+
+```{r}
+# Create resale train sf
+resale_train_sf <- resale_sf %>%
+  filter(year(sale_date) == 2023)
+
+# Create resale test sf
+resale_test_sf <- resale_sf %>%
+  filter(year(sale_date) != 2023)
+```
+
+## 4.1 Calibrate Non-Spatial Model
+
+Using `lm()`, I will build a multiple linear regression model. This can be check with `ols_regress()` from `olsrr` package.
+
+```{r}
+# Build model
+resale_mlr <- lm(formula = resale_price ~ std_PROX_CBD + std_PROX_ELDERCARE +
+                   std_PROX_HAWKER + std_PROX_MRT + std_PROX_PARK + std_PROX_GDPRISCH +
+                   std_PROX_MALL + std_PROX_SUPERMARKET + std_WITHIN_350M_KINDERGARTEN +
+                   std_WITHIN_350M_CHILDCARE + std_WITHIN_350M_BUS + std_WITHIN_1KM_PRISCH +
+                   std_UNIT_AREA + std_UNIT_FLOOR + std_UNIT_LEASE +
+                   mup_status + hip_announced + hip_completed,
+                 data = resale_train_sf)
 
 
+# Check model with olsrr
+olsrr::ols_regress(resale_mlr)
+```
+
+Looking at the results, I will remove the following and re-run the model:
+
+-   "std_PROX_ELDERCARE" - not statistically significant (0.107 \> alpha of 0.05)
+-   "std_PROX_PARK" - not statistically significant (0.109 \> alpha of 0.05)
+-   "std_PROX_SUPERMARKET" - not statistically significant (0.462 \> alpha of 0.05)
+
+```{r}
+# Build model
+resale_mlr <- lm(formula = resale_price ~ std_PROX_CBD +
+                   std_PROX_HAWKER + std_PROX_MRT + std_PROX_GDPRISCH +
+                   std_PROX_MALL + std_WITHIN_350M_KINDERGARTEN +
+                   std_WITHIN_350M_CHILDCARE + std_WITHIN_350M_BUS + std_WITHIN_1KM_PRISCH +
+                   std_UNIT_AREA + std_UNIT_FLOOR + std_UNIT_LEASE +
+                   mup_status + hip_announced + hip_completed,
+                 data = resale_train_sf)
 
 
-# 5 Geographically Weighted Linear Regression
+# Check model with olsrr
+olsrr::ols_regress(resale_mlr)
+```
+
+Since all the independent variables are statistically significant, I will proceed to the subsequent steps after saving this model as a rds object.
+
+```{r}
+# Save model as rds
+write_rds(resale_mlr, "data/model/resale_mlr.rds")
+```
+
+## 4.2 Multicolinearity Check
+
+Using `check_collinearity()` from the `performance` package, I can compute the VIF scores for the resale multiple linear regression model. This can then be shown in a table using the `kable` package.
+
+```{r, fig.height=10, fig.width=12}
+# Check multicolinearity
+vif <- performance::check_collinearity(resale_mlr)
+
+# Round values to 5 decimal places
+vif[] <- lapply(vif, function(x) if(is.numeric(x)) round(x, 5) else x)
+
+# Format output in a table
+datatable(vif, rownames=FALSE, width="100%",
+            options=list(pageLength = 15,
+                         scrollX = TRUE, 
+                         initComplete = JS(
+                           "function(settings, json) {",
+                           "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff', 'font-family': 'sans-serif', 'font-size': '12px'});",
+                           "$(this.api().table().body()).css({'font-family': 'sans-serif', 'font-size': '12px'});",
+                           "}"
+    )))
+```
+
+Using `theme()` from ggplot2, I can also visualize the VIF scores in a graph.
+
+```{r, fig.height=10, fig.width=12}
+#| warning: false
+# Plot vif
+plot(vif) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+::: callout-note
+Since VIF of the independent variables are all less than 10, I can conclude that there are no sign of multicollinearity.
+:::
+
+## 4.3 Additional Tests
+
+Beside multicolinearity, I would also need to run other tests
+
+### 4.3.1 Non-Linearity Test
+
+```{r}
+# Check non-linearity
+ols_plot_resid_fit(resale_mlr)
+```
+
+::: callout-note
+Since most of the data points are scattered around the 0 line, I can conclude that the dependent and independent variables have a linear relationship.
+:::
+
+### 4.3.2 Normality Test
+
+Using `ols_plot_resid_hist()` from `olsrr` package, I will test the normality assumption.
+
+```{r}
+# Check nomality
+ols_plot_resid_hist(resale_mlr)
+```
+
+::: callout-note
+The plot shows that the residual of the multiple linear regression model resembles normal distribution. However, further tests are required.
+:::
+
+Given that the Shapiro-Wilk test has a sample size limit of 5000, I will have to sample a portion of the residuals from "resale_mlr". Since sampling is involved, I will need to set a seed to ensure reproducibility.
+
+```{r}
+#| warning: false
+# Set seed
+set.seed(42)
+
+# Check normality
+ols_test_normality(sample(residuals(resale_mlr), size = 5000))
+```
+
+::: callout-note
+Since the p-values of the tests are way smaller than alpha value of 0.05, I can reject the null hypothesis and conclude that there is statistical evidence that the residual are not normally distributed.
+:::
+
+### 4.3.3 Spatial Autocorrelation Test
+
+Before performing spatial autocorrelation test on the residuals of the multiple linear regression model, it is good to visualize the residuals on a map. To do so, I would need to extract the residuals from the model and merge it with the resale_sf dataframe.
+
+```{r, fig.height=10, fig.width=12}
+#| warning: false
+# Extract residuals of mlr
+mlr_res <- as.data.frame(resale_mlr$residuals)
+
+# Join residuals with resale_sf
+resale_res_sf <- cbind(resale_train_sf, mlr_res) %>%
+  rename(`MLR_RES` = `resale_mlr.residuals`)
 
 
+# Set tmap to plot
+tmap_mode("plot")
+
+tmap_options(check.and.fix = TRUE)
+
+# Visualize residuals
+tm_shape(mpsz19_shp)+
+  tm_polygons(alpha = 0.4) +
+tm_shape(resale_res_sf) +  
+  tm_dots(col = "MLR_RES", alpha = 0.6, style = "quantile", size = 0.2) +
+  tm_layout(main.title = "Multiple Linear Regression Residuals",     
+            main.title.position = "center",                       
+            main.title.size = 1.5                                  
+            )
+
+```
+
+::: callout-note
+Judging from the map, it looks like there are some clustering which are signs of spatial autocorrelation.
+:::
+
+To conclusively prove spatial autocorrelation, I will use Moran's I test. As the `sfdep` package lacks a way to do this for a linear model, I would need to use `spdep` package. However, I would then need to:
+
+-   Convert the sf dataframe to spatial point dataframe with `as_Spatial()` from `spdep` package.
+-   Create the distance-based neighbour list with `dnearneigh()` from `spdep` package.
+-   Convert neighbour list into spatial weights with `nb2listw()` from `spdep` package.
+
+```{r}
+#| eval: false 
+# Convert simple features object to spatialpointsdataframe
+resale_sp <- as_Spatial(resale_res_sf)
+
+# Create neighbour list
+nb <- dnearneigh(coordinates(resale_sp), 0, 1500, longlat = FALSE)
+
+# Create spatial weights matrix
+nb_lw <- nb2listw(nb, style = 'W')
+```
+
+Finally, I can run perform the Moran's I test with `lm.morantest()` from `spdep` package. This will be saved as a rds object.
+
+```{r}
+#| eval: false 
+# Perform Moran's I test
+mlr_moran <- lm.morantest(resale_mlr, nb_lw)
+
+# Save output to rds
+write_rds(mlr_moran, "data/model/mlr_moran.rds")
+```
+
+The results can then be loaded for us to check.
+
+```{r}
+# Load Moran's I test results
+read_rds("data/model/mlr_moran.rds")
+```
+
+::: callout-note
+The Global Moran’s I test shows that it’s p-value is less than the alpha value of 0.05. Therefore I will reject the null hypothesis that the residuals are randomly distributed.
+
+Since the Observed Global Moran I = 0.3135 \> 0, I can infer than the residuals resemble cluster distribution.
+:::
+
+# 5 Geographically Random Forest
+
+Before running any models, I will need to prepare the coordinates data as it is required by the `SpatialML` package. This can be done with `st_coordinates()` from `sf` package. After which, I will remove the geometry data from the resale_train_sf with `st_drop_geometry()` from `sf` package to create an aspatial dataset.
+
+```{r}
+# Get coordinates from full, training and test data
+coords <- st_coordinates(resale_sf)
+coords_train <- st_coordinates(resale_train_sf)
+coords_test <- st_coordinates(resale_test_sf)
+
+# Save coordinates for easy retrieval
+write_rds(coords, "data/model/coords.rds")
+write_rds(coords_train, "data/model/coords_train.rds")
+write_rds(coords_test, "data/model/coords_test.rds")
+
+# Drop geometry
+resale_train_nogeo <- resale_train_sf %>% 
+  st_drop_geometry()
+```
+
+## 5.1 Calibrate Random Forest Model
+
+To better highlight the differences between a geographical weighted model and a non-spatial model, I will first calibrate a random forest model using the `ranger` package. The seed is also set to ensure reproducibility. Parameters for this rf model will follow the grf model closely to better highlight the influence of geographical factors.
+
+Once done, this will be saved as a rds object to facilitate future retrieval.
+
+```{r}
+#| eval: false 
+# Set seed
+set.seed(42)
+
+# Calibrate random forest model
+rf <- ranger(resale_price ~ std_PROX_CBD + # std_PROX_ELDERCARE +
+               std_PROX_HAWKER + std_PROX_MRT + std_PROX_GDPRISCH + # std_PROX_PARK + 
+               std_PROX_MALL + std_WITHIN_350M_KINDERGARTEN + # + std_PROX_SUPERMARKET
+               std_WITHIN_350M_CHILDCARE + std_WITHIN_350M_BUS + std_WITHIN_1KM_PRISCH +
+               std_UNIT_AREA + std_UNIT_FLOOR + std_UNIT_LEASE +
+               mup_status + hip_announced + hip_completed,
+             data = resale_train_nogeo,
+             num.trees = 50, # set to a small number to manage complexity 
+             mtry = 2, # default - p/3 ~ 5
+             verbose = TRUE,
+             importance = "impurity" 
+             )
+
+# Save ranger output
+write_rds(rf, "data/model/rf.rds")
+```
+
+Now, I can load the rf model to check the output.
+
+```{r}
+# Load ranger output
+rf <- read_rds("data/model/rf.rds")
+
+# Check output
+rf
+```
+
+## 5.2 Calibrate Geographical Random Forest Model
+
+For the Geographical Random Forest model, I have decided to use an adaptive bandwidth as it is better able to capture local patterns and handle differences in data distributions across Singapore. To determine the optimal adaptive bandwidth, `bw.gwr()` from `GWmodel` package will be used, with the approach being set to cross-validation ("CV"). The SpatialPointDataFrame created earlier in 4.3.3 can also be reused. After this is completed, the bandwidth will be saved as a rds object.
+
+```{r}
+#| eval: false 
+# Compute adaptive bandwidth 
+bw_adaptive <- bw.gwr(formula = resale_price ~ std_PROX_CBD + # std_PROX_ELDERCARE +
+                        std_PROX_HAWKER + std_PROX_MRT + std_PROX_GDPRISCH + # std_PROX_PARK + 
+                        std_PROX_MALL + std_WITHIN_350M_KINDERGARTEN + # + std_PROX_SUPERMARKET
+                        std_WITHIN_350M_CHILDCARE + std_WITHIN_350M_BUS + std_WITHIN_1KM_PRISCH +
+                        std_UNIT_AREA + std_UNIT_FLOOR + std_UNIT_LEASE +
+                        mup_status + hip_announced + hip_completed,
+                      data=resale_sp, 
+                      approach="CV", 
+                      kernel="gaussian", 
+                      adaptive=TRUE, 
+                      longlat=FALSE)
+
+# Save adaptive bandwidth
+write_rds(bw_adaptive, "data/model/bw_adaptive.rds")
+```
+
+Now, I can load the adaptive bandwidth to check.
+
+```{r}
+# Load adaptive bandwidth
+bw_adaptive <- read_rds("data/model/bw_adaptive.rds")
+
+# Check adaptive bandwidth
+bw_adaptive
+```
+
+::: callout-note
+The optimal adaptive bandwidth from cross-validation is determined to be 72.
+:::
+
+Finally, I can calibrate the geographical random forest model with `grf()` from `SpatialML` package. To reduce complexity while still having a robust model, I have set "ntree" to 50 and "mtry" to 2. Once done, this will be saved as a rds object.
+
+```{r}
+#| eval: false 
+# Set seed
+set.seed(42)
+
+# Calibrate geographic random forest model
+gwRF_adaptive <- grf(formula = resale_price ~ std_PROX_CBD + 
+                        std_PROX_HAWKER + std_PROX_MRT + std_PROX_GDPRISCH + 
+                        std_PROX_MALL + std_WITHIN_350M_KINDERGARTEN + 
+                        std_WITHIN_350M_CHILDCARE + std_WITHIN_350M_BUS + std_WITHIN_1KM_PRISCH +
+                        std_UNIT_AREA + std_UNIT_FLOOR + std_UNIT_LEASE +
+                        mup_status + hip_announced + hip_completed,
+                     dframe=resale_train_nogeo, 
+                     bw = bw_adaptive,
+                     ntree = 50, # default - 500
+                     mtry = 2, # default - p/3 ~ 5
+                     kernel="adaptive",
+                     nthreads = 12,
+                     verbose = TRUE,
+                     coords=coords_train)
+
+# Save model output
+write_rds(gwRF_adaptive, "data/model/gwRF_adaptive.rds")
+```
+
+# 6 Model Evaluation
+
+Since this is a predictive model, I am more interested in regression metrics (i.e. root mean square error) rather than fit (i.e. R square) which is more suitable for models seeking to explain. First, I'll load back all the models that have been calibrated in the previous steps.
+
+```{r}
+# Load mlr model
+model_mlr <- read_rds("data/model/resale_mlr.rds")
+
+# Load random forest model
+model_rf <- read_rds("data/model/rf.rds")
+
+# Load geographically random forest model
+model_grf <- read_rds("data/model/gwRF_adaptive.rds")
+```
+
+## 6.1 Predicting with Test Data
+
+To evaluate the different models, I would need to know their performance on the test data. Therefore, I will first need to generate predictions on the test data for each of those models.
+
+### 6.1.1 Multiple Linear Regression Model
+
+To predict with the multiple linear regression ordinary least squares model, I can use `predict()`.
+
+```{r}
+#| eval: false 
+# Predict with mlr
+resale_test_sf$predict_mlr <- predict(object = model_mlr, newdata = resale_test_sf)
+```
+
+### 6.1.2 Random Forest Model
+
+For the random forest model, I will similarly use `predict()`, but I will have to remove the geometry data with `st_drop_geometry()` from `sf` package. The predictions can be found within the "predictions" in the output object.
+
+```{r}
+#| eval: false 
+# Remove geometry data from resale_test_sf
+resale_test_nogeo <- resale_test_sf %>%
+  st_drop_geometry()
+
+# Predict with rf
+rf_pred <- predict(model_rf, data = resale_test_nogeo)
+
+# Extract and append predictions to resale_test_sf
+resale_test_sf$predict_rf <- rf_pred$predictions
+```
+
+### 6.1.3 Geographical Random Forest Model
+
+For the geographical random forest model, I will need to do an additional step - combining the coordinates data to the nogeo test data. The predictions will be computed with `predict.grf()` from `SpatialML` package and saved as a rds object.
+
+```{r}
+#| eval: false 
+# Combine test data with coordinates
+gwRF_test_data <- cbind(resale_test_nogeo, coords_test) 
+
+# Compute predicted values
+gwRF_pred <- predict.grf(model_grf, 
+                         gwRF_test_data, 
+                         x.var.name="X",
+                         y.var.name="Y", 
+                         local.w=1,
+                         global.w=0,
+                         nthreads = 12)
+
+# Save output
+write_rds(gwRF_pred, "data/model/GRF_pred.rds")
+```
+
+Now I can load it back in and append the predictions to the resale_test_sf. The resale_test_sf with all the predictions from the different models will now be saved as a rds object.
+
+```{r}
+#| eval: false 
+# Load output
+grf_pred <- read_rds("data/model/GRF_pred.rds")
+
+# Combine predicted values with test data
+resale_test_sf$predict_grf <- grf_pred
+
+# Save output
+write_rds(resale_test_sf, "data/model/resale_test_sf.rds")
+```
+
+## 6.2 Metrics
+
+To compute the metrics, I will load in the resale_test_sf with all the predict values and compute 2 regression metrics for them
+
+-   RMSE: Root Mean Square Error
+-   MAE: Mean Absolute Error
+
+This will be visualized with `datatable()` from `DT` package.
+
+```{r}
+# Load in resale_test_sf
+resale_test_sf <- read_rds("data/model/resale_test_sf.rds")
+
+# Compute rmse for the different models
+rmse_mlr <- Metrics::rmse(resale_test_sf$resale_price, resale_test_sf$predict_mlr)
+rmse_rf <- Metrics::rmse(resale_test_sf$resale_price, resale_test_sf$predict_rf)
+rmse_grf <- Metrics::rmse(resale_test_sf$resale_price, resale_test_sf$predict_grf)
+
+# Compute mae for the different models
+mae_mlr <- Metrics::mae(resale_test_sf$resale_price, resale_test_sf$predict_mlr)
+mae_rf <- Metrics::mae(resale_test_sf$resale_price, resale_test_sf$predict_rf)
+mae_grf <- Metrics::mae(resale_test_sf$resale_price, resale_test_sf$predict_grf)
+
+# Combine metrics into a dataframe
+metrics_df <- data.frame(
+  Multiple_Linear_Regression = c(rmse_mlr, mae_mlr),
+  Random_Forest = c(rmse_rf, mae_rf),
+  Geographically_Weighted_RF = c(rmse_grf, mae_grf)
+)
+
+# Assign rownames
+rownames(metrics_df) <- c("RMSE", "MAE")
+
+# Visualize results
+datatable(metrics_df, rownames=TRUE, width="100%",
+            options=list(scrollX = TRUE, 
+                         initComplete = JS(
+                           "function(settings, json) {",
+                           "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff', 'font-family': 'sans-serif', 'font-size': '12px'});",
+                           "$(this.api().table().body()).css({'font-family': 'sans-serif', 'font-size': '12px'});",
+                           "}"
+    )))
+```
+
+::: callout-note
+Comparing the metrics, Geographical Weighted Random Forest performed better than Multiple Linear Regression (Ordinary Least Squares) and Random Forest at both RMSE and MAE, having the least value for both.
+:::
 
 
+However, I also want to know how the models fare across different locations. To do so, I will first use `st_join()` from `sf` package to get the "PLN_AREA_N" information from "mpsz19_shp" dataset. RMSE and MAE are then performed for all models within each "PLN_AREA_N", with the best model having the smallest value for each metric.
 
-# 6 Conclusion
+This is then joined back to "mpsz19_shp" dataset which is summarized by "PLN_AREA_N" with `st_union()` from `sf` package after a `group_by().`
 
+```{r}
+# Join Planning Area from MPSZ data to resale_test_sf
+resale_with_area <- st_join(resale_test_sf, mpsz19_shp["PLN_AREA_N"])
 
+# Calculate RMSE and MAE by PLN_AREA_N for each model
+rmse_by_area <- resale_with_area %>%
+  group_by(PLN_AREA_N) %>%
+  summarise(
+    RMSE_MLR = Metrics::rmse(resale_price, predict_mlr),
+    RMSE_RF = Metrics::rmse(resale_price, predict_rf),
+    RMSE_GRF = Metrics::rmse(resale_price, predict_grf),
+    MAE_MLR = Metrics::mae(resale_price, predict_mlr),
+    MAE_RF = Metrics::mae(resale_price, predict_rf),
+    MAE_GRF = Metrics::mae(resale_price, predict_grf)
+  ) %>%
+  mutate(Best_RMSE = case_when(RMSE_MLR == pmin(RMSE_MLR, RMSE_RF, RMSE_GRF) ~ "MLR",
+                               RMSE_RF == pmin(RMSE_MLR, RMSE_RF, RMSE_GRF) ~ "RF",
+                               RMSE_GRF == pmin(RMSE_MLR, RMSE_RF, RMSE_GRF) ~ "GRF"
+                                 ),
+         Best_MAE = case_when(MAE_MLR == pmin(MAE_MLR, MAE_RF, MAE_GRF) ~ "MLR",
+                              MAE_RF == pmin(MAE_MLR, MAE_RF, MAE_GRF) ~ "RF",
+                              MAE_GRF == pmin(MAE_MLR, MAE_RF, MAE_GRF) ~ "GRF"
+                                 ),
+  ) %>%
+  st_drop_geometry()
 
+# Join back to mpsz data
+mpsz19_shp_with_metrics <- mpsz19_shp %>%
+  group_by(PLN_AREA_N) %>%
+  summarise(geometry = st_union(geometry)) %>% # Union geometries by PLN_AREA_N
+  ungroup() %>%
+  left_join(rmse_by_area, by = "PLN_AREA_N")
+```
+
+With the updated mpsz19_shp data, I can plot the 2 metrics performance side by side for each planning area.
+
+```{r, fig.height=10, fig.width=12}
+# Set tmap mode to view
+tmap_mode("plot")
+
+tmap_options(check.and.fix = TRUE)
+
+# Visualize best rmse model by planning area
+plot_rmse <- tm_shape(mpsz19_shp_with_metrics) +
+  tm_polygons("Best_RMSE", 
+              title = "Model", 
+              palette = "Set2", 
+              border.col = "gray",id = "PLN_AREA_N") +
+  tm_layout(main.title = "Best Model by RMSE for Each Area",
+            main.title.position = "center") +
+  tm_view(set.zoom.limits = c(11, 12))
+
+# Visualize best mae model by planning area
+plot_mae <- tm_shape(mpsz19_shp_with_metrics) +
+  tm_polygons("Best_MAE", 
+              title = "Model", 
+              palette = "Set2", 
+              border.col = "gray",id = "PLN_AREA_N") +
+  tm_layout(main.title = "Best Model by MAE for Each Area",
+            main.title.position = "center") +
+  tm_view(set.zoom.limits = c(11, 12))
+
+# Plot the 2 maps side by side
+tmap_arrange(plot_rmse, plot_mae, ncol = 2, sync = TRUE)
+```
+::: callout-note
+Geographically weighted random forest tends to perform better for regions that are more expensive (those in the Downtown area and those in the East/North East), whereas random forest tends to perform better in the North and West. Surprisingly, multiple linear regression managed to outperform both, albeit 2 regions (Hougang and Kallang)
+:::
+
+## 6.3 Visualizing Performance
+
+### 6.3.1 Scatterplot
+
+Using a scatterplot with `ggplot2` package, I can check the performance of each model visually by plotting the actual resale prices against the predicted values. These are then arranged in a suitable format with `ggarrange()` from `ggpubr` package.
+
+```{r, fig.height=10, fig.width=12}
+# Plot for Multiple Linear Regression
+plot_mlr <- ggplot(data = resale_test_sf,
+                   aes(x = predict_mlr,
+                       y = resale_price)) +
+  geom_point() + 
+  ggtitle("Resale Prices vs Prediced Prices (MLR)") + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+# Plot for Random Forest
+plot_rf <- ggplot(data = resale_test_sf,
+                   aes(x = predict_rf,
+                       y = resale_price)) +
+  geom_point() + 
+  ggtitle("Resale Prices vs Prediced Prices (RF)") + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+# Plot for Geographical Random Forest
+plot_grf <- ggplot(data = resale_test_sf,
+                   aes(x = predict_grf,
+                       y = resale_price)) +
+  geom_point() + 
+  ggtitle("Resale Prices vs Prediced Prices (GRF)") + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+# Visualize plots side by side
+ggarrange(plot_mlr, plot_rf, plot_grf, ncol = 2, nrow = 2)
+```
+
+::: callout-note
+Tighter
+:::
+
+### 6.3.2 Prediction Errors Across Singapore
+
+Residuals are calculated for each model, then I can visualize them with a boxplot with `boxplot()`.
+
+```{r, fig.height=10, fig.width=12}
+# Create residuals for each model prediction
+resale_test_sf <- resale_test_sf %>%
+  mutate(residual_mlr = resale_price - predict_mlr,
+         residual_rf = resale_price - predict_rf,
+         residual_grf = resale_price - predict_grf)
+
+# Visualize boxplot
+boxplot(resale_test_sf$residual_mlr, resale_test_sf$residual_rf, resale_test_sf$residual_grf,
+        names = c("OLS MLR", "Random Forest", "Geographically Weighted RF"),
+        main = "Residual Comparison Across Models",
+        ylab = "Residuals",
+        col = c("skyblue", "salmon", "lightgreen"))
+```
+::: callout-note
+Tighter
+:::
+
+To better understand each model, I will also visualize each model's residuals across Singapore region. For cross comparison, the model's RMSE performance across region will also be shown.
+
+::: panel-tabset
+# Multiple Linear Regression
+
+```{r, fig.width = 12, fig.height = 10}
+# Set tmap mode to plot
+tmap_mode("view")
+
+tmap_options(check.and.fix = TRUE)
+
+# Visualize residuals for multiple linear regression
+tm_shape(mpsz19_shp_with_metrics) +
+  tm_polygons("RMSE_MLR", 
+              palette = "YlOrRd",         
+              title = "RMSE by Region") +  
+  tm_shape(resale_test_sf) +
+  tm_dots("residual_mlr",
+          palette = "-RdBu",
+          title = "Residual (Over/Underestimation)",
+          size = 0.1,
+          id = "address",
+          breaks = c(-Inf, seq(-400000, 600000, by = 200000), Inf)) +
+  tm_layout(main.title = "Residuals (MLR)",
+            main.title.position = ("center")) +
+  tm_view(set.zoom.limits = c(11, 12))
+```
+
+::: callout-note
+Analysis for the variable importance will be incorporated into the conclusion.
+:::
+
+# Random Forest
+
+```{r, fig.width = 12, fig.height = 10}
+# Set tmap mode to view
+tmap_mode("view")
+
+tmap_options(check.and.fix = TRUE)
+
+# Visualize residuals for random forest
+tm_shape(mpsz19_shp_with_metrics) +
+  tm_polygons("RMSE_RF", 
+              palette = "YlOrRd",         
+              title = "RMSE by Region") +  
+  tm_shape(resale_test_sf) +
+  tm_dots("residual_rf",
+          palette = "-RdBu",
+          title = "Residual (Over/Underestimation)",
+          size = 0.1,
+          id = "address",
+          breaks = c(-Inf, seq(-400000, 600000, by = 200000), Inf)) +
+  tm_layout(main.title = "Residuals (RF)",
+            main.title.position = ("center")) +
+  tm_view(set.zoom.limits = c(11, 12))
+```
+
+::: callout-note
+Analysis for the variable importance will be incorporated into the conclusion.
+:::
+
+# Geographical Random Forest
+
+```{r, fig.width = 12, fig.height = 10}
+# Set tmap mode to plot
+tmap_mode("view")
+
+tmap_options(check.and.fix = TRUE)
+
+# Visualize residuals for geographical random forest
+tm_shape(mpsz19_shp_with_metrics) +
+  tm_polygons("RMSE_GRF", 
+              palette = "YlOrRd",         
+              title = "RMSE by Region") +  
+  tm_shape(resale_test_sf) +
+  tm_dots("residual_grf",
+          palette = "-RdBu",
+          title = "Residual (Over/Underestimation)",
+          size = 0.1,
+          id = "address",
+          breaks = c(-Inf, seq(-400000, 600000, by = 200000), Inf)) +
+  tm_layout(main.title = "Residuals (GRF)",
+            main.title.position = ("center")) +
+  tm_view(set.zoom.limits = c(11, 12))
+```
+
+::: callout-note
+Analysis for the variable importance will be incorporated into the conclusion.
+:::
+:::
+
+## 6.4 Variable Importance
+
+While the focus is on prediction, it is always good to have a better understanding of the variable importance. This could be used to explain the model which is very helpful when selling the model to stakeholders. While model metrics are definitely important, stakeholders typically demand explanation to better trust the model.
+
+Since the geographical random forest model is the model for choice, I will use the variable importance from that model. That can be found within the "Global.Model" of the model object. Using `enframe()` from `tibble` package, I will convert the named list into a tibble. Minor processing are done (arrange values, add thousand separator) before visualizing it with `datatable()` from `DT` package.
+
+```{r}
+# Extract importance from geographical random forest model output
+importance_tbl <- enframe(model_grf$Global.Model$variable.importance, name = "Factor", value = "Value")
+
+# For
+importance_tbl <- importance_tbl %>%
+  arrange(desc(Value)) %>%
+  mutate(Value = scales::comma(Value))
+
+datatable(importance_tbl, rownames=TRUE, width="100%",
+            options=list(scrollX = TRUE, 
+                         initComplete = JS(
+                           "function(settings, json) {",
+                           "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff', 'font-family': 'sans-serif', 'font-size': '12px'});",
+                           "$(this.api().table().body()).css({'font-family': 'sans-serif', 'font-size': '12px'});",
+                           "}"
+    )))
+```
+
+::: callout-note
+Analysis for the variable importance will be incorporated into the conclusion.
+:::
+
+# 7 Conclusion
+
+Resale flat prices are a constant hot topic in Singapore, with demand for resale flats coming from growing families as well as investors.
 
 # References
 

@@ -45,6 +45,19 @@ condo_resale <- resale %>%
 ```
 
 ```{r}
+library(DT)
+
+# Check output
+datatable(head(resale), rownames=FALSE, width="100%",
+            options=list(initComplete = JS(
+    "function(settings, json) {",
+    "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff', 'font-family': 'sans-serif'});",
+    "$(this.api().table().body()).css({'font-family': 'sans-serif'});",
+    "}"
+            )))
+```
+
+```{r}
 #| eval: false
 postcode <- unique(condo_resale$`Postal Code`)
 ```
