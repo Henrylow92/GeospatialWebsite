@@ -216,6 +216,7 @@ coords <- read_rds("data/processed/coords_full.rds")
 coords[(is.na(coords$postal) | is.na(coords$latitude) | is.na(coords$longitude) | coords$postal=="NIL"), ]
 
 
+
 # Join coordinates to resale_tidy dataset
 resale_sf <- left_join(resale_tidy, coords, by = c('address' = 'address')) %>%
   st_as_sf(coords = c("longitude", "latitude"), crs = 4326) %>%
@@ -761,7 +762,7 @@ Besides this, I have explored the following:
 ::: {.column width="40%"}
 1.  Go to [overpass-turbo website](https://overpass-turbo.eu/#)
 2.  Run the following query:
-    -   \[out:json\]\[timeout:25\]; area\["name"="Singapore"\]-\>.searchArea; ( node["shop"="mall"](area.searchArea); way["shop"="mall"](area.searchArea); relation["shop"="mall"](area.searchArea); ); out body; \>; out skel qt;
+    -   \[out:json\]\[timeout:25\]; area\["name"="Singapore"\]-\>.searchArea; ( node"shop"="mall"; way"shop"="mall"; relation"shop"="mall"; ); out body; \>; out skel qt;
 3.  After generating the results, they can be exported as KML and saved into the data folder.
 :::
 
@@ -1781,7 +1782,88 @@ ggplot(town_summary, aes(x = reorder(town, -proportion), y = proportion, fill = 
 Although the test data has a much greater proportion of Sengkang and lesser proportion of Sembawang observations, the proportions for both train and test datasets are relatively similar. Therefore, I shouldn't worry too much about class imbalance issues.
 :::
 
-### 3.4 Multicolinearity Analysis
+### 3.4 Area Analysis
+
+To perform descriptive statistics for each planning area, I will use `st_join()` from `sf` package to join the planning area information from "mpsz19_shp" dataset to the "resale_sf" dataset. The statistics are computed within each "PLN_AREA_N" and then joined back to the "mpsz19_shp" dataset.
+
+```{r}
+# Join Planning Area from MPSZ data to resale_sf
+resale_area_df <- st_join(resale_sf, mpsz19_shp["PLN_AREA_N"]) %>%
+  st_drop_geometry()
+
+# Compute descriptive statistics
+area_analysis <- resale_area_df %>%
+  group_by(PLN_AREA_N) %>%
+  summarise(count = n(),
+            mean_resale_price = mean(resale_price, na.rm = TRUE),
+            median_resale_price = median(resale_price, na.rm = TRUE),
+            var_resale_price = var(resale_price, na.rm = TRUE)
+  )
+   
+# Join data with MPSZ data          
+mpsz19_shp_eda <- mpsz19_shp %>%
+  group_by(PLN_AREA_N) %>%
+  summarise(geometry = st_union(geometry)) %>% # Union geometries by PLN_AREA_N
+  ungroup() %>%
+  left_join(area_analysis, by = "PLN_AREA_N")
+```
+
+Now I can visualize the various statistics with `tmap` package.
+
+```{r, fig.height=10, fig.width=12}
+# Set tmap mode to plot
+tmap_mode("plot")
+
+tmap_options(check.and.fix = TRUE)
+
+# Visualize count of units by planning area
+plot_count <- tm_shape(mpsz19_shp_eda) +
+  tm_polygons("count",
+              title = "Count",
+              palette = "YlOrRd", 
+              border.col = "gray",id = "PLN_AREA_N") +
+  tm_layout(main.title = "No. of Units by Planning Area",
+            main.title.position = ("center"))
+
+# Visualize mean resale price by planning area
+plot_mean <- tm_shape(mpsz19_shp_eda) +
+  tm_polygons("mean_resale_price",
+              title = "Mean",
+              palette = "YlOrRd", 
+              border.col = "gray",id = "PLN_AREA_N") +
+  tm_layout(main.title = "Resale Price by Planning Area (Mean)",
+            main.title.position = ("center"))
+
+# Visualize median resale price by planning area
+plot_median <- tm_shape(mpsz19_shp_eda) +
+  tm_polygons("median_resale_price",
+              title = "Median",
+              palette = "YlOrRd", 
+              border.col = "gray",id = "PLN_AREA_N") +
+  tm_layout(main.title = "Resale Price by Planning Area (Median)",
+            main.title.position = ("center"))
+
+# Visualize standard deviation of resale price by planning area
+plot_sd <- tm_shape(mpsz19_shp_eda) +
+  tm_polygons("var_resale_price",
+              title = "Variance",
+              palette = "YlOrRd", 
+              border.col = "gray",id = "PLN_AREA_N") +
+  tm_layout(main.title = "Resale Price by Planning Area (Variance)",
+            main.title.position = ("center"))
+
+
+
+# Plot the 4 maps
+tmap_arrange(plot_count, plot_mean, plot_median, plot_sd, ncol = 2, nrow = 2)
+
+```
+
+::: callout-note
+While there are much less 5 room units sold in the Central/Downtown area, they are much more expensive and have a higher variance.
+:::
+
+### 3.5 Multicolinearity Analysis
 
 Finally, I will do a last check for multicolinearity through a correlation matrix. To do so, I would remove the geometry data with `st_drop_geometry()`. `ggcorrmat()` from `ggstatsplot` package will then be used to plot the matrix.
 
@@ -2285,7 +2367,6 @@ datatable(metrics_df, rownames=TRUE, width="100%",
 Comparing the metrics, Geographical Weighted Random Forest performed better than Multiple Linear Regression (Ordinary Least Squares) and Random Forest at both RMSE and MAE, having the least value for both.
 :::
 
-
 However, I also want to know how the models fare across different locations. To do so, I will first use `st_join()` from `sf` package to get the "PLN_AREA_N" information from "mpsz19_shp" dataset. RMSE and MAE are then performed for all models within each "PLN_AREA_N", with the best model having the smallest value for each metric.
 
 This is then joined back to "mpsz19_shp" dataset which is summarized by "PLN_AREA_N" with `st_union()` from `sf` package after a `group_by().`
@@ -2327,7 +2408,7 @@ mpsz19_shp_with_metrics <- mpsz19_shp %>%
 With the updated mpsz19_shp data, I can plot the 2 metrics performance side by side for each planning area.
 
 ```{r, fig.height=10, fig.width=12}
-# Set tmap mode to view
+# Set tmap mode to plot
 tmap_mode("plot")
 
 tmap_options(check.and.fix = TRUE)
@@ -2339,8 +2420,7 @@ plot_rmse <- tm_shape(mpsz19_shp_with_metrics) +
               palette = "Set2", 
               border.col = "gray",id = "PLN_AREA_N") +
   tm_layout(main.title = "Best Model by RMSE for Each Area",
-            main.title.position = "center") +
-  tm_view(set.zoom.limits = c(11, 12))
+            main.title.position = "center")
 
 # Visualize best mae model by planning area
 plot_mae <- tm_shape(mpsz19_shp_with_metrics) +
@@ -2349,14 +2429,14 @@ plot_mae <- tm_shape(mpsz19_shp_with_metrics) +
               palette = "Set2", 
               border.col = "gray",id = "PLN_AREA_N") +
   tm_layout(main.title = "Best Model by MAE for Each Area",
-            main.title.position = "center") +
-  tm_view(set.zoom.limits = c(11, 12))
+            main.title.position = "center") 
 
 # Plot the 2 maps side by side
-tmap_arrange(plot_rmse, plot_mae, ncol = 2, sync = TRUE)
+tmap_arrange(plot_rmse, plot_mae, ncol = 2)
 ```
+
 ::: callout-note
-Geographically weighted random forest tends to perform better for regions that are more expensive (those in the Downtown area and those in the East/North East), whereas random forest tends to perform better in the North and West. Surprisingly, multiple linear regression managed to outperform both, albeit 2 regions (Hougang and Kallang)
+Geographically weighted random forest tends to perform better for regions that are more expensive (those in the Downtown area and those in the East/North East), whereas random forest tends to perform better in the North and West. Surprisingly, multiple linear regression managed to outperform both, albeit 2 regions (Hougang and Kallang).
 :::
 
 ## 6.3 Visualizing Performance
@@ -2395,7 +2475,7 @@ ggarrange(plot_mlr, plot_rf, plot_grf, ncol = 2, nrow = 2)
 ```
 
 ::: callout-note
-Tighter
+While it is clear that random forest and geographical weighted random forest models have scatter points closer to the diagonal than the multiple linear regression model, the differences between random forest and geographical weighted random forest are less obvious.
 :::
 
 ### 6.3.2 Prediction Errors Across Singapore
@@ -2414,10 +2494,11 @@ boxplot(resale_test_sf$residual_mlr, resale_test_sf$residual_rf, resale_test_sf$
         names = c("OLS MLR", "Random Forest", "Geographically Weighted RF"),
         main = "Residual Comparison Across Models",
         ylab = "Residuals",
-        col = c("skyblue", "salmon", "lightgreen"))
+        col = c("#FC8D62", "#8DA0CB", "#66C2A5"))
 ```
+
 ::: callout-note
-Tighter
+With the boxplot, I can tell that random forest has the tendency to underestimate the resale prices, with more outliers above the top whisker rather than spread out above and below the 2 whiskers respectively. Furthermore, it appears that the geographcially weighted random forest model has a slightly smaller interquartile range, suggesting that errors are smaller in scale as compared to random forest or ordinary least square multiple linear regression.
 :::
 
 To better understand each model, I will also visualize each model's residuals across Singapore region. For cross comparison, the model's RMSE performance across region will also be shown.
@@ -2449,7 +2530,7 @@ tm_shape(mpsz19_shp_with_metrics) +
 ```
 
 ::: callout-note
-Analysis for the variable importance will be incorporated into the conclusion.
+The ordinary least squares multiple linear regression model performed the worst for Bukit Timah and Outram area by RMSE, instead performing better for resale flats that are towards the edges of Singapore (West, North, North East, East). As supported by its boxplot, its errors lean towards underestimation rather than overestimation, with majority of the points being colored light pink.
 :::
 
 # Random Forest
@@ -2478,7 +2559,7 @@ tm_shape(mpsz19_shp_with_metrics) +
 ```
 
 ::: callout-note
-Analysis for the variable importance will be incorporated into the conclusion.
+Similar to the ordinary least squares multiple linear regression model, the random forest model performed worst for the Bukit Timah area. However, it differs in that it seems to perform best specially for West and North Regions. As mentioned in the insight for the boxplot, majority of its errors lean towards underestimation as many of the points are coloured light pink.
 :::
 
 # Geographical Random Forest
@@ -2507,7 +2588,7 @@ tm_shape(mpsz19_shp_with_metrics) +
 ```
 
 ::: callout-note
-Analysis for the variable importance will be incorporated into the conclusion.
+Contrasting with the other models, geographically weighted random forest model performed worst for Marine Parade and Ang Mo Kio areas. Despite outperforming other models in the downtown area, the geographically weighted random forest model has greater residual for those area as compared to areas towards the North and West.
 :::
 :::
 
@@ -2515,16 +2596,25 @@ Analysis for the variable importance will be incorporated into the conclusion.
 
 While the focus is on prediction, it is always good to have a better understanding of the variable importance. This could be used to explain the model which is very helpful when selling the model to stakeholders. While model metrics are definitely important, stakeholders typically demand explanation to better trust the model.
 
-Since the geographical random forest model is the model for choice, I will use the variable importance from that model. That can be found within the "Global.Model" of the model object. Using `enframe()` from `tibble` package, I will convert the named list into a tibble. Minor processing are done (arrange values, add thousand separator) before visualizing it with `datatable()` from `DT` package.
+Since the geographical random forest model is the model for choice, I will use the variable importance from that model. The global importance can be found within the "Global.Model" of the model object. Using `enframe()` from `tibble` package, I will convert the named list into a tibble. The local importance on the other hand is saved as "Local.Variable.Importance" in the model object.
+
+After extracting those information, I will merge them and do minor processing (arrange values, add thousand separator) before visualizing it with `datatable()` from `DT` package.
 
 ```{r}
-# Extract importance from geographical random forest model output
-importance_tbl <- enframe(model_grf$Global.Model$variable.importance, name = "Factor", value = "Value")
+# Extract global importance
+global_importance_tbl <- enframe(model_grf$Global.Model$variable.importance, name = "Factor", value = "Global_Importance")
 
-# For
-importance_tbl <- importance_tbl %>%
-  arrange(desc(Value)) %>%
-  mutate(Value = scales::comma(Value))
+# Extract local importance 
+local_importance_tbl <- model_grf$Local.Variable.Importance %>%
+  summarise(across(everything(), mean, .names = "{col}")) %>%
+  pivot_longer(cols = everything(), names_to = "Factor", values_to = "Local_Importance")
+
+# Combine both importance
+importance_tbl <- global_importance_tbl %>%
+  left_join(local_importance_tbl, by = "Factor") %>%
+  arrange(desc(Global_Importance)) %>%
+  mutate(Global_Importance = scales::comma(Global_Importance),
+         Local_Importance = scales::comma(Local_Importance))
 
 datatable(importance_tbl, rownames=TRUE, width="100%",
             options=list(scrollX = TRUE, 
@@ -2542,7 +2632,19 @@ Analysis for the variable importance will be incorporated into the conclusion.
 
 # 7 Conclusion
 
-Resale flat prices are a constant hot topic in Singapore, with demand for resale flats coming from growing families as well as investors.
+Resale flat prices are a constant hot topic in Singapore, with demand for resale flats coming from growing families as well as investors. While there are abundant sources of property data (i.e. Data.gov.sg, PropertyGuru), it is hard for users to pinpoint the resale price for a given HDB unit due to : (1) challenges with processing large volumes of transactional data and (2) difficulty in find previous transactions that completely match the features of the unit they are interested in.
+
+Having a predictive model would be helpful in this case as it serves to distill the various information into a simulator that accounts for differences and nuances of unit features. Through this exercise, I have established that the overall best performing model is the Geographical Weighted Random Forest Model *(Section 6.2)* based on its root mean squared error (RMSE) performance. As the various models were run with the same parameters (i.e. same number of trees, type of factors), the differences in performance could be largely attributed to the inherent algorithm/approach of the model.
+
+Nevertheless, the Geographical Weighted Random Forest Model still faces challenges as it is also shown to be potentially outperformed by other models for specific areas of Singapore *(Section 6.2)*. Comparing the performance across different models, it seems as though there are greater difficulties in estimating resale prices for units in the Downtown/Central Region as compared other areas *(Section 6.3.2)*. This can be due to the fact that despite having lesser observations to train on, those observations themselves have a greater variance *(Section 3.4)*. On the other hand, models perform better on the West and North, areas which have more observations and lesser variance.
+
+The larger variance of the Downtown/Central area units could be attributed to the fact that the exercise focuses on 5 room resale flats. Investors/families who can afford such units especially in those area are likely to be more affluent, causing prices for those units to fluctuate more drastically as compared to other types of units/units in other areas as demand for those units might be less price elastic.
+
+When looking at the variable importance *(Section 6.4)*, the global importance values highlight the weight of the Downtown/Central area units with a larger value for "PROX_CBD". Other factors that are generally importance and thus score highly under global importance are "std_UNIT_LEASE" and "std_UNIT_FLOOR". These coincides with the main consideration factors that people typically look at for HDB units. Remaining lease inherently affects the value of the unit as having a longer lease would give the owner more time to use the unit before it is repossessed by HDB. A unit located on higher floor is also given more value as units on higher floors are generally thought to be cleaner and more noise insulated (i.e. from surrounding traffic).
+
+However, when looking at local importance values *(Section 6.4)*, other factors then take precedence. This highlights the value of having a Geographical Weighted Random Forest Model over a Random Forest Model, as it is able to reconsider factors at a local level (within each bandwidth), incorporating local biases in the prediction. At a local level, while "std_UNIT_LEASE" is still important, people consider factors such as "std_UNIT_AREA" and "std_PROX_GDPRISCH". This aligns with the context that people purchasing 5 room resale flats are possibly growing families who move to be [closer to the primary schools to have a better chance in enrolling their children into said schools](https://www.propertyguru.com.sg/property-guides/primary-school-singapore-moving-house-48819). For those cases, families will understandably prioritize a more spacious unit and one that is closer to the school of choice.
+
+All things considered, it is always a challenge trying to calibrate a perfect model to predict resale prices. Nevertheless, the Geographical Weighted Random Forest model was able to demonstrate an edge over other models by being able to consider localised information as well as global information.
 
 # References
 

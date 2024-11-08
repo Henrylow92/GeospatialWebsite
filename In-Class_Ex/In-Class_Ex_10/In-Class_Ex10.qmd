@@ -17,9 +17,9 @@ editor: visual
 ## Load Packages
 
 \-`sf` package to perform geospatial wrangling tasks \
--`SpatialAcc` package to model geographical accessibility tasks \
+-`httr` package to make api requests \
 - `tmap` package for plotting tasks \
-- `ggstatsplot` package for statistical analysis \
+- `performance` package for model performance \
 -`tidyverse` package for reading csv files, dataframe processing tasks 
 
 ```{r}
@@ -28,12 +28,34 @@ pacman::p_load(tidyverse, sf, tmap, httr, performance)
 
 ## Importing Data
 
-This will allow us to do the geocoding.
+If there are multiple files in a specified folder, I can use the following to import them (assuming they have the same pattern) and append them into a tibble dataframe.
+
+```{r}
+#| eval: false
+
+# Load data
+folder_path <- "data/aspatial"
+file_list <- list.files(path = folder_path, 
+                        pattern = "^realis.*\\.csv$", 
+                        full.names = TRUE)
+
+realis_data <- file_list %>%
+  map_dfr(read_csv)
+
+# Create condo resale data
+condo_resale <- realis_data %>%
+  mutate(`Sale Date` = dmy(`Sale Date`)) %>%
+  filter(`Type of Sale` == "Resale" &
+           `Property Type` == "Condominium")
+```
+
+Due to the lack of data I will load in the resale data instead.
 
 ```{r}
 # Load resale data
-resale <- read_csv("data/aspatial/resale.csv") %>%
-  filter(month >= "2023-01" & month <= "2024-09")
+resale <- read_rds("data/resale_sf.rds") %>%
+  filter(month == "2024-09") %>%
+  st_drop_geometry()
 
 # Preprocess data
 condo_resale <- resale %>%
@@ -41,26 +63,22 @@ condo_resale <- resale %>%
   mutate(remaining_lease_yr = as.integer(
     str_sub(remaining_lease, 0, 2)))%>%
   mutate(remaining_lease_mth = as.integer(
-    str_sub(remaining_lease, 9, 11)))
+    str_sub(remaining_lease, 9, 11))) %>%
+  filter(postal != "NIL") %>%
+  rename(`Postal Code` = postal)
 ```
 
-```{r}
-library(DT)
+## Data Wrangling
 
-# Check output
-datatable(head(resale), rownames=FALSE, width="100%",
-            options=list(initComplete = JS(
-    "function(settings, json) {",
-    "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff', 'font-family': 'sans-serif'});",
-    "$(this.api().table().body()).css({'font-family': 'sans-serif'});",
-    "}"
-            )))
-```
+I need to get a unique list of postal codes which will be run by the function to get the geocoding
 
 ```{r}
 #| eval: false
+# Get unique postal codes
 postcode <- unique(condo_resale$`Postal Code`)
 ```
+
+With the list of postal code, I can make GET requests iteratively to the onemap api.
 
 ```{r}
 #| eval: false
@@ -79,20 +97,70 @@ for (postcode in postcode){
 }
 ```
 
+The output will be saved for easy retrieval.
+
+```{r}
+# # Save output
+# write_rds(found, "data/found.rds")
+# write_rds(not_found, "data/not_found.rds")
+
+# Load output
+found <- read_rds("data/found.rds")
+not_found <- read_rds("data/not_found.rds")
+```
+
+After getting the results, some tidying is required. The clean output is then appended to the resale data and converted into a sf dataframe with `st_as_sf()` from `sf` package.
+
+```{r}
+# Process the results
+found <- found %>%
+  select(c(6:8)) %>%
+  rename(POSTAL = `results.POSTAL`,
+         XCOORD = `results.X`,
+         YCOORD = `results.Y`)
+
+# Append results to aspatial data
+condo_resale_geocoded = left_join(
+  condo_resale, found, 
+  by = c('Postal Code' = 'POSTAL')) %>%
+  filter()
+
+
+# Convert the dataframe to sf dataframe
+condo_resale_sf <- st_as_sf(condo_resale_geocoded, 
+                            coords = c("XCOORD",
+                                       "YCOORD"),
+                            crs=3414)
+```
+Since overlapping points may cause issues, I will need to check if there are any.
+
+```{r}
+# Check for overlapping point
+overlapping_points <- condo_resale_sf %>%
+  mutate(overlap = lengths(st_equals(., .)) > 1)
+```
+
+If there are any overlapping points, `st_jitter()` with 2 metres will be used.
+
+```{r}
+# Jitter
+condo_resale_sf <- condo_resale_sf %>%
+  st_jitter(amount = 2)
+```
+
+
 ## Other Tips
 
 ```{r}
-#| eval: false
 # Load in Thailand data
-prov_sf <- st_read(dsn = " ", layers = "") %>%
-  st_transform()
+prov_sf <- st_read(dsn = "data/tha_adm_rtsd_itos_20210121_shp/", layer = "tha_admbnda_adm1_rtsd_20220121") %>%
+  st_transform(crs = 32647) 
 ```
 
 First, convert multipolygons into individual polygons. Area is also calculated for each polygons
 
 ```{r}
-#| eval: false
-sf_polygon <- prow_sf %>%
+sf_polygon <- prov_sf %>%
   st_cast("POLYGON") %>%
   mutate(area = st_area(.))
 ```
@@ -100,7 +168,6 @@ sf_polygon <- prow_sf %>%
 The data is then grouped by unique name and the largest polygon by area is selected.
 
 ```{r}
-#| eval: false
 prov_cleaned <- sf_polygon %>%
   group_by(ADM1_EN) %>%
   filter(area == max(area)) %>%
@@ -109,8 +176,12 @@ prov_cleaned <- sf_polygon %>%
   select(ADM1_EN)
 ```
 
-```{r}
-#| eval: false
-tm_shape(prov_cleaned) %>%
+After cleaning it, I can visualize it with tm_shape
+
+```{r, fig.height=10, fig.width=12}
+tmap_mode("plot")
+tm_shape(prov_cleaned) +
   tm_polygons()
 ```
+
+
